@@ -96,5 +96,19 @@ export const AgentSchema = defineMongooseModel({
       },
       dropChance: Number, // 0-1, e.g., 0.5 = 50% chance
     }],
+    // Phase 25: Vendor System
+    isVendor: {
+      type: Boolean,
+      default: false,
+    },
+    shopInventory: [{
+      type: Schema.Types.ObjectId,
+      ref: 'Item',
+    }],
+    shopType: {
+      type: String,
+      enum: ['gold', 'premium'],
+      default: 'gold',
+    },
   },
 });
