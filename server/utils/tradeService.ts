@@ -133,7 +133,7 @@ class TradeService {
     return { success: true, message: 'Đã thêm vật phẩm vào giao dịch.' };
   }
 
-  // Add gold to trade
+  // Set gold amount in trade (replaces previous amount)
   addGold(playerId: string, amount: number): { success: boolean; message: string } {
     const playerTrade = this.getPlayerTrade(playerId);
     if (!playerTrade) {
@@ -147,7 +147,7 @@ class TradeService {
       return { success: false, message: 'Giao dịch đã bị khóa. Không thể thêm vàng.' };
     }
 
-    // Add gold
+    // Set gold amount (replaces previous amount if any)
     if (isInitiator) {
       trade.initiatorGold = amount;
     } else {

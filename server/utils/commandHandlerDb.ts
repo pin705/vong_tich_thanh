@@ -1627,6 +1627,58 @@ export async function handleCommandDb(command: Command, playerId: string): Promi
                   break;
                 }
 
+                // Validate gold amounts
+                if (initiator.gold < trade.initiatorGold) {
+                  responses.push('Lỗi: Người khởi tạo không có đủ vàng để hoàn tất giao dịch.');
+                  if (otherPlayer?.ws) {
+                    otherPlayer.ws.send(JSON.stringify({
+                      type: 'system',
+                      category: 'trade',
+                      message: 'Giao dịch thất bại: Người kia không có đủ vàng.'
+                    }));
+                  }
+                  break;
+                }
+                if (target.gold < trade.targetGold) {
+                  responses.push('Lỗi: Người đối tác không có đủ vàng để hoàn tất giao dịch.');
+                  if (otherPlayer?.ws) {
+                    otherPlayer.ws.send(JSON.stringify({
+                      type: 'system',
+                      category: 'trade',
+                      message: 'Giao dịch thất bại: Bạn không có đủ vàng.'
+                    }));
+                  }
+                  break;
+                }
+
+                // Validate items still exist in inventories
+                for (const itemId of trade.initiatorItems) {
+                  if (!initiator.inventory.some((id: any) => id.toString() === itemId)) {
+                    responses.push('Lỗi: Một số vật phẩm của bạn không còn tồn tại.');
+                    if (otherPlayer?.ws) {
+                      otherPlayer.ws.send(JSON.stringify({
+                        type: 'system',
+                        category: 'trade',
+                        message: 'Giao dịch thất bại: Người kia không còn vật phẩm đã đưa ra.'
+                      }));
+                    }
+                    break;
+                  }
+                }
+                for (const itemId of trade.targetItems) {
+                  if (!target.inventory.some((id: any) => id.toString() === itemId)) {
+                    responses.push('Lỗi: Một số vật phẩm của đối tác không còn tồn tại.');
+                    if (otherPlayer?.ws) {
+                      otherPlayer.ws.send(JSON.stringify({
+                        type: 'system',
+                        category: 'trade',
+                        message: 'Giao dịch thất bại: Bạn không còn vật phẩm đã đưa ra.'
+                      }));
+                    }
+                    break;
+                  }
+                }
+
                 // Exchange items
                 for (const itemId of trade.initiatorItems) {
                   initiator.inventory = initiator.inventory.filter((id: any) => id.toString() !== itemId);
@@ -1671,24 +1723,24 @@ export async function handleCommandDb(command: Command, playerId: string): Promi
           }
 
           case 'cancel': {
+            // Get trade info BEFORE canceling
+            const playerTrade = tradeService.getPlayerTrade(playerId);
+            
             // Cancel trade
             const cancelResult = tradeService.cancelTrade(playerId);
             responses.push(cancelResult.message);
 
-            if (cancelResult.success && cancelResult.tradeId) {
-              const playerTrade = tradeService.getPlayerTrade(playerId);
-              if (playerTrade) {
-                const otherPlayerId = playerTrade.isInitiator
-                  ? playerTrade.trade.targetId
-                  : playerTrade.trade.initiatorId;
-                const otherPlayer = gameState.getPlayer(otherPlayerId);
-                if (otherPlayer?.ws) {
-                  otherPlayer.ws.send(JSON.stringify({
-                    type: 'system',
-                    category: 'trade',
-                    message: `[${player.username}] đã hủy giao dịch.`
-                  }));
-                }
+            if (cancelResult.success && playerTrade) {
+              const otherPlayerId = playerTrade.isInitiator
+                ? playerTrade.trade.targetId
+                : playerTrade.trade.initiatorId;
+              const otherPlayer = gameState.getPlayer(otherPlayerId);
+              if (otherPlayer?.ws) {
+                otherPlayer.ws.send(JSON.stringify({
+                  type: 'system',
+                  category: 'trade',
+                  message: `[${player.username}] đã hủy giao dịch.`
+                }));
               }
             }
             break;

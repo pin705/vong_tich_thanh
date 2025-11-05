@@ -454,8 +454,19 @@ const renderClickableItems = (text: string): string => {
   // Match item names in brackets like [Cỏ Chữa Lành] or [Đuôi Chuột]
   const itemRegex = /\[([^\]]+)\]/g;
   return text.replace(itemRegex, (match, itemName) => {
+    // Sanitize item name to prevent XSS
+    const sanitizedName = itemName.replace(/[<>"'&]/g, (char) => {
+      const entities: Record<string, string> = {
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#39;',
+        '&': '&amp;'
+      };
+      return entities[char] || char;
+    });
     // Create a clickable span with data attribute for the item name
-    return `<span class="clickable-item" data-item-name="${itemName}" onclick="window.handleItemClick('${itemName}')">${match}</span>`;
+    return `<span class="clickable-item" data-item-name="${sanitizedName}" onclick="window.handleItemClick('${sanitizedName}')">[${sanitizedName}]</span>`;
   });
 };
 
