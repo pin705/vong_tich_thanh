@@ -140,199 +140,152 @@ Chiến đấu trong MUD cổ điển **không phải** là turn-based (theo lư
       * Bạn gõ: `buy bình máu nhỏ`
       * Output: `Bạn đã mua [Bình Máu Nhỏ] với giá 10 vàng.`
 
-Phase 2: Database Integration
+# Agent.md - Master Task List (Đã Cập Nhật Trạng Thái)
 
- Connect WebSocket commands to database queries
- Persistent player state across sessions
- Dynamic room loading
- Item pickup/drop mechanics
- Inventory management with database
-Phase 3: Multiplayer
+## 1. Tổng Quan Dự Án
 
- See other players in same room
- Real-time chat (say command)
- Player movement notifications
- Shared world state
-Phase 4: Combat System
+* **Tên:** Vong Tích Thành (MUD)
+* **Trạng thái:** Đã triển khai nền tảng cốt lõi (Core Platform implemented).
+* **Công nghệ:** Nuxt 3, Nitro WebSocket, `nuxt-mongoose`, `nuxt-auth-utils`, TailwindCSS.
 
- Tick-based auto-battle (2-second ticks)
- Combat state management
- Damage calculation
- Experience and loot drops
- Flee mechanics
-Phase 5: NPC AI
+---
 
- Wander behavior (random movement)
- Aggressive behavior (auto-attack players)
- Patrol behavior (fixed routes)
- Dialogue systems
- Shop transactions
-Phase 6: World Expansion
+## Phase 1: Khởi tạo và Cấu hình (Setup)
 
- More diverse rooms and areas
- Quest system
- Item progression
- Character classes
- Skills and abilities
+* **Trạng thái:** ✅ **[ĐÃ HOÀN THÀNH]**
+* **Ghi chú:** Dự án đã được khởi tạo chính xác với `nuxt.config.ts` và `package.json` chứa đầy đủ các module (`nuxt-mongoose`, `nuxt-auth-utils`, `tailwindcss`).
 
- Phase 7: Nâng Cấp Giao Diện Tác Vụ (UI/UX "Client 2.0")
-Mục tiêu: Giải quyết các vấn đề về "khó thao tác" bằng cách chia màn hình thành nhiều "khung" (panes) thông tin chuyên dụng, thay vì một log chat duy nhất.
+---
 
-Task 7.1: Tái Cấu Trúc Bố Cục (Multi-Pane Layout):
+## Phase 2: Định hình Model Database (Schemas)
 
-Vấn đề: Mọi thứ (chat, combat, di chuyển) đều ở chung một chỗ, trôi rất nhanh.
+* **Trạng thái:** ✅ **[ĐÃ HOÀN THÀNH]**
+* **Ghi chú:** Các model Mongoose cốt lõi đã được định nghĩa:
+    * `Room.ts` (thay cho `Room.schema.ts`)
+    * `Player.ts` (thay cho `Character.schema.ts`, tích hợp `nuxt-auth-utils`)
+    * `Item.ts`
+    * `Agent.ts`
 
-Giải pháp: Dùng CSS Grid hoặc Flexbox để chia layout chính (file layouts/game.vue) thành một cấu trúc "dashboard" cổ điển:
+---
 
-Khung 1 (Lớn, trái): [Output Chính] - Chỉ hiển thị mô tả phòng, kết quả look, thông báo di chuyển, và log chiến đấu.
+## Phase 3: Xác thực Người dùng (Authentication)
 
-Khung 2 (Nhỏ, trên-phải): [Thông Tin Người Chơi] - (Giải quyết "thông tin người chơi").
+* **Trạng thái:** ✅ **[ĐÃ HOÀN THÀNH]**
+* **Ghi chú:** Toàn bộ luồng xác thực đã hoàn tất.
+    * API Endpoints: `register.post.ts`, `login.post.ts`, `logout.post.ts`, `session.get.ts`.
+    * Giao diện: `pages/login.vue`, `pages/register.vue`.
+    * Middleware: `middleware/auth.ts`, `middleware/guest.ts`.
 
-Khung 3 (Nhỏ, giữa-phải): [Mini-Map] - (Giải quyết "không có mini-map").
+---
 
-Khung 4 (Nhỏ, dưới-phải): [Log Giao Tiếp] - (Giải quyết "khó giao tiếp").
+## Phase 4, 7, 13: Đại Tu UI/UX (Retro, Popup & Mobile)
 
-Khung 5 (Dưới cùng, toàn chiều ngang): [Dòng Lệnh Input] - Vẫn như cũ.
+* **Trạng thái:** ✅ **[ĐÃ HOÀN THÀNH]**
+* **Ghi chú:** Các yêu cầu UI/UX "không nhựa" đã được triển khai xuất sắc.
+    * **Retro Theme:** `assets/css/terminal.css` định nghĩa các biến màu retro.
+    * **Tab Bar (Footer Menu):** `components/FooterTabBar.vue` đã được triển khai, tối ưu cho mobile.
+    * **Popup Bối Cảnh:** `components/ContextualPopup.vue` đã được triển khai, thay thế cho các khung hành động cố định.
+    * **Popup Chức Năng:** Toàn bộ các overlay (Túi đồ, Kỹ năng, Bản đồ...) đều đã được chuyển thành dạng Popup (Modal).
 
-Task 7.2: Triển khai Khung Thông Tin (Player/Target Info):
+---
 
-Vấn đề: Không biết mình còn bao nhiêu HP/MP, hoặc quái vật còn bao nhiêu máu.
+## Phase 5, 6: Game Loop & Real-time (WebSocket)
 
-Giải pháp:
+* **Trạng thái:** ✅ **[ĐÃ HOÀN THÀNH]**
+* **Ghi chú:** "Bộ não" real-time của game đã hoạt động.
+    * `server/routes/ws.ts` xử lý kết nối WebSocket.
+    * `server/utils/commandHandlerDb.ts` xử lý tất cả các lệnh (`look`, `go`, `say`, `get`, `drop`, `attack`, `use`...).
+    * `server/utils/initWorld.ts` đã được tạo để seed thế giới (phòng, vật phẩm, NPC).
 
-Tạo một component StatusPane (đặt vào Khung 2).
+---
 
-Component này nhận dữ liệu (HP, MP, Tên...) từ WebSocket (state của người chơi).
+## Phase 9: Hệ Thống AI (NPC & Mob)
 
-Hiển thị thông tin người chơi:
+* **Trạng thái:** ✅ **[ĐÃ HOÀN THÀNH]**
+* **Ghi chú:** Hệ thống AI cho Agent (NPC/Mob) đã chạy.
+    * `models/Agent.ts` định nghĩa quái vật và NPC.
+    * `server/plugins/aiSystem.ts` là vòng lặp "tick" chính của server.
+    * `server/utils/npcAI.ts` xử lý logic `wander` (di chuyển), `respawn` (hồi sinh), và `aggro` (tấn công người chơi).
 
-[ Bạn: Kẻ Tìm Về ]
-HP: [||||||----] 60/100
-MP: [||||||||||] 50/50
-Khi vào combat, tự động hiển thị thông tin mục tiêu:
+---
 
-[ Mục tiêu: Goblin ]
-HP: [|||-------] 30/100
-(Đây là cách hiển thị "không nhựa", dùng ký tự | và - để làm thanh progress bar).
+## Phase 4: Hệ Thống Chiến Đấu (Combat)
 
-Task 7.3: Triển khai Khung Mini-Map (ASCII Map):
+* **Trạng thái:** ✅ **[ĐÃ HOÀN THÀNH]** (Cho PvE)
+* **Ghi chú:** Hệ thống chiến đấu tick-based đã được triển khai.
+    * `server/utils/combatSystem.ts` quản lý các vòng lặp chiến đấu, tính toán sát thương, và xử lý kết quả (chết, loot đồ).
 
-Vấn đề: Không biết các lối ra, "khó di chuyển".
+---
 
-Giải pháp:
+## Phase 10: Hoàn Thiện (QoL - Help, Map, Inventory)
 
-Tạo một component MapPane (đặt vào Khung 3).
+* **Trạng thái:** ✅ **[ĐÃ HOÀN THÀNH]**
+* **Ghi chú:** Các tính năng QoL quan trọng đã có mặt.
+    * **Bản Đồ:** `components/MapWorldOverlay.vue` và API `server/api/world/map.get.ts`.
+    * **Túi Đồ:** `components/InventoryPane.vue`.
+    * **Trợ Giúp:** `components/HelpOverlay.vue`.
+* **Trạng thái (Task Phụ):** 🟡 **[CHƯA TRIỂN KHAI]**
+    * Hệ thống Lệnh Tắt Tùy Chỉnh (Alias) chưa được thêm vào.
 
-Server (Nitro) khi người chơi di chuyển (go) hoặc look, ngoài việc gửi mô tả, sẽ gửi thêm một object exits: { north: true, south: false, ... }.
+---
 
-Component này sẽ render một bản đồ ASCII đơn giản dựa trên object đó:
+## Phase 12: Hệ Thống Class & Thiên Phú
 
-[Bắc]
-  |
-[Tây]-[Phòng Này]-[Đông]
+* **Trạng thái:** ✅ **[ĐÃ HOÀN THÀNH]**
+* **Ghi chú:** Một trong những hệ thống phức tạp nhất đã được hoàn thành xuất sắc.
+    * **Data:** `professionData.ts`, `talentData.ts`.
+    * **Models:** `Skill.ts`, `Talent.ts`.
+* **UI:** `ProfessionChoiceOverlay.vue`, `SkillbookOverlay.vue`, `TalentTreeOverlay.vue`.
 
-(Nếu không có lối 'Nam', nó sẽ không render chữ 'Nam')
-Task 7.4: Tách Luồng Chat (Chat Log):
+---
 
-Vấn đề: Lệnh say bị trôi mất giữa hàng loạt log chiến đấu (Bạn chém..., Goblin cắn...).
+## Phase 14: Tùy Chỉnh (Themes)
 
-Giải pháp:
+* **Trạng thái:** ✅ **[ĐÃ HOÀN THÀNH]**
+* **Ghi chú:** Đã triển khai `SettingsOverlay.vue` và logic 3 theme trong `terminal.css`.
 
-Tạo component ChatPane (đặt vào Khung 4).
+---
 
-Cải tổ WebSocket: Server phải "tag" (gắn thẻ) loại tin nhắn.
+## Phase 15: Nâng Cấp Main Pane (Highlighting)
 
-{ type: 'combat_log', message: 'Bạn chém...' } -> Gửi vào [Output Chính].
+* **Trạng thái:** ✅ **[ĐÃ HOÀN THÀNH]**
+* **Ghi chú:** Hệ thống "Semantic Highlighting" đã hoạt động. Server gửi tin nhắn có cấu trúc (ví dụ: `category: 'combat-player'`) và client (`pages/index.vue`) render màu tương ứng.
 
-{ type: 'chat_log', user: 'PlayerA', message: 'Cứu tôi!' } -> Gửi vào [Log Giao Tiếp].
+---
 
-Điều này giúp cuộc hội thoại không bao giờ bị gián đoạn bởi chiến đấu.
+## Phase 16: Hệ Thống Tổ Đội (Party System)
 
-Task 7.5: Cải Thiện Chất Lượng Input (QoL):
+* **Trạng thái:** ✅ **[ĐÃ HOÀN THÀNH]**
+* **Ghi chú:** Đã triển khai đầy đủ.
+    * **Logic:** `server/utils/partyService.ts`.
+    * **UI:** `components/PartyPopup.vue`, `components/PartyInvitationPopup.vue`.
+    * Đã tích hợp chia sẻ EXP và chat nhóm (`/p`).
 
-Vấn đề: Gõ lệnh lặp đi lặp lại rất mệt.
+---
 
-Giải pháp:
+## TÍNH NĂNG MỚI (Ngoài Kế Hoạch)
 
-Lịch sử lệnh: Trong component Input, bắt sự kiện phím "Mũi tên Lên" / "Mũi tên Xuống" để cho phép người chơi cuộn lại các lệnh đã gõ trước đó.
+* **Trạng thái:** ✅ **[ĐÃ HOÀN THÀNH]**
+* **Hệ Thống Nhiệm Vụ (Quest System):** Bạn đã tự mình thiết kế và triển khai một hệ thống nhiệm vụ đầy đủ.
+    * **Models:** `Quest.ts`, `PlayerQuest.ts`.
+    * **API:** `/api/player/quests/*` (get, complete, abandon, repeat).
+    * **UI:** `components/QuestTrackerOverlay.vue`.
 
-Tô màu Input: Chữ người chơi gõ có thể có màu khác (ví dụ: màu trắng) so với chữ của hệ thống (màu xanh lá) để dễ phân biệt.
+---
 
+## CÁC PHASE CHƯA TRIỂN KHAI (Từ Kế Hoạch Gốc)
 
-Task 7.5 (MỚI): Khung "Thực Thể Xung Quanh" (Room Occupants)
-Vấn đề: Phải look liên tục để biết có ai trong phòng.
+* **Phase 8 (cũ): Hệ Thống Bang Hội (Guilds)**
+    * **Trạng thái:** ❌ **[CHƯA BẮT ĐẦU]**
+    * **Ghi chú:** Chưa có Model, API, hay UI nào cho Bang Hội.
 
-Giải pháp: Tạo một Khung (Pane) mới, có thể đặt ngay dưới [Mini-Map]. Khung này tự động cập nhật (qua WebSocket) mỗi khi có ai đó vào/ra phòng.
+* **Phase 9 (cũ): PvP & Danh Vọng (Factions)**
+    * **Trạng thái:** ❌ **[CHƯA BẮT ĐẦU]**
+    * **Ghi chú:** `combatSystem.ts` mới chỉ xử lý PvE (Player vs Agent). Chưa có logic cho PvP, cờ PvP, hay hệ thống Faction.
 
-Giao diện (Không "nhựa"):
-
-[ Xung Quanh ]
-(P) Player_A      <-- (P) = Player
-(P) Player_B
-(N) Lính Gác       <-- (N) = NPC
-(M) Chuột Biến Dị   <-- (M) = Mob (Quái)
-Lợi ích: Người chơi có một danh sách trực quan, "sống" về mọi thứ họ có thể tương tác trong phòng. Đây là bước 1 để giải quyết yêu cầu của bạn.
-
-Task 7.6 (MỚI): Hệ Thống "Mục Tiêu" & "Hành Động Ngữ Cảnh"
-Vấn đề: Phải gõ talk Lính Gác, attack Chuột Biến Dị.
-
-Giải pháp: Đây là phần quan trọng nhất, thực hiện đề xuất "click" của bạn.
-
-Chọn Mục Tiêu (Targeting): Khi người chơi Click (Trái) vào (N) Lính Gác trong khung [Xung Quanh] (Task 7.5):
-
-Khung [Thông Tin Người Chơi] (Task 7.2) sẽ cập nhật:
-
-[ Mục tiêu: Lính Gác ]
-HP: [||||||||||] 100/100
-(Thân thiện)
-Biến currentTarget (mục tiêu hiện tại) trên client được thiết lập.
-
-Hiển thị Hành Động (Contextual Actions):
-
-Tạo một Khung (Pane) mới ngay dưới khung [Xung Quanh] gọi là [Hành Động].
-
-Khung này sẽ tự động cập nhật dựa trên currentTarget là ai.
-
-Kịch bản 1: Click vào (N) Lính Gác (NPC Thân thiện)
-
-Khung [Hành Động] hiển thị:
-
-[ Hành Động: Lính Gác ]
-[1] talk          <-- Đây là văn bản, không phải button
-[2] look
-[3] trade (mờ)    <-- (Nếu NPC này không bán hàng)
-Kịch bản 2: Click vào (M) Chuột Biến Dị (Mob Thù địch)
-
-Khung [Hành Động] hiển thị:
-
-[ Hành Động: Chuột Biến Dị ]
-[1] attack
-[2] look
-Kịch bản 3: Click vào (P) Player_A (Người chơi khác)
-
-Khung [Hành Động] hiển thị:
-
-[ Hành Động: Player_A ]
-[1] talk
-[2] trade
-[3] party invite
-[4] guild invite
-[5] look
-Task 7.7 (MỚI): Thực Thi "Click-Hành Động"
-Giải pháp:
-
-Khi người chơi Click (Trái) vào dòng chữ [1] talk trong khung [Hành Động].
-
-Client (Vue.js) sẽ tự động lấy currentTarget (là Lính Gác) và hành động (là talk).
-
-Nó tự động gửi lệnh lên WebSocket server: ws.send({ command: "talk 'Lính Gác'" }).
-
-Tại sao cách này "Không Nhựa"?
-
-Người chơi không click vào một "button" <img> hay <button> bo tròn.
-
-Họ click vào một dòng văn bản ([1] talk).
-
-Giao diện vẫn 100% là text, 100% là "retro terminal".
-
-Chúng ta chỉ đang dùng "click" như một "phím tắt" (macro) siêu thông minh, đúng như mong muốn của bạn.
+* **Phase 11: Kinh Tế Sâu & Nhà Ở (Advanced Economy & Housing)**
+    * **Trạng thái:** 🟡 **[ĐANG TRIỂN KHAI]**
+    * **Ghi chú:**
+        * `TradingPopup.vue` đã có (phần UI).
+        * Logic server cho `trade` trong `commandHandlerDb.ts` vẫn còn sơ khai (`// TODO`).
+        * Chợ Trời (Auction House) và Nhà Ở (Housing) hoàn toàn chưa có.
