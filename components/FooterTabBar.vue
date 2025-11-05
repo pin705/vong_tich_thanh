@@ -27,6 +27,7 @@ const tabs: Tab[] = [
   { id: 'inventory', label: '[Túi Đồ]' },
   { id: 'party', label: '[Nhóm]' },
   { id: 'guild', label: '[Bang Hội]' },
+  { id: 'auction', label: '[Chợ]' },
   { id: 'quests', label: '[Nhiệm Vụ]' },
   { id: 'skills', label: '[Kỹ Năng]' },
   { id: 'talents', label: '[Thiên Phú]' },

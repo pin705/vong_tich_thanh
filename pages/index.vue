@@ -190,6 +190,19 @@
         @refresh="loadGuildInfo"
       />
     </Popover>
+
+    <!-- Auction House Popup -->
+    <Popover
+      :isOpen="auctionHousePopupOpen"
+      title="Chợ Đấu Giá"
+      width="800px"
+      @close="auctionHousePopupOpen = false"
+    >
+      <AuctionHouseOverlay
+        :currentPlayerId="user?.id || ''"
+        @close="auctionHousePopupOpen = false"
+      />
+    </Popover>
   </div>
 </template>
 
@@ -259,6 +272,7 @@ const tradingPopupOpen = ref(false);
 const partyPopupOpen = ref(false);
 const partyInvitationPopupOpen = ref(false);
 const guildPopupOpen = ref(false);
+const auctionHousePopupOpen = ref(false);
 const contextualPopupData = ref<{
   title: string;
   entityType: 'npc' | 'mob' | 'player' | null;
@@ -439,6 +453,9 @@ const handleTabClick = async (tabId: string) => {
       break;
     case 'guild':
       guildPopupOpen.value = true;
+      break;
+    case 'auction':
+      auctionHousePopupOpen.value = true;
       break;
     case 'skills':
       await loadSkills();
