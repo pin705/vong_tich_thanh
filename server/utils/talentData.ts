@@ -213,13 +213,208 @@ export const MUTANT_WARRIOR_TALENTS: TalentBranch[] = [
   },
 ];
 
+export const RUNE_HISTORIAN_TALENTS: TalentBranch[] = [
+  {
+    id: 'restoration',
+    name: 'Phục Hồi',
+    description: 'Tập trung vào hồi máu và hỗ trợ đồng đội',
+    talents: [
+      {
+        id: 'healing_power',
+        name: 'Sức Mạnh Hồi Phục +',
+        description: 'Tăng 10% hiệu quả hồi máu',
+        branch: 'restoration',
+        tier: 1,
+        maxRank: 5,
+        pointsInBranchRequired: 0,
+        levelRequired: 10,
+        effects: { healingPower: 10 },
+      },
+      {
+        id: 'mass_heal',
+        name: 'Hồi Máu Tập Thể',
+        description: 'Học kỹ năng Hồi Máu Tập Thể',
+        branch: 'restoration',
+        tier: 2,
+        maxRank: 1,
+        pointsInBranchRequired: 5,
+        levelRequired: 20,
+        prerequisiteTalents: ['healing_power'],
+        effects: {},
+        grantsSkill: 'mass_heal',
+      },
+    ],
+  },
+  {
+    id: 'buff',
+    name: 'Tăng Cường',
+    description: 'Tập trung vào buff và tăng sức mạnh đồng đội',
+    talents: [
+      {
+        id: 'buff_duration',
+        name: 'Buff Lâu Hơn +',
+        description: 'Tăng 20% thời gian buff',
+        branch: 'buff',
+        tier: 1,
+        maxRank: 3,
+        pointsInBranchRequired: 0,
+        levelRequired: 10,
+        effects: { buffDuration: 20 },
+      },
+      {
+        id: 'arcane_power',
+        name: 'Sức Mạnh Bí Thuật',
+        description: 'Học kỹ năng Sức Mạnh Bí Thuật',
+        branch: 'buff',
+        tier: 2,
+        maxRank: 1,
+        pointsInBranchRequired: 3,
+        levelRequired: 20,
+        prerequisiteTalents: ['buff_duration'],
+        effects: {},
+        grantsSkill: 'arcane_power',
+      },
+    ],
+  },
+  {
+    id: 'debuff',
+    name: 'Suy Yếu',
+    description: 'Tập trung vào debuff và giảm sức mạnh kẻ thù',
+    talents: [
+      {
+        id: 'curse_power',
+        name: 'Sức Mạnh Lời Nguyền +',
+        description: 'Tăng 10% hiệu quả debuff',
+        branch: 'debuff',
+        tier: 1,
+        maxRank: 5,
+        pointsInBranchRequired: 0,
+        levelRequired: 10,
+        effects: { cursePower: 10 },
+      },
+      {
+        id: 'hex_of_weakness',
+        name: 'Lời Nguyền Yếu Đuối',
+        description: 'Học kỹ năng Lời Nguyền Yếu Đuối',
+        branch: 'debuff',
+        tier: 2,
+        maxRank: 1,
+        pointsInBranchRequired: 5,
+        levelRequired: 20,
+        prerequisiteTalents: ['curse_power'],
+        effects: {},
+        grantsSkill: 'hex_of_weakness',
+      },
+    ],
+  },
+];
+
+export const STALKER_TALENTS: TalentBranch[] = [
+  {
+    id: 'assassination',
+    name: 'Ám Sát',
+    description: 'Tập trung vào sát thương bùng nổ và chí mạng',
+    talents: [
+      {
+        id: 'critical_chance',
+        name: 'Tỉ Lệ Chí Mạng +',
+        description: 'Tăng 5% tỉ lệ chí mạng',
+        branch: 'assassination',
+        tier: 1,
+        maxRank: 5,
+        pointsInBranchRequired: 0,
+        levelRequired: 10,
+        effects: { critChance: 5 },
+      },
+      {
+        id: 'backstab',
+        name: 'Đâm Lén',
+        description: 'Học kỹ năng Đâm Lén',
+        branch: 'assassination',
+        tier: 2,
+        maxRank: 1,
+        pointsInBranchRequired: 5,
+        levelRequired: 20,
+        prerequisiteTalents: ['critical_chance'],
+        effects: {},
+        grantsSkill: 'backstab',
+      },
+    ],
+  },
+  {
+    id: 'shadow',
+    name: 'Bóng Đêm',
+    description: 'Tập trung vào tàng hình và né tránh',
+    talents: [
+      {
+        id: 'dodge_chance',
+        name: 'Né Tránh +',
+        description: 'Tăng 5% tỉ lệ né tránh',
+        branch: 'shadow',
+        tier: 1,
+        maxRank: 5,
+        pointsInBranchRequired: 0,
+        levelRequired: 10,
+        effects: { dodgeChance: 5 },
+      },
+      {
+        id: 'vanish',
+        name: 'Biến Mất',
+        description: 'Học kỹ năng Biến Mất',
+        branch: 'shadow',
+        tier: 2,
+        maxRank: 1,
+        pointsInBranchRequired: 5,
+        levelRequired: 20,
+        prerequisiteTalents: ['dodge_chance'],
+        effects: {},
+        grantsSkill: 'vanish',
+      },
+    ],
+  },
+  {
+    id: 'poison',
+    name: 'Độc Dược',
+    description: 'Tập trung vào độc và sát thương theo thời gian',
+    talents: [
+      {
+        id: 'poison_damage',
+        name: 'Sát Thương Độc +',
+        description: 'Tăng 10% sát thương độc',
+        branch: 'poison',
+        tier: 1,
+        maxRank: 5,
+        pointsInBranchRequired: 0,
+        levelRequired: 10,
+        effects: { poisonDamage: 10 },
+      },
+      {
+        id: 'deadly_poison',
+        name: 'Độc Chết Người',
+        description: 'Học kỹ năng Độc Chết Người',
+        branch: 'poison',
+        tier: 2,
+        maxRank: 1,
+        pointsInBranchRequired: 5,
+        levelRequired: 20,
+        prerequisiteTalents: ['poison_damage'],
+        effects: {},
+        grantsSkill: 'deadly_poison',
+      },
+    ],
+  },
+];
+
 export function getTalentsByClass(classId: string): TalentBranch[] {
   switch (classId) {
     case 'scrap_engineer':
       return SCRAP_ENGINEER_TALENTS;
     case 'mutant_warrior':
       return MUTANT_WARRIOR_TALENTS;
-    // Add other classes later
+    case 'rune_historian':
+      return RUNE_HISTORIAN_TALENTS;
+    case 'stalker':
+      return STALKER_TALENTS;
     default:
       return [];
   }
