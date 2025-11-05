@@ -126,19 +126,23 @@
             :class="['room-card', { current: room.isCurrent, visited: room.visited }]"
             @click="selectRoom(room)"
           >
-            <div class="room-name">{{ room.name }}</div>
+            <div class="room-name">
+              {{ room.name }}
+              <span v-if="room.hasNewQuests" class="quest-indicator new-quest" title="Có nhiệm vụ mới">[!]</span>
+              <span v-if="room.hasActiveQuests" class="quest-indicator active-quest" title="Có nhiệm vụ đang làm">[?]</span>
+            </div>
             <div class="room-info">
               <div v-if="room.npcs && room.npcs.length > 0" class="room-npcs">
-                <span class="info-icon">👤</span> {{ room.npcs.length }} NPC
+                <span class="info-icon">[N]</span> {{ room.npcs.length }} NPC
               </div>
               <div v-if="room.mobs && room.mobs.length > 0" class="room-mobs">
-                <span class="info-icon">⚔️</span> {{ room.mobs.length }} Quái vật
+                <span class="info-icon">[M]</span> {{ room.mobs.length }} Quái vật
               </div>
               <div v-if="room.boss" class="room-boss">
-                <span class="info-icon">👹</span> Boss: {{ room.boss }}
+                <span class="info-icon">[B]</span> Boss: {{ room.boss }}
               </div>
               <div v-if="room.shop" class="room-shop">
-                <span class="info-icon">🏪</span> Cửa hàng
+                <span class="info-icon">[S]</span> Cửa hàng
               </div>
             </div>
             <div v-if="room.connections" class="room-connections">
@@ -156,8 +160,10 @@
             <!-- NPCs -->
             <div v-if="selectedRoom.npcs && selectedRoom.npcs.length > 0" class="detail-section">
               <h4>NPCs:</h4>
-              <div v-for="npc in selectedRoom.npcs" :key="npc" class="detail-item">
-                • {{ npc }}
+              <div v-for="npc in selectedRoom.npcs" :key="typeof npc === 'string' ? npc : npc.name" class="detail-item">
+                • {{ typeof npc === 'string' ? npc : npc.name }}
+                <span v-if="typeof npc === 'object' && npc.hasNewQuest" class="quest-indicator new-quest" title="Có nhiệm vụ mới">[!]</span>
+                <span v-if="typeof npc === 'object' && npc.hasActiveQuest" class="quest-indicator active-quest" title="Có nhiệm vụ đang làm">[?]</span>
               </div>
             </div>
 
@@ -172,7 +178,7 @@
             <!-- Boss -->
             <div v-if="selectedRoom.boss" class="detail-section boss-section">
               <h4>Boss:</h4>
-              <div class="detail-item boss-name">⚠️ {{ selectedRoom.boss }}</div>
+              <div class="detail-item boss-name">[!] {{ selectedRoom.boss }}</div>
             </div>
 
             <!-- Actions -->
@@ -189,7 +195,7 @@
                 class="action-button current"
                 disabled
               >
-                [✓] VỊ TRÍ HIỆN TẠI
+                [*] VỊ TRÍ HIỆN TẠI
               </button>
             </div>
           </div>
@@ -585,6 +591,37 @@ function navigateToRoom(room: Room) {
 
 .room-shop {
   color: #ffb000;
+}
+
+.quest-indicator {
+  display: inline-block;
+  margin-left: 0.5rem;
+  font-weight: bold;
+  font-size: 0.9em;
+  padding: 0 0.25rem;
+  border-radius: 2px;
+}
+
+.quest-indicator.new-quest {
+  color: #ffff00;
+  background-color: rgba(255, 255, 0, 0.2);
+  border: 1px solid #ffff00;
+  animation: pulse 2s infinite;
+}
+
+.quest-indicator.active-quest {
+  color: #00aaaa;
+  background-color: rgba(0, 170, 170, 0.2);
+  border: 1px solid #00aaaa;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 0.6;
+  }
+  50% {
+    opacity: 1;
+  }
 }
 
 .room-connections {

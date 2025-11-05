@@ -1,6 +1,8 @@
 import { RoomSchema } from '~/models/Room';
 import { AgentSchema } from '~/models/Agent';
 import { PlayerSchema } from '~/models/Player';
+import { QuestSchema } from '~/models/Quest';
+import { PlayerQuestSchema } from '~/models/PlayerQuest';
 
 export default defineEventHandler(async (event) => {
   try {
@@ -14,6 +16,34 @@ export default defineEventHandler(async (event) => {
     
     // Get all agents to populate NPC/mob info
     const agents = await AgentSchema.find().lean();
+    
+    // Get all quests to determine which NPCs have quests
+    const allQuests = await QuestSchema.find().lean();
+    
+    // Get player's quest status
+    const playerQuests = await PlayerQuestSchema.find({ playerId: session.user.id }).lean();
+    const activeQuestIds = new Set(
+      playerQuests
+        .filter((pq: any) => pq.status === 'active' || pq.status === 'completed')
+        .map((pq: any) => pq.questId.toString())
+    );
+    
+    // Create a map of quest givers to their quest status
+    const questGiverMap = new Map<string, { hasNewQuest: boolean; hasActiveQuest: boolean }>();
+    allQuests.forEach((quest: any) => {
+      const questId = quest._id.toString();
+      const isActive = activeQuestIds.has(questId);
+      const currentStatus = questGiverMap.get(quest.questGiver) || { hasNewQuest: false, hasActiveQuest: false };
+      
+      if (isActive) {
+        currentStatus.hasActiveQuest = true;
+      } else {
+        // Check if player can accept this quest (level requirement, etc.)
+        currentStatus.hasNewQuest = true;
+      }
+      
+      questGiverMap.set(quest.questGiver, currentStatus);
+    });
 
     // Map rooms to the world map format
     const worldRooms = rooms.map((room: any) => {
@@ -23,7 +53,14 @@ export default defineEventHandler(async (event) => {
 
       const npcs = roomAgents
         .filter((agent: any) => agent.type === 'npc')
-        .map((agent: any) => agent.name);
+        .map((agent: any) => {
+          const questInfo = questGiverMap.get(agent.name);
+          return {
+            name: agent.name,
+            hasNewQuest: questInfo?.hasNewQuest || false,
+            hasActiveQuest: questInfo?.hasActiveQuest || false
+          };
+        });
 
       const mobs = roomAgents
         .filter((agent: any) => agent.type === 'mob')
@@ -48,6 +85,10 @@ export default defineEventHandler(async (event) => {
       if (room.exits.up) connections.push('Lên');
       if (room.exits.down) connections.push('Xuống');
 
+      // Count quest indicators
+      const hasNewQuests = npcs.some((npc: any) => npc.hasNewQuest);
+      const hasActiveQuests = npcs.some((npc: any) => npc.hasActiveQuest);
+      
       return {
         id: room._id.toString(),
         name: room.name,
@@ -56,6 +97,8 @@ export default defineEventHandler(async (event) => {
         mobs,
         boss: boss?.name,
         shop: hasShop,
+        hasNewQuests,
+        hasActiveQuests,
         connections,
         visited: true, // TODO: Track per player
         isCurrent: false // Will be set below

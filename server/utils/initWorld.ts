@@ -371,7 +371,7 @@ export async function initializeWorld() {
       damage: 25,
       behavior: 'passive',
       dialogue: [
-        '💎 Chào mừng đến với Cửa Hàng Cao Cấp. Tôi bán những vật phẩm đặc biệt...',
+        'Chào mừng đến với Cửa Hàng Cao Cấp. Tôi bán những vật phẩm đặc biệt...',
         'Cổ Thạch là đồng tiền quý giá. Sử dụng khôn ngoan.',
         'Những vật phẩm của tôi có thể thay đổi vận mệnh của bạn.'
       ],

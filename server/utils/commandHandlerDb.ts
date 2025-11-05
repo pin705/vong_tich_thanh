@@ -775,8 +775,8 @@ export async function handleCommandDb(command: Command, playerId: string): Promi
             // Delete the consumed item
             await ItemSchema.findByIdAndDelete(useItem._id);
             
-            responses.push(`✨ Bạn đã kích hoạt [${useItem.name}]!`);
-            responses.push(`⚡ Bạn sẽ nhận được ${multiplier}x EXP trong ${durationMinutes} phút!`);
+            responses.push(`[+] Bạn đã kích hoạt [${useItem.name}]!`);
+            responses.push(`[+] Bạn sẽ nhận được ${multiplier}x EXP trong ${durationMinutes} phút!`);
             
             // Broadcast to room
             const useRoom = await RoomSchema.findById(player.currentRoomId);
@@ -785,7 +785,7 @@ export async function handleCommandDb(command: Command, playerId: string): Promi
                 useRoom._id.toString(),
                 {
                   type: 'normal',
-                  message: `✨ [${player.username}] đã kích hoạt [${useItem.name}]!`
+                  message: `[+] [${player.username}] đã kích hoạt [${useItem.name}]!`
                 },
                 player._id.toString()
               );
@@ -1704,14 +1704,14 @@ export async function handleCommandDb(command: Command, playerId: string): Promi
                 await initiator.save();
                 await target.save();
 
-                responses.push('✨ Giao dịch thành công!');
+                responses.push('[OK] Giao dịch thành công!');
 
                 // Notify other player
                 if (otherPlayer?.ws) {
                   otherPlayer.ws.send(JSON.stringify({
                     type: 'system',
                     category: 'trade',
-                    message: '✨ Giao dịch thành công!'
+                    message: '[OK] Giao dịch thành công!'
                   }));
                 }
               } else {

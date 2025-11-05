@@ -43,7 +43,7 @@
           <div class="detail-section">
             <h4>Phần thưởng khởi đầu:</h4>
             <div v-for="reward in selectedProfessionData.startingRewards" :key="reward" class="detail-item reward">
-              ✓ {{ reward }}
+              + {{ reward }}
             </div>
           </div>
 
@@ -52,7 +52,7 @@
               class="action-button confirm"
               @click="confirmChoice"
             >
-              [✓] XÁC NHẬN CHỌN NGHỀ
+              [OK] XÁC NHẬN CHỌN NGHỀ
             </button>
             <button
               class="action-button cancel"
@@ -66,7 +66,7 @@
 
       <!-- Footer -->
       <div class="profession-footer">
-        <div class="warning">⚠️ Lưu ý: Bạn chỉ có thể chọn nghề nghiệp một lần duy nhất!</div>
+        <div class="warning">[!] Lưu ý: Bạn chỉ có thể chọn nghề nghiệp một lần duy nhất!</div>
       </div>
     </div>
   </FullscreenOverlay>
@@ -100,7 +100,7 @@ const professions: Profession[] = [
   {
     id: 'blacksmith',
     name: 'Thợ Rèn',
-    icon: '⚒️',
+    icon: '[H]',
     description: 'Chuyên chế tạo vũ khí và giáp, sửa chữa trang bị.',
     fullDescription: 'Thợ Rèn là những người thành thạo nghệ thuật rèn kim loại. Họ có thể chế tạo vũ khí và giáp mạnh mẽ, cũng như sửa chữa trang bị hư hỏng. Đây là nghề không thể thiếu trong thế giới đầy nguy hiểm này.',
     bonuses: ['+5 Defense', '+10% Repair efficiency'],
@@ -110,7 +110,7 @@ const professions: Profession[] = [
   {
     id: 'alchemist',
     name: 'Nhà Giả Kim',
-    icon: '🧪',
+    icon: '[A]',
     description: 'Pha chế thuốc, độc dược và các loại potion.',
     fullDescription: 'Nhà Giả Kim nghiên cứu và pha chế các loại thuốc từ nguyên liệu thiên nhiên. Họ có thể tạo ra các loại potion hồi máu, hồi mana, và thậm chí cả độc dược nguy hiểm.',
     bonuses: ['+20 HP', '+2 Bình máu nhỏ'],
@@ -120,7 +120,7 @@ const professions: Profession[] = [
   {
     id: 'enchanter',
     name: 'Phù Phép Sư',
-    icon: '✨',
+    icon: '[E]',
     description: 'Phù phép trang bị, tạo ma thuật và bùa chú.',
     fullDescription: 'Phù Phép Sư sử dụng ma pháp cổ xưa để tăng cường sức mạnh của vật phẩm. Họ có thể thêm các thuộc tính đặc biệt vào vũ khí và giáp, biến chúng thành những vật phẩm huyền thoại.',
     bonuses: ['+10 MP', '+5% Magic damage'],
@@ -130,7 +130,7 @@ const professions: Profession[] = [
   {
     id: 'hunter',
     name: 'Thợ Săn',
-    icon: '🏹',
+    icon: '[T]',
     description: 'Săn bắn, thu thập da thú và nguyên liệu từ quái vật.',
     fullDescription: 'Thợ Săn là những chuyên gia trong việc săn bắt quái vật. Họ biết cách lấy nguyên liệu quý hiếm từ sinh vật và có khả năng phát hiện điểm yếu của kẻ thù.',
     bonuses: ['+8 Damage', '+10% Drop rate'],
@@ -140,7 +140,7 @@ const professions: Profession[] = [
   {
     id: 'miner',
     name: 'Thợ Mỏ',
-    icon: '⛏️',
+    icon: '[M]',
     description: 'Khai thác khoáng sản, đá quý và tài nguyên.',
     fullDescription: 'Thợ Mỏ dành cả cuộc đời để khai thác khoáng sản từ lòng đất. Họ có thể tìm thấy những tài nguyên quý hiếm và biết cách phát hiện các mạch khoáng.',
     bonuses: ['+15 HP', '+5% Resource yield'],
@@ -150,7 +150,7 @@ const professions: Profession[] = [
   {
     id: 'herbalist',
     name: 'Thảo Dược Gia',
-    icon: '🌿',
+    icon: '[D]',
     description: 'Thu thập thảo mộc, chế biến dược liệu.',
     fullDescription: 'Thảo Dược Gia hiểu biết sâu rộng về thực vật và cách sử dụng chúng. Họ có thể thu thập và chế biến các loại thảo mộc để tạo ra thuốc chữa bệnh và buff đặc biệt.',
     bonuses: ['+10 HP', '+10 MP', '+5% Herb yield'],

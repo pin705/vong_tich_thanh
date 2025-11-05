@@ -17,12 +17,12 @@
     </div>
 
     <div class="currency-section">
-      <span class="currency-label">💰 Vàng:</span>
+      <span class="currency-label">Vàng:</span>
       <span class="currency-value">{{ currency }}</span>
     </div>
 
     <div class="currency-section">
-      <span class="currency-label">💎 Cổ Thạch:</span>
+      <span class="currency-label">Cổ Thạch:</span>
       <span class="currency-value">{{ premiumCurrency }}</span>
     </div>
   </div>

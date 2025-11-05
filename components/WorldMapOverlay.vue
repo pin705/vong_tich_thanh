@@ -38,16 +38,16 @@
           <div class="room-name">{{ room.name }}</div>
           <div class="room-info">
             <div v-if="room.npcs && room.npcs.length > 0" class="room-npcs">
-              <span class="info-icon">👤</span> {{ room.npcs.length }} NPC
+              <span class="info-icon">[N]</span> {{ room.npcs.length }} NPC
             </div>
             <div v-if="room.mobs && room.mobs.length > 0" class="room-mobs">
-              <span class="info-icon">⚔️</span> {{ room.mobs.length }} Quái vật
+              <span class="info-icon">[M]</span> {{ room.mobs.length }} Quái vật
             </div>
             <div v-if="room.boss" class="room-boss">
-              <span class="info-icon">👹</span> Boss: {{ room.boss }}
+              <span class="info-icon">[B]</span> Boss: {{ room.boss }}
             </div>
             <div v-if="room.shop" class="room-shop">
-              <span class="info-icon">🏪</span> Cửa hàng
+              <span class="info-icon">[S]</span> Cửa hàng
             </div>
           </div>
           <div v-if="room.connections" class="room-connections">

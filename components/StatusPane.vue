@@ -24,11 +24,11 @@
         <span class="stat-value">{{ level }}</span>
       </div>
       <div class="stat-row">
-        <span class="stat-label">💰 Vàng:</span>
+        <span class="stat-label">Vàng:</span>
         <span class="stat-value">{{ gold }}</span>
       </div>
       <div class="stat-row">
-        <span class="stat-label">💎 Cổ Thạch:</span>
+        <span class="stat-label">Cổ Thạch:</span>
         <span class="stat-value">{{ premiumCurrency }}</span>
       </div>
     </div>

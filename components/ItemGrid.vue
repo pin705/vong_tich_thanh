@@ -132,10 +132,10 @@ const selectedItem = ref<InventoryItem | null>(null);
 
 const getItemIcon = (type: string): string => {
   const icons: Record<string, string> = {
-    weapon: '⚔',
-    armor: '🛡',
-    consumable: '🧪',
-    misc: '📦'
+    weapon: '[/]',
+    armor: '[=]',
+    consumable: '[!]',
+    misc: '[?]'
   };
   return icons[type] || '?';
 };
