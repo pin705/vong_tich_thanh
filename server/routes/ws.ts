@@ -1,7 +1,10 @@
 import type { Peer } from 'crossws';
 import { parseCommand } from '../utils/commandParser';
 import { handleCommand } from '../utils/commandHandler';
+import { handleCommandDb } from '../utils/commandHandlerDb';
 import { gameState } from '../utils/gameState';
+import { PlayerSchema } from '../../models/Player';
+import { RoomSchema } from '../../models/Room';
 
 // Store peer to player mapping
 const peerToPlayer = new Map<string, string>();
@@ -38,17 +41,71 @@ export default defineWebSocketHandler({
           // TODO: In a full implementation, verify the session token here
           // For now, we trust the client (acceptable for MVP/demo)
           
-          peerToPlayer.set(peer.id, playerId);
-          gameState.addPlayer(playerId, payload.username, payload.roomId, peer);
+          // Load player from database
+          const authPlayer = await PlayerSchema.findById(playerId);
+          if (!authPlayer) {
+            peer.send(JSON.stringify({
+              type: 'error',
+              message: 'Player not found in database.'
+            }));
+            return;
+          }
+
+          const authRoom = await RoomSchema.findById(authPlayer.currentRoomId);
+          if (!authRoom) {
+            peer.send(JSON.stringify({
+              type: 'error',
+              message: 'Starting room not found. Please contact administrator.'
+            }));
+            return;
+          }
           
-          // Send initial room description
+          peerToPlayer.set(peer.id, playerId);
+          gameState.addPlayer(playerId, authPlayer.username, authRoom._id.toString(), peer);
+          
+          // Broadcast to room that player joined
+          gameState.broadcastToRoom(
+            authRoom._id.toString(),
+            {
+              type: 'system',
+              message: `[${authPlayer.username}] đã kết nối.`
+            },
+            playerId
+          );
+          
+          // Send initial room description using the look command
+          const lookCommand = parseCommand('look');
+          const initialResponses = await handleCommandDb(lookCommand, playerId);
+          
+          // Send welcome message first
           peer.send(JSON.stringify({
-            type: 'room',
-            payload: {
-              name: 'Cổng Thành Cũ',
-              description: 'Bạn đang đứng trước một cổng thành bằng đá đã sụp đổ một nửa.',
-            }
+            type: 'system',
+            message: `Chào mừng trở lại, [${authPlayer.username}]!`
           }));
+          peer.send(JSON.stringify({
+            type: 'normal',
+            message: ''
+          }));
+          
+          // Send room description
+          for (const response of initialResponses) {
+            if (response === '') {
+              peer.send(JSON.stringify({
+                type: 'normal',
+                message: ''
+              }));
+            } else if (response.includes('[') && response.includes(']')) {
+              peer.send(JSON.stringify({
+                type: 'accent',
+                message: response
+              }));
+            } else {
+              peer.send(JSON.stringify({
+                type: 'normal',
+                message: response
+              }));
+            }
+          }
           break;
 
         case 'command':
@@ -64,8 +121,8 @@ export default defineWebSocketHandler({
           const command = parseCommand(payload.input);
           console.log('[WS] Command:', command, 'from player:', playerIdForCmd);
           
-          // Process command
-          const responses = handleCommand(command, playerIdForCmd);
+          // Process command with database integration
+          const responses = await handleCommandDb(command, playerIdForCmd);
           
           // Send responses
           for (const response of responses) {
@@ -86,7 +143,7 @@ export default defineWebSocketHandler({
                 type: 'action',
                 message: response
               }));
-            } else if (response.includes('Lệnh không hợp lệ') || response.includes('không thể')) {
+            } else if (response.includes('Lệnh không hợp lệ') || response.includes('không thể') || response.includes('Lỗi')) {
               // Errors
               peer.send(JSON.stringify({
                 type: 'error',
@@ -125,6 +182,19 @@ export default defineWebSocketHandler({
     
     const playerId = peerToPlayer.get(peer.id);
     if (playerId) {
+      const player = gameState.getPlayer(playerId);
+      if (player) {
+        // Broadcast to room that player left
+        gameState.broadcastToRoom(
+          player.roomId,
+          {
+            type: 'system',
+            message: `[${player.username}] đã ngắt kết nối.`
+          },
+          playerId
+        );
+      }
+      
       gameState.removePlayer(playerId);
       peerToPlayer.delete(peer.id);
     }
