@@ -110,6 +110,63 @@ export async function initializeWorld() {
       }
     });
 
+    // Phase 26: Additional Consumables
+    const binhMauVua = await ItemSchema.create({
+      name: 'Bình Máu Vừa',
+      description: 'Một bình thuốc cỡ vừa chứa dịch màu đỏ thẫm. Có thể hồi phục 500 HP.',
+      type: 'consumable',
+      value: 50,
+      price: 250,
+      sellValue: 50,
+      stats: { healing: 500 }
+    });
+
+    const binhNangLuongNho = await ItemSchema.create({
+      name: 'Bình Năng Lượng Nhỏ',
+      description: 'Một lọ dịch màu xanh lam phát sáng. Hồi phục 100 Năng Lượng (Mana/Nộ/Energy).',
+      type: 'consumable',
+      value: 20,
+      price: 100,
+      sellValue: 20,
+      effects: {
+        restoreResource: 100
+      }
+    });
+
+    const dichChuyenVeChoCu = await ItemSchema.create({
+      name: 'Dịch Chuyển Về Chợ Cũ',
+      description: 'Một cuộn giấy cổ với ký tự phát sáng. Sử dụng một lần để quay về Chợ Cũ.',
+      type: 'consumable',
+      value: 40,
+      price: 200,
+      sellValue: 0,
+      effects: {
+        teleport: 'khu_cho_cu'
+      }
+    });
+
+    // Phase 26: Utility Items
+    const chiaKhoaHamNgam = await ItemSchema.create({
+      name: 'Chìa Khóa Hầm Ngầm',
+      description: 'Một chiếc chìa khóa gỉ sét với hình dạng kỳ lạ. Có vẻ mở được cánh cửa xuống Hầm Ngầm.',
+      type: 'misc',
+      value: 0,
+      sellValue: 0,
+      quality: 'Tốt'
+    });
+
+    const ruongGoNho = await ItemSchema.create({
+      name: 'Rương Gỗ Nhỏ',
+      description: 'Một chiếc rương gỗ nhỏ cũ kỹ. Bên trong có thể chứa vật phẩm ngẫu nhiên.',
+      type: 'misc',
+      value: 10,
+      sellValue: 5,
+      effects: {
+        container: true,
+        randomLoot: true
+      }
+    });
+
     // Phase 21 & 22: Crafting Materials
     // Zone 1 Materials (Level 1-10)
     const daChuot = await ItemSchema.create({
@@ -320,6 +377,51 @@ export async function initializeWorld() {
       ]
     });
 
+    const congThucAoLangKhach = await ItemSchema.create({
+      name: 'Công Thức: Áo Lãng Khách',
+      description: 'Bản vẽ chi tiết cách chế tạo Áo Lãng Khách.',
+      type: 'Recipe',
+      value: 25,
+      price: 1000,
+      sellValue: 200,
+      quality: 'Thường',
+      resultItem: aoLangKhach._id,
+      recipe: [
+        { materialId: daChuot._id, quantity: 8 },
+        { materialId: vaiRach._id, quantity: 5 }
+      ]
+    });
+
+    const congThucQuanLangKhach = await ItemSchema.create({
+      name: 'Công Thức: Quần Lãng Khách',
+      description: 'Bản vẽ chi tiết cách chế tạo Quần Lãng Khách.',
+      type: 'Recipe',
+      value: 22,
+      price: 800,
+      sellValue: 160,
+      quality: 'Thường',
+      resultItem: quanLangKhach._id,
+      recipe: [
+        { materialId: daChuot._id, quantity: 6 },
+        { materialId: vaiRach._id, quantity: 4 }
+      ]
+    });
+
+    const congThucGiayLangKhach = await ItemSchema.create({
+      name: 'Công Thức: Giày Lãng Khách',
+      description: 'Bản vẽ chi tiết cách chế tạo Giày Lãng Khách.',
+      type: 'Recipe',
+      value: 20,
+      price: 600,
+      sellValue: 120,
+      quality: 'Thường',
+      resultItem: giayLangKhach._id,
+      recipe: [
+        { materialId: daChuot._id, quantity: 4 },
+        { materialId: vaiRach._id, quantity: 3 }
+      ]
+    });
+
     const congThucMuSuThi = await ItemSchema.create({
       name: 'Công Thức: Mũ Sử Thi',
       description: 'Bản vẽ cổ xưa hướng dẫn chế tạo trang bị huyền thoại.',
@@ -396,6 +498,78 @@ export async function initializeWorld() {
       rarity: 'rare',
       requiredLevel: 20,
       stats: { damage: 25, strength: 8 }
+    });
+
+    // Phase 26: Recipes for Set Phế Liệu (Level 20) - Drop only
+    const congThucMuPheLieu = await ItemSchema.create({
+      name: 'Công Thức: Mũ Phế Liệu',
+      description: 'Bản vẽ chế tạo mũ giáp từ phế liệu kim loại.',
+      type: 'Recipe',
+      value: 40,
+      sellValue: 80,
+      quality: 'Tốt',
+      resultItem: muPheLieu._id,
+      recipe: [
+        { materialId: voNhenCung._id, quantity: 10 },
+        { materialId: loiNangLuongYeu._id, quantity: 3 }
+      ]
+    });
+
+    const congThucAoPheLieu = await ItemSchema.create({
+      name: 'Công Thức: Áo Giáp Phế Liệu',
+      description: 'Bản vẽ chế tạo giáp ngực từ vỏ nhện và kim loại cũ.',
+      type: 'Recipe',
+      value: 60,
+      sellValue: 120,
+      quality: 'Tốt',
+      resultItem: aoPheLieu._id,
+      recipe: [
+        { materialId: voNhenCung._id, quantity: 15 },
+        { materialId: loiNangLuongYeu._id, quantity: 5 }
+      ]
+    });
+
+    const congThucQuanPheLieu = await ItemSchema.create({
+      name: 'Công Thức: Quần Giáp Phế Liệu',
+      description: 'Bản vẽ chế tạo quần giáp từ kim loại tái chế.',
+      type: 'Recipe',
+      value: 50,
+      sellValue: 100,
+      quality: 'Tốt',
+      resultItem: quanPheLieu._id,
+      recipe: [
+        { materialId: voNhenCung._id, quantity: 12 },
+        { materialId: loiNangLuongYeu._id, quantity: 4 }
+      ]
+    });
+
+    const congThucGiayPheLieu = await ItemSchema.create({
+      name: 'Công Thức: Ủng Phế Liệu',
+      description: 'Bản vẽ chế tạo ủng kim loại nặng nề.',
+      type: 'Recipe',
+      value: 45,
+      sellValue: 90,
+      quality: 'Tốt',
+      resultItem: giayPheLieu._id,
+      recipe: [
+        { materialId: voNhenCung._id, quantity: 10 },
+        { materialId: loiNangLuongYeu._id, quantity: 3 }
+      ]
+    });
+
+    const congThucVukhi20Hiem = await ItemSchema.create({
+      name: 'Công Thức: Kiếm Năng Lượng Cổ',
+      description: 'Bản vẽ hiếm chế tạo vũ khí từ Lõi Cổ Ngữ Hỏng.',
+      type: 'Recipe',
+      value: 100,
+      sellValue: 200,
+      quality: 'Hiếm',
+      rarity: 'rare',
+      resultItem: vukhi20Hiem._id,
+      recipe: [
+        { materialId: loiCoNguHong._id, quantity: 1 },
+        { materialId: loiNangLuongYeu._id, quantity: 10 }
+      ]
     });
 
     // Phase 22: Zone 3 Equipment Sets - Class-specific (Level 30)
@@ -1228,15 +1402,15 @@ export async function initializeWorld() {
       damage: 10,
       behavior: 'passive',
       dialogue: [
-        'Đừng gây rối. Nếu muốn tìm việc, đến khu chợ tìm [Thương Gia].',
+        'Đừng gây rối. Nếu muốn tìm việc, đến khu chợ tìm [Thợ Rèn].',
         'Thành phố này đã không còn như xưa nữa...',
         'Cẩn thận khi đi vào hẻm. Có nhiều chuột biến dị ở đó.'
       ]
     });
 
     const thuongGia = await AgentSchema.create({
-      name: 'Thương Gia',
-      description: 'Một người đàn ông trung niên với nụ cười thân thiện. Anh ta đứng sau quầy hàng với nhiều vật phẩm.',
+      name: 'Thợ Rèn',
+      description: 'Một người thợ rèn khỏe mạnh với tạp dề da đen xì. Anh ta đứng sau quầy hàng với nhiều vật phẩm và công cụ.',
       type: 'npc',
       currentRoomId: khuCho._id,
       hp: 80,
@@ -1245,14 +1419,22 @@ export async function initializeWorld() {
       damage: 5,
       behavior: 'passive',
       dialogue: [
-        'Chào mừng! Gõ \'list\' để xem hàng của tôi. Tôi có đồ tốt đây!',
-        'Nếu bạn tìm được Đuôi Chuột, tôi sẽ mua với giá tốt!',
-        'Cẩn thận ngoài kia. Nhiều quái vật nguy hiểm lắm.'
+        'Chào mừng đến lò rèn! Gõ \'list\' để xem hàng của tôi.',
+        'Tôi có công thức chế tạo và thuốc hồi máu. Mua đi!',
+        'Nếu tìm được nguyên liệu, tôi có thể dạy ngươi cách chế tạo trang bị.'
       ],
-      shopItems: [binhMau._id, kiemGi._id, aoDa._id],
-      // Phase 25: Vendor System
+      shopItems: [], // Legacy field - replaced by shopInventory
+      // Phase 26: Vendor System - Updated shop inventory
       isVendor: true,
-      shopInventory: [binhMau._id, congThucMuLangKhach._id],
+      shopInventory: [
+        binhMau._id,
+        binhNangLuongNho._id,
+        dichChuyenVeChoCu._id,
+        congThucMuLangKhach._id,
+        congThucAoLangKhach._id,
+        congThucQuanLangKhach._id,
+        congThucGiayLangKhach._id
+      ],
       shopType: 'gold'
     });
 
@@ -1270,7 +1452,8 @@ export async function initializeWorld() {
       experience: 15,
       lootTable: [
         { itemId: daChuot._id, dropChance: 0.5 }, // 50% chance
-        { itemId: vaiRach._id, dropChance: 0.3 }  // 30% chance
+        { itemId: vaiRach._id, dropChance: 0.3 },  // 30% chance
+        { itemId: ruongGoNho._id, dropChance: 0.01 } // Phase 26: 1% chance for container
       ]
     });
 
@@ -1423,7 +1606,8 @@ export async function initializeWorld() {
       experience: 10,
       lootTable: [
         { itemId: daChuot._id, dropChance: 0.4 },
-        { itemId: vaiRach._id, dropChance: 0.3 }
+        { itemId: vaiRach._id, dropChance: 0.3 },
+        { itemId: ruongGoNho._id, dropChance: 0.01 } // Phase 26: 1% chance
       ]
     });
 
@@ -1441,7 +1625,8 @@ export async function initializeWorld() {
       experience: 25,
       lootTable: [
         { itemId: vaiRach._id, dropChance: 0.6 },
-        { itemId: daChuot._id, dropChance: 0.3 }
+        { itemId: daChuot._id, dropChance: 0.3 },
+        { itemId: ruongGoNho._id, dropChance: 0.01 } // Phase 26: 1% chance
       ]
     });
 
@@ -1460,7 +1645,31 @@ export async function initializeWorld() {
       lootTable: [
         { itemId: daChuot._id, dropChance: 0.5 },
         { itemId: vaiRach._id, dropChance: 0.5 },
-        { itemId: congThucMuLangKhach._id, dropChance: 0.15 }
+        { itemId: congThucMuLangKhach._id, dropChance: 0.15 },
+        { itemId: ruongGoNho._id, dropChance: 0.01 } // Phase 26: 1% chance
+      ]
+    });
+
+    // Phase 26: Zone 1 Boss (Level 10) - Drops Chìa Khóa Hầm Ngầm
+    const thuLinhKeCuop = await AgentSchema.create({
+      name: 'Thủ Lĩnh Kẻ Cướp',
+      description: 'Thủ lĩnh của băng cướp, mặc áo giáp da dày và cầm rìu hai tay lớn. Sẹo dài chạy từ trán xuống má.',
+      type: 'mob',
+      currentRoomId: hang._id,
+      hp: 350,
+      maxHp: 350,
+      level: 10,
+      damage: 18,
+      behavior: 'aggressive',
+      loot: [],
+      experience: 150,
+      agentType: 'boss',
+      mechanics: ['heavy_strike', 'battle_roar'],
+      lootTable: [
+        { itemId: chiaKhoaHamNgam._id, dropChance: 1.0 }, // 100% boss drop - unlocks Zone 2
+        { itemId: daChuot._id, dropChance: 0.9 },
+        { itemId: vaiRach._id, dropChance: 0.9 },
+        { itemId: ruongGoNho._id, dropChance: 0.15 } // Small chance for container
       ]
     });
 
@@ -1498,7 +1707,10 @@ export async function initializeWorld() {
       agentType: 'mob',
       lootTable: [
         { itemId: voNhenCung._id, dropChance: 0.6 },
-        { itemId: loiNangLuongYeu._id, dropChance: 0.3 }
+        { itemId: loiNangLuongYeu._id, dropChance: 0.3 },
+        { itemId: congThucMuPheLieu._id, dropChance: 0.05 },
+        { itemId: congThucGiayPheLieu._id, dropChance: 0.05 },
+        { itemId: ruongGoNho._id, dropChance: 0.01 }
       ]
     });
 
@@ -1517,7 +1729,10 @@ export async function initializeWorld() {
       agentType: 'mob',
       lootTable: [
         { itemId: voNhenCung._id, dropChance: 0.5 },
-        { itemId: loiNangLuongYeu._id, dropChance: 0.4 }
+        { itemId: loiNangLuongYeu._id, dropChance: 0.4 },
+        { itemId: congThucAoPheLieu._id, dropChance: 0.05 },
+        { itemId: congThucQuanPheLieu._id, dropChance: 0.05 },
+        { itemId: ruongGoNho._id, dropChance: 0.01 }
       ]
     });
 
@@ -1533,12 +1748,13 @@ export async function initializeWorld() {
       behavior: 'aggressive',
       loot: [],
       experience: 300,
-      agentType: 'elite',
+      agentType: 'boss',
       mechanics: ['shield_regeneration'],
       lootTable: [
-        { itemId: loiCoNguHong._id, dropChance: 1.0 }, // 100% boss drop
+        { itemId: loiCoNguHong._id, dropChance: 1.0 }, // 100% boss drop - for rare weapon recipe
         { itemId: voNhenCung._id, dropChance: 0.8 },
-        { itemId: loiNangLuongYeu._id, dropChance: 0.8 }
+        { itemId: loiNangLuongYeu._id, dropChance: 0.8 },
+        { itemId: congThucVukhi20Hiem._id, dropChance: 0.1 } // Phase 26: 10% drop for rare weapon recipe
       ]
     });
 
@@ -1784,7 +2000,7 @@ export async function initializeWorld() {
     khuCho.agents.push(thuongGia._id, thuongGiaBiAn._id);
     hẻmTối.agents.push(chuotBienDi._id, chuotCong._id);
     rừngRậm.agents.push(sóiRừng._id, thayMaYeu._id, keCuopDuong._id);
-    hang.agents.push(goblin._id);
+    hang.agents.push(goblin._id, thuLinhKeCuop._id); // Phase 26: Added Level 10 boss
     quảngTrường.agents.push(linhTuần._id);
     sânLuyệnTập.agents.push(huấnLuyệnViên._id);
     phòngKhóTreasure.agents.push(phùThủy._id);
@@ -1860,11 +2076,11 @@ export async function initializeWorld() {
 
     await QuestSchema.create({
       name: 'Nói chuyện với Thợ Rèn',
-      description: 'Già Làng muốn bạn đi nói chuyện với Thương Gia ở Khu Chợ.',
+      description: 'Già Làng muốn bạn đi nói chuyện với Thợ Rèn ở Khu Chợ.',
       type: 'main',
       questGiver: 'Già Làng',
       questGiverRoomId: cổngThành._id,
-      objectives: [{ type: 'talk', target: 'Thương Gia', count: 1, progress: 0 }],
+      objectives: [{ type: 'talk', target: 'Thợ Rèn', count: 1, progress: 0 }],
       rewards: { exp: 50, gold: 10 },
       levelRequirement: 1,
       isRepeatable: false,
