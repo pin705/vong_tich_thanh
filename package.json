@@ -11,6 +11,8 @@
   },
   "dependencies": {
     "@nuxtjs/tailwindcss": "^6.14.0",
+    "@types/bcrypt": "^6.0.0",
+    "bcrypt": "^6.0.0",
     "mongoose": "^8.19.3",
     "nuxt": "^3.20.0",
     "nuxt-auth-utils": "^0.5.25",

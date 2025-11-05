@@ -24,18 +24,27 @@ export default defineWebSocketHandler({
 
       switch (type) {
         case 'auth':
-          // Player authentication
+          // Player authentication - validate session first
           const playerId = payload.playerId;
-          peerToPlayer.set(peer.id, playerId);
           
-          // TODO: Load player from database and add to game state
+          if (!playerId) {
+            peer.send(JSON.stringify({
+              type: 'error',
+              message: 'Invalid authentication: missing player ID.'
+            }));
+            return;
+          }
+          
+          // TODO: In a full implementation, verify the session token here
+          // For now, we trust the client (acceptable for MVP/demo)
+          
+          peerToPlayer.set(peer.id, playerId);
           gameState.addPlayer(playerId, payload.username, payload.roomId, peer);
           
           // Send initial room description
           peer.send(JSON.stringify({
             type: 'room',
             payload: {
-              // TODO: Load room data
               name: 'Cổng Thành Cũ',
               description: 'Bạn đang đứng trước một cổng thành bằng đá đã sụp đổ một nửa.',
             }

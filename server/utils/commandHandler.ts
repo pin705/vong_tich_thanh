@@ -1,4 +1,5 @@
 import type { Command } from '~/types';
+import { DEV_FEATURE_MESSAGE } from './constants';
 
 export function handleCommand(command: Command, playerId: string): string[] {
   const { action, target, args } = command;
@@ -109,7 +110,7 @@ export function handleCommand(command: Command, playerId: string): string[] {
         responses.push('Bạn muốn tấn công ai?');
       } else {
         responses.push(`Bạn không thể tấn công "${target}" ở đây.`);
-        responses.push('(Tính năng chiến đấu đang được phát triển)');
+        responses.push(DEV_FEATURE_MESSAGE);
       }
       break;
 
@@ -142,7 +143,7 @@ export function handleCommand(command: Command, playerId: string): string[] {
       if (!target) {
         responses.push('Bạn muốn mua gì?');
       } else {
-        responses.push(`(Tính năng mua bán đang được phát triển)`);
+        responses.push(DEV_FEATURE_MESSAGE);
         responses.push(`Bạn chưa có đủ vàng để mua "${target}".`);
       }
       break;
