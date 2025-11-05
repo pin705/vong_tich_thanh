@@ -1,5 +1,15 @@
 <template>
   <div class="terminal-container" @click="focusInput">
+    <!-- Player Status Header -->
+    <PlayerStatusHeader
+      :hp="playerState.hp"
+      :maxHp="playerState.maxHp"
+      :resource="playerState.resource"
+      :maxResource="playerState.maxResource"
+      :currency="playerState.gold"
+      :premiumCurrency="playerState.premiumCurrency"
+    />
+
     <!-- Main Output Area (85-90%) -->
     <div class="main-output-pane">
       <div ref="outputArea" class="output-area">
@@ -217,6 +227,7 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, nextTick, watch, computed } from 'vue';
 import type { Message, ChatMessage, PlayerState, TargetState, ExitsState, RoomOccupantsState, SelectedTarget, Skill } from '~/types';
+import PlayerStatusHeader from '~/components/PlayerStatusHeader.vue';
 import InventoryPane from '~/components/InventoryPane.vue';
 import HelpOverlay from '~/components/HelpOverlay.vue';
 import SkillbookOverlay from '~/components/SkillbookOverlay.vue';
@@ -1010,12 +1021,14 @@ const connectWebSocket = () => {
               name: payload.name || playerState.value.name,
               hp: payload.hp ?? playerState.value.hp,
               maxHp: payload.maxHp ?? playerState.value.maxHp,
-              mp: payload.mp ?? playerState.value.mp,
-              maxMp: payload.maxMp ?? playerState.value.maxMp,
+              mp: payload.mp ?? payload.resource ?? playerState.value.mp,
+              maxMp: payload.maxMp ?? payload.maxResource ?? playerState.value.maxMp,
+              resource: payload.resource ?? playerState.value.resource ?? 0,
+              maxResource: payload.maxResource ?? playerState.value.maxResource ?? 100,
               level: payload.level ?? playerState.value.level,
               exp: payload.exp ?? playerState.value.exp,
               nextLevelExp: payload.nextLevelExp ?? playerState.value.nextLevelExp,
-              gold: payload.gold ?? playerState.value.gold,
+              gold: payload.currency ?? payload.gold ?? playerState.value.gold,
               premiumCurrency: payload.premiumCurrency ?? playerState.value.premiumCurrency,
               inCombat: payload.inCombat ?? playerState.value.inCombat,
               stats: payload.stats ? {

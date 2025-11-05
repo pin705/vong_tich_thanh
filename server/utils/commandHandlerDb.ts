@@ -161,12 +161,31 @@ export async function handleCommandDb(command: Command, playerId: string): Promi
           
           // Check agents
           if (room.agents && room.agents.length > 0) {
-            const agents = await AgentSchema.find({ _id: { $in: room.agents } });
+            const agents = await AgentSchema.find({ _id: { $in: room.agents } }).populate('loot');
             const agent = agents.find((a: any) => 
               a.name.toLowerCase().includes(targetLower)
             );
             if (agent) {
               responses.push(agent.description);
+              responses.push('');
+              
+              // Show rewards for mobs
+              if (agent.type === 'mob') {
+                responses.push('--- Phần Thưởng (Dự Kiến) ---');
+                responses.push(`EXP: ${agent.experience}`);
+                
+                // Gold is not directly stored, but can be assumed from level
+                const estimatedGold = Math.floor(agent.level * 2);
+                responses.push(`Vàng: ~${estimatedGold}`);
+                
+                // Show loot items
+                if (agent.loot && agent.loot.length > 0) {
+                  const lootNames = agent.loot.map((item: any) => `[${item.name}]`).join(', ');
+                  responses.push(`Vật phẩm: ${lootNames}`);
+                }
+                responses.push('');
+              }
+              
               break;
             }
           }

@@ -22,11 +22,11 @@ async function sendPlayerState(peer: Peer, playerId: string) {
       name: player.username,
       hp: player.hp,
       maxHp: player.maxHp,
-      mp: 50, // TODO: Add MP system to Player schema
-      maxMp: 50, // TODO: Add MP system to Player schema
+      resource: player.resource || 0,
+      maxResource: player.maxResource || 100,
       level: player.level,
-      gold: player.gold,
-      premiumCurrency: player.premiumCurrency,
+      currency: player.gold,
+      premiumCurrency: player.premiumCurrency || 0,
       inCombat: player.inCombat
     }
   }));
