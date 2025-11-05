@@ -664,6 +664,19 @@ export async function handleCommandDb(command: Command, playerId: string): Promi
         // Empty command - do nothing
         break;
 
+      case 'skills':
+      case 'sk':
+        responses.push(DEV_FEATURE_MESSAGE);
+        responses.push('Sử dụng nút "Skills" ở thanh tab dưới để xem sổ kỹ năng.');
+        break;
+
+      case 'talents':
+      case 't':
+      case 'thienphu':
+        responses.push(DEV_FEATURE_MESSAGE);
+        responses.push('Sử dụng nút "Talents" ở thanh tab dưới để xem bảng thiên phú.');
+        break;
+
       case 'quit':
         responses.push('Tạm biệt! Hẹn gặp lại.');
         break;

@@ -81,15 +81,38 @@
 
     <!-- Help Overlay -->
     <HelpOverlay :isOpen="helpOpen" @close="helpOpen = false" />
+    
+    <!-- Skills Overlay -->
+    <SkillbookOverlay 
+      :isOpen="skillsOpen" 
+      :skills="playerSkills"
+      :playerClass="playerState.class"
+      @close="skillsOpen = false"
+      @assignSkill="handleAssignSkill"
+    />
+    
+    <!-- Talents Overlay -->
+    <TalentTreeOverlay
+      :isOpen="talentsOpen"
+      :playerClass="playerState.class || 'mutant_warrior'"
+      :playerLevel="playerState.level"
+      :talentPoints="playerState.talentPoints || 0"
+      :branches="talentBranches"
+      :allocatedTalents="allocatedTalents"
+      @close="talentsOpen = false"
+      @allocateTalent="handleAllocateTalent"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, nextTick, watch, computed } from 'vue';
-import type { Message, ChatMessage, PlayerState, TargetState, ExitsState, RoomOccupantsState, SelectedTarget } from '~/types';
+import type { Message, ChatMessage, PlayerState, TargetState, ExitsState, RoomOccupantsState, SelectedTarget, Skill } from '~/types';
 import MapPane from '~/components/MapPane.vue';
 import InventoryPane from '~/components/InventoryPane.vue';
 import HelpOverlay from '~/components/HelpOverlay.vue';
+import SkillbookOverlay from '~/components/SkillbookOverlay.vue';
+import TalentTreeOverlay from '~/components/TalentTreeOverlay.vue';
 import FooterTabBar from '~/components/FooterTabBar.vue';
 import Popover from '~/components/Popover.vue';
 import OccupantsListPopup from '~/components/OccupantsListPopup.vue';
@@ -113,6 +136,8 @@ const inputField = ref<HTMLInputElement | null>(null);
 const ws = ref<WebSocket | null>(null);
 const isConnected = ref(false);
 const helpOpen = ref(false);
+const skillsOpen = ref(false);
+const talentsOpen = ref(false);
 
 // Popup states
 const inventoryPopupOpen = ref(false);
@@ -130,6 +155,11 @@ const contextualPopupData = ref<{
   entityData: {},
   actions: []
 });
+
+// Skills and talents state
+const playerSkills = ref<Skill[]>([]);
+const talentBranches = ref<any[]>([]);
+const allocatedTalents = ref<Record<string, number>>({});
 
 // Room occupants state
 const roomOccupants = ref<RoomOccupantsState>({
@@ -231,7 +261,7 @@ const focusInput = () => {
 };
 
 // Handle tab bar clicks
-const handleTabClick = (tabId: string) => {
+const handleTabClick = async (tabId: string) => {
   switch (tabId) {
     case 'map':
       mapPopupOpen.value = true;
@@ -246,7 +276,12 @@ const handleTabClick = (tabId: string) => {
       addMessage('Chức năng nhóm đang được phát triển...', 'system');
       break;
     case 'skills':
-      addMessage('Chức năng kỹ năng đang được phát triển...', 'system');
+      await loadSkills();
+      skillsOpen.value = true;
+      break;
+    case 'talents':
+      await loadTalents();
+      talentsOpen.value = true;
       break;
   }
 };
@@ -376,6 +411,66 @@ const handleMapNavigation = (direction: string) => {
 // Toggle help overlay
 const toggleHelp = () => {
   helpOpen.value = !helpOpen.value;
+};
+
+// Load player skills
+const loadSkills = async () => {
+  try {
+    const response = await $fetch('/api/player/skills');
+    if (response.success) {
+      playerSkills.value = response.skills || [];
+      if (response.playerClass) {
+        playerState.value.class = response.playerClass;
+      }
+    }
+  } catch (error) {
+    console.error('Error loading skills:', error);
+    addMessage('Không thể tải danh sách kỹ năng.', 'error');
+  }
+};
+
+// Load player talents
+const loadTalents = async () => {
+  try {
+    const response = await $fetch('/api/player/talents');
+    if (response.success) {
+      talentBranches.value = response.branches || [];
+      allocatedTalents.value = response.allocatedTalents || {};
+      playerState.value.class = response.playerClass;
+      playerState.value.level = response.playerLevel;
+      playerState.value.talentPoints = response.talentPoints;
+    }
+  } catch (error) {
+    console.error('Error loading talents:', error);
+    addMessage('Không thể tải bảng thiên phú.', 'error');
+  }
+};
+
+// Handle skill assignment to hotkey
+const handleAssignSkill = (skill: Skill) => {
+  addMessage(`Đã gán kỹ năng [${skill.name}] (Tính năng hotkey đang phát triển)`, 'system');
+};
+
+// Handle talent allocation
+const handleAllocateTalent = async (talentId: string) => {
+  try {
+    const response = await $fetch('/api/player/talents', {
+      method: 'POST',
+      body: { talentId }
+    });
+    
+    if (response.success) {
+      allocatedTalents.value = response.allocatedTalents;
+      playerState.value.talentPoints = response.talentPoints;
+      addMessage('Đã cộng điểm thiên phú thành công!', 'system');
+      // Reload talents to update UI
+      await loadTalents();
+    }
+  } catch (error: any) {
+    console.error('Error allocating talent:', error);
+    const errorMsg = error.data?.message || 'Không thể cộng điểm thiên phú.';
+    addMessage(errorMsg, 'error');
+  }
 };
 
 // Navigate command history

@@ -27,6 +27,10 @@ export interface PlayerState {
   nextLevelExp: number;
   gold: number;
   inCombat: boolean;
+  class?: string;
+  resource?: number;
+  maxResource?: number;
+  talentPoints?: number;
   stats: {
     damage: number;
     defense: number;
@@ -160,6 +164,37 @@ export interface Agent {
   experience: number;
   inCombat: boolean;
   combatTarget?: string;
+}
+
+// Skill types
+export interface Skill {
+  _id: string;
+  name: string;
+  description: string;
+  class: 'mutant_warrior' | 'rune_historian' | 'stalker' | 'scrap_engineer';
+  type: 'active' | 'passive';
+  resourceCost: number;
+  cooldown: number;
+  damage?: number;
+  healing?: number;
+  effects?: Record<string, any>;
+  levelRequirement: number;
+}
+
+// Talent types
+export interface Talent {
+  _id: string;
+  name: string;
+  description: string;
+  class: 'mutant_warrior' | 'rune_historian' | 'stalker' | 'scrap_engineer';
+  branch: string;
+  tier: number;
+  maxRank: number;
+  pointsInBranchRequired: number;
+  levelRequired: number;
+  prerequisiteTalents?: string[];
+  effects?: Record<string, any>;
+  grantsSkill?: string;
 }
 
 // Command types
