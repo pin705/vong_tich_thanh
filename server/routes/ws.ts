@@ -5,9 +5,69 @@ import { handleCommandDb } from '../utils/commandHandlerDb';
 import { gameState } from '../utils/gameState';
 import { PlayerSchema } from '../../models/Player';
 import { RoomSchema } from '../../models/Room';
+import { AgentSchema } from '../../models/Agent';
 
 // Store peer to player mapping
 const peerToPlayer = new Map<string, string>();
+
+// Helper function to send player state
+async function sendPlayerState(peer: Peer, playerId: string) {
+  const player = await PlayerSchema.findById(playerId);
+  if (!player) return;
+
+  peer.send(JSON.stringify({
+    type: 'player_state',
+    payload: {
+      name: player.username,
+      hp: player.hp,
+      maxHp: player.maxHp,
+      mp: 50, // Placeholder for now
+      maxMp: 50, // Placeholder for now
+      level: player.level,
+      gold: player.gold,
+      inCombat: player.inCombat
+    }
+  }));
+
+  // Send target state if in combat
+  if (player.inCombat && player.combatTarget) {
+    const target = await AgentSchema.findById(player.combatTarget);
+    if (target) {
+      peer.send(JSON.stringify({
+        type: 'target_state',
+        payload: {
+          name: target.name,
+          hp: target.hp,
+          maxHp: target.maxHp
+        }
+      }));
+    }
+  } else {
+    // Clear target
+    peer.send(JSON.stringify({
+      type: 'target_state',
+      payload: null
+    }));
+  }
+}
+
+// Helper function to send exits
+async function sendExits(peer: Peer, roomId: string) {
+  const room = await RoomSchema.findById(roomId);
+  if (!room) return;
+
+  peer.send(JSON.stringify({
+    type: 'exits',
+    payload: {
+      north: !!room.exits.north,
+      south: !!room.exits.south,
+      east: !!room.exits.east,
+      west: !!room.exits.west,
+      up: !!room.exits.up,
+      down: !!room.exits.down
+    }
+  }));
+}
 
 export default defineWebSocketHandler({
   async open(peer: Peer) {
@@ -87,6 +147,10 @@ export default defineWebSocketHandler({
             message: ''
           }));
           
+          // Send player state, exits, and initial room info
+          await sendPlayerState(peer, playerId);
+          await sendExits(peer, authRoom._id.toString());
+          
           // Send room description
           for (const response of initialResponses) {
             if (response === '') {
@@ -162,6 +226,13 @@ export default defineWebSocketHandler({
                 message: response
               }));
             }
+          }
+          
+          // Send updated player state and exits after command
+          const playerAfterCmd = await PlayerSchema.findById(playerIdForCmd);
+          if (playerAfterCmd) {
+            await sendPlayerState(peer, playerIdForCmd);
+            await sendExits(peer, playerAfterCmd.currentRoomId.toString());
           }
           break;
 
