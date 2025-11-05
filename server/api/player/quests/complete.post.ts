@@ -2,6 +2,7 @@ import { PlayerQuestSchema } from '~/models/PlayerQuest';
 import { QuestSchema } from '~/models/Quest';
 import { PlayerSchema } from '~/models/Player';
 import { ItemSchema } from '~/models/Item';
+import { applyExpBuff } from '~/server/utils/buffSystem';
 
 export default defineEventHandler(async (event) => {
   try {
@@ -48,9 +49,16 @@ export default defineEventHandler(async (event) => {
       return { success: false, message: 'Player not found' };
     }
 
-    // Add experience
+    // Add experience (with buff)
     if (quest.rewards.exp) {
-      player.experience += quest.rewards.exp;
+      const { exp: modifiedExp, multiplier } = await applyExpBuff(playerId, quest.rewards.exp);
+      player.experience += modifiedExp;
+      
+      // Update rewards to show actual exp gained
+      quest.rewards.exp = modifiedExp;
+      if (multiplier > 1) {
+        quest.rewards.expBonus = `(${multiplier}x boost!)`;
+      }
     }
 
     // Add gold

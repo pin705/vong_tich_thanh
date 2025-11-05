@@ -3,6 +3,7 @@ import { PlayerSchema } from '../../models/Player';
 import { RoomSchema } from '../../models/Room';
 import { ItemSchema } from '../../models/Item';
 import { AgentSchema } from '../../models/Agent';
+import { BuffSchema } from '../../models/Buff';
 import { gameState } from './gameState';
 import { DEV_FEATURE_MESSAGE, SMALL_POTION_HEALING } from './constants';
 import { startCombat, fleeCombat } from './combatSystem';
@@ -687,6 +688,7 @@ export async function handleCommandDb(command: Command, playerId: string): Promi
 
         // Handle consumable items
         if (useItem.type === 'consumable') {
+          // Handle healing items
           if (useItem.stats?.healing) {
             const healAmount = useItem.stats.healing;
             const oldHp = player.hp;
@@ -711,6 +713,59 @@ export async function handleCommandDb(command: Command, playerId: string): Promi
                 {
                   type: 'normal',
                   message: `[${player.username}] sử dụng [${useItem.name}].`
+                },
+                player._id.toString()
+              );
+            }
+          } 
+          // Handle buff items (like EXP boost)
+          else if (useItem.effects && useItem.effects.buff) {
+            const buffType = useItem.effects.buff;
+            const multiplier = useItem.effects.multiplier || 1;
+            const durationMinutes = useItem.effects.duration_minutes || 60;
+            
+            // Calculate expiration time
+            const expiresAt = new Date(Date.now() + durationMinutes * 60 * 1000);
+            
+            // Check if player already has this buff active
+            const existingBuff = await BuffSchema.findOne({
+              playerId: player._id,
+              type: buffType,
+              expiresAt: { $gt: new Date() }
+            });
+            
+            if (existingBuff) {
+              responses.push(`Bạn đã có buff [${buffType}] đang hoạt động!`);
+              responses.push(`Thời gian còn lại: ${Math.ceil((existingBuff.expiresAt.getTime() - Date.now()) / 60000)} phút.`);
+              break;
+            }
+            
+            // Create buff
+            await BuffSchema.create({
+              playerId: player._id,
+              type: buffType,
+              multiplier,
+              expiresAt
+            });
+            
+            // Remove item from inventory
+            player.inventory = player.inventory.filter((id: any) => id.toString() !== useItem._id.toString());
+            await player.save();
+            
+            // Delete the consumed item
+            await ItemSchema.findByIdAndDelete(useItem._id);
+            
+            responses.push(`✨ Bạn đã kích hoạt [${useItem.name}]!`);
+            responses.push(`⚡ Bạn sẽ nhận được ${multiplier}x EXP trong ${durationMinutes} phút!`);
+            
+            // Broadcast to room
+            const useRoom = await RoomSchema.findById(player.currentRoomId);
+            if (useRoom) {
+              gameState.broadcastToRoom(
+                useRoom._id.toString(),
+                {
+                  type: 'normal',
+                  message: `✨ [${player.username}] đã kích hoạt [${useItem.name}]!`
                 },
                 player._id.toString()
               );
