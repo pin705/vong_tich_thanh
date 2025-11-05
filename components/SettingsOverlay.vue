@@ -125,33 +125,47 @@ const close = () => {
 const selectTheme = (themeId: string) => {
   currentTheme.value = themeId;
   emit('themeChange', themeId);
-  // Save to localStorage
+  // Save to localStorage with error handling
   if (typeof window !== 'undefined') {
-    localStorage.setItem('game-theme', themeId);
+    try {
+      localStorage.setItem('game-theme', themeId);
+    } catch (error) {
+      console.warn('Failed to save theme preference:', error);
+    }
   }
 };
 
 const selectFontSize = (sizeId: string) => {
   currentFontSize.value = sizeId;
   emit('fontSizeChange', sizeId);
-  // Save to localStorage
+  // Save to localStorage with error handling
   if (typeof window !== 'undefined') {
-    localStorage.setItem('game-font-size', sizeId);
+    try {
+      localStorage.setItem('game-font-size', sizeId);
+    } catch (error) {
+      console.warn('Failed to save font size preference:', error);
+    }
   }
 };
 
 // Load saved preferences on mount
 onMounted(() => {
   if (typeof window !== 'undefined') {
-    const savedTheme = localStorage.getItem('game-theme');
-    const savedFontSize = localStorage.getItem('game-font-size');
-    
-    if (savedTheme) {
-      currentTheme.value = savedTheme;
-    }
-    
-    if (savedFontSize) {
-      currentFontSize.value = savedFontSize;
+    try {
+      const savedTheme = localStorage.getItem('game-theme');
+      const savedFontSize = localStorage.getItem('game-font-size');
+      
+      // Validate theme exists in available options
+      if (savedTheme && themes.some(t => t.id === savedTheme)) {
+        currentTheme.value = savedTheme;
+      }
+      
+      // Validate font size exists in available options
+      if (savedFontSize && fontSizes.some(s => s.id === savedFontSize)) {
+        currentFontSize.value = savedFontSize;
+      }
+    } catch (error) {
+      console.warn('Failed to load saved preferences:', error);
     }
   }
 });

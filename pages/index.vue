@@ -705,10 +705,16 @@ const connectWebSocket = () => {
   };
 };
 
+// Theme and font size constants
+const THEME_IDS = ['vong-tich', 'ho-phach', 'co-ngu'] as const;
+const FONT_SIZE_IDS = ['small', 'medium', 'large'] as const;
+const DEFAULT_THEME = 'vong-tich';
+const DEFAULT_FONT_SIZE = 'medium';
+
 // Handle theme change
 const handleThemeChange = (themeId: string) => {
   // Remove all theme classes
-  document.body.classList.remove('theme-vong-tich', 'theme-ho-phach', 'theme-co-ngu');
+  THEME_IDS.forEach(id => document.body.classList.remove(`theme-${id}`));
   // Add new theme class
   document.body.classList.add(`theme-${themeId}`);
 };
@@ -716,7 +722,7 @@ const handleThemeChange = (themeId: string) => {
 // Handle font size change
 const handleFontSizeChange = (sizeId: string) => {
   // Remove all font size classes
-  document.body.classList.remove('font-size-small', 'font-size-medium', 'font-size-large');
+  FONT_SIZE_IDS.forEach(id => document.body.classList.remove(`font-size-${id}`));
   // Add new font size class
   document.body.classList.add(`font-size-${sizeId}`);
 };
@@ -726,23 +732,21 @@ onMounted(() => {
   focusInput();
   connectWebSocket();
   
-  // Load saved theme
+  // Load saved theme and font size
   if (typeof window !== 'undefined') {
-    const savedTheme = localStorage.getItem('game-theme');
-    const savedFontSize = localStorage.getItem('game-font-size');
-    
-    if (savedTheme) {
-      handleThemeChange(savedTheme);
-    } else {
-      // Default theme
-      handleThemeChange('vong-tich');
-    }
-    
-    if (savedFontSize) {
-      handleFontSizeChange(savedFontSize);
-    } else {
-      // Default font size
-      handleFontSizeChange('medium');
+    try {
+      const savedTheme = localStorage.getItem('game-theme');
+      const savedFontSize = localStorage.getItem('game-font-size');
+      
+      // Apply saved theme or default
+      handleThemeChange(savedTheme || DEFAULT_THEME);
+      
+      // Apply saved font size or default
+      handleFontSizeChange(savedFontSize || DEFAULT_FONT_SIZE);
+    } catch (error) {
+      console.warn('Failed to load preferences, using defaults:', error);
+      handleThemeChange(DEFAULT_THEME);
+      handleFontSizeChange(DEFAULT_FONT_SIZE);
     }
   }
   
