@@ -1402,7 +1402,7 @@ export async function initializeWorld() {
       damage: 10,
       behavior: 'passive',
       dialogue: [
-        'Đừng gây rối. Nếu muốn tìm việc, đến khu chợ tìm [Thương Gia].',
+        'Đừng gây rối. Nếu muốn tìm việc, đến khu chợ tìm [Thợ Rèn].',
         'Thành phố này đã không còn như xưa nữa...',
         'Cẩn thận khi đi vào hẻm. Có nhiều chuột biến dị ở đó.'
       ]
@@ -1423,7 +1423,7 @@ export async function initializeWorld() {
         'Tôi có công thức chế tạo và thuốc hồi máu. Mua đi!',
         'Nếu tìm được nguyên liệu, tôi có thể dạy ngươi cách chế tạo trang bị.'
       ],
-      shopItems: [binhMau._id, kiemGi._id, aoDa._id],
+      shopItems: [], // Legacy field - replaced by shopInventory
       // Phase 26: Vendor System - Updated shop inventory
       isVendor: true,
       shopInventory: [
@@ -1708,10 +1708,9 @@ export async function initializeWorld() {
       lootTable: [
         { itemId: voNhenCung._id, dropChance: 0.6 },
         { itemId: loiNangLuongYeu._id, dropChance: 0.3 },
-        // Phase 26: Recipe drops from Zone 2 mobs (low chance)
         { itemId: congThucMuPheLieu._id, dropChance: 0.05 },
         { itemId: congThucGiayPheLieu._id, dropChance: 0.05 },
-        { itemId: ruongGoNho._id, dropChance: 0.01 } // 1% chance
+        { itemId: ruongGoNho._id, dropChance: 0.01 }
       ]
     });
 
@@ -1731,10 +1730,9 @@ export async function initializeWorld() {
       lootTable: [
         { itemId: voNhenCung._id, dropChance: 0.5 },
         { itemId: loiNangLuongYeu._id, dropChance: 0.4 },
-        // Phase 26: Recipe drops from Zone 2 mobs (low chance)
         { itemId: congThucAoPheLieu._id, dropChance: 0.05 },
         { itemId: congThucQuanPheLieu._id, dropChance: 0.05 },
-        { itemId: ruongGoNho._id, dropChance: 0.01 } // 1% chance
+        { itemId: ruongGoNho._id, dropChance: 0.01 }
       ]
     });
 
@@ -1750,7 +1748,7 @@ export async function initializeWorld() {
       behavior: 'aggressive',
       loot: [],
       experience: 300,
-      agentType: 'boss', // Phase 26: Changed from elite to boss
+      agentType: 'boss',
       mechanics: ['shield_regeneration'],
       lootTable: [
         { itemId: loiCoNguHong._id, dropChance: 1.0 }, // 100% boss drop - for rare weapon recipe
@@ -2078,11 +2076,11 @@ export async function initializeWorld() {
 
     await QuestSchema.create({
       name: 'Nói chuyện với Thợ Rèn',
-      description: 'Già Làng muốn bạn đi nói chuyện với Thương Gia ở Khu Chợ.',
+      description: 'Già Làng muốn bạn đi nói chuyện với Thợ Rèn ở Khu Chợ.',
       type: 'main',
       questGiver: 'Già Làng',
       questGiverRoomId: cổngThành._id,
-      objectives: [{ type: 'talk', target: 'Thương Gia', count: 1, progress: 0 }],
+      objectives: [{ type: 'talk', target: 'Thợ Rèn', count: 1, progress: 0 }],
       rewards: { exp: 50, gold: 10 },
       levelRequirement: 1,
       isRepeatable: false,
