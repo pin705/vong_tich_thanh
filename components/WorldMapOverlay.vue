@@ -1,5 +1,5 @@
 <template>
-  <FullscreenOverlay :isOpen="isOpen" @close="$emit('close')" size="large">
+  <FullscreenOverlay :isOpen="isOpen" @close="$emit('close')" size="large" title="Bản Đồ Thế Giới">
     <div class="world-map-container">
       <!-- Map Header -->
       <div class="map-header">

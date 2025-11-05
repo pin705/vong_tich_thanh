@@ -1,5 +1,5 @@
 <template>
-  <FullscreenOverlay :isOpen="isOpen" @close="$emit('close')" size="large">
+  <FullscreenOverlay :isOpen="isOpen" @close="$emit('close')" size="large" title="Chọn Nghề Nghiệp">
     <div class="profession-choice-container">
       <!-- Header -->
       <div class="profession-header">

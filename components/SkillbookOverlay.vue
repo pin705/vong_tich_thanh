@@ -1,5 +1,5 @@
 <template>
-  <FullscreenOverlay :isOpen="isOpen" @close="$emit('close')">
+  <FullscreenOverlay :isOpen="isOpen" @close="$emit('close')" title="Sổ Kỹ Năng">
     <div class="skillbook-container">
       <!-- Header -->
       <div class="skillbook-header">
@@ -70,13 +70,13 @@
               <div v-if="selectedSkill.resourceCost > 0">
                 <strong>Tài nguyên:</strong> {{ selectedSkill.resourceCost }} {{ getResourceName() }}
               </div>
-              <div v-if="selectedSkill.cooldown > 0">
+              <div v-if="selectedSkill.cooldown && selectedSkill.cooldown > 0">
                 <strong>Thời gian hồi:</strong> {{ selectedSkill.cooldown }} giây
               </div>
-              <div v-if="selectedSkill.damage > 0">
+              <div v-if="selectedSkill.damage && selectedSkill.damage > 0">
                 <strong>Sát thương:</strong> {{ selectedSkill.damage }}
               </div>
-              <div v-if="selectedSkill.healing > 0">
+              <div v-if="selectedSkill.healing && selectedSkill.healing > 0">
                 <strong>Hồi máu:</strong> {{ selectedSkill.healing }}
               </div>
             </div>

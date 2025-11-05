@@ -1,5 +1,5 @@
 <template>
-  <FullscreenOverlay :isOpen="isOpen" @close="$emit('close')">
+  <FullscreenOverlay :isOpen="isOpen" @close="$emit('close')" title="Bảng Thiên Phú">
     <div class="talent-tree-container">
       <!-- Header -->
       <div class="talent-tree-header">

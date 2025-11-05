@@ -1,5 +1,5 @@
 <template>
-  <FullscreenOverlay :isOpen="isOpen" @close="$emit('close')" size="large">
+  <FullscreenOverlay :isOpen="isOpen" @close="$emit('close')" size="large" title="Nhiệm Vụ">
     <div class="quest-tracker-container">
       <!-- Header -->
       <div class="quest-header">
@@ -86,7 +86,7 @@
             <!-- Requirements -->
             <div v-if="hasRequirements(selectedQuest)" class="detail-section requirements-section">
               <h4>Yêu cầu:</h4>
-              <div v-if="selectedQuest.levelRequirement > 1" class="requirement-item">
+              <div v-if="selectedQuest.levelRequirement && selectedQuest.levelRequirement > 1" class="requirement-item">
                 • Cấp độ: {{ selectedQuest.levelRequirement }}
               </div>
               <div v-if="selectedQuest.professionRequirement" class="requirement-item">
@@ -181,7 +181,7 @@ const emit = defineEmits(['close', 'completeQuest', 'abandonQuest', 'repeatQuest
 const activeTab = ref<'active' | 'completed' | 'available'>('active');
 const selectedQuest = ref<Quest | null>(null);
 
-const tabs = [
+const tabs: Array<{ id: 'active' | 'completed' | 'available', label: string }> = [
   { id: 'active', label: 'Đang làm' },
   { id: 'available', label: 'Có thể nhận' },
   { id: 'completed', label: 'Hoàn thành' }
