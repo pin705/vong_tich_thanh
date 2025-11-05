@@ -139,3 +139,39 @@ Chiến đấu trong MUD cổ điển **không phải** là turn-based (theo lư
         ```
       * Bạn gõ: `buy bình máu nhỏ`
       * Output: `Bạn đã mua [Bình Máu Nhỏ] với giá 10 vàng.`
+
+Phase 2: Database Integration
+
+ Connect WebSocket commands to database queries
+ Persistent player state across sessions
+ Dynamic room loading
+ Item pickup/drop mechanics
+ Inventory management with database
+Phase 3: Multiplayer
+
+ See other players in same room
+ Real-time chat (say command)
+ Player movement notifications
+ Shared world state
+Phase 4: Combat System
+
+ Tick-based auto-battle (2-second ticks)
+ Combat state management
+ Damage calculation
+ Experience and loot drops
+ Flee mechanics
+Phase 5: NPC AI
+
+ Wander behavior (random movement)
+ Aggressive behavior (auto-attack players)
+ Patrol behavior (fixed routes)
+ Dialogue systems
+ Shop transactions
+Phase 6: World Expansion
+
+ More diverse rooms and areas
+ Quest system
+ Item progression
+ Character classes
+ Skills and abilities
+
