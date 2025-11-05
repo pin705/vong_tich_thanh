@@ -224,30 +224,18 @@ const connectWebSocket = () => {
 
   ws.value.onopen = () => {
     isConnected.value = true;
+    // Show banner
     addMessage('═══════════════════════════════════════════════════', 'system');
     addMessage('    VONG TÍCH THÀNH - MUD', 'accent');
     addMessage('═══════════════════════════════════════════════════', 'system');
     addMessage('', 'normal');
-    addMessage(`Chào mừng ${user.value?.username || 'Player'} đến với Vong Tích Thành!`, 'action');
-    addMessage('', 'normal');
-    addMessage('[Cổng Thành Cũ]', 'accent');
-    addMessage('Bạn đang đứng trước một cổng thành bằng đá đã sụp đổ một nửa.', 'normal');
-    addMessage('Rêu và dây leo phủ kín. Gió rít qua những khe hở. Về phía bắc,', 'normal');
-    addMessage('bạn thấy ánh đèn leo lét của khu chợ.', 'normal');
-    addMessage('', 'normal');
-    addMessage('Lối ra: [bắc]', 'normal');
-    addMessage('Một [Lính Gác] đang đứng đây.', 'accent');
-    addMessage('', 'normal');
-    addMessage('Gõ "help" để xem danh sách lệnh, hoặc "quit" để thoát.', 'system');
-    addMessage('', 'normal');
 
-    // Authenticate with user session
+    // Authenticate with user session - server will send actual room data
     ws.value?.send(JSON.stringify({
       type: 'auth',
       payload: {
         playerId: user.value?.id || 'demo-player',
-        username: user.value?.username || 'Player',
-        roomId: 'starting-room'
+        username: user.value?.username || 'Player'
       }
     }));
   };
