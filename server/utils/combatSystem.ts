@@ -710,8 +710,12 @@ export async function startPvPCombat(attackerId: string, targetId: string): Prom
       return messages;
     }
     
-    // TODO: Check if players are in the same guild
-    // For now, we'll allow guild members to attack each other if both have PvP enabled
+    // Check if players are in the same guild
+    if (attacker.guild && target.guild && 
+        attacker.guild.toString() === target.guild.toString()) {
+      messages.push('Không thể tấn công thành viên cùng bang!');
+      return messages;
+    }
     
     // Mark both as in combat
     attacker.inCombat = true;

@@ -59,11 +59,12 @@ export default defineEventHandler(async (event) => {
     });
   }
 
-  // Add player to guild members
-  if (!guild.members.includes(player._id)) {
-    guild.members.push(player._id);
-    await guild.save();
-  }
+  // Add player to guild members using atomic operation to prevent race conditions
+  await GuildSchema.findByIdAndUpdate(
+    guildId,
+    { $addToSet: { members: player._id } }, // $addToSet prevents duplicates
+    { new: true }
+  );
 
   // Update player's guild
   player.guild = guild._id;

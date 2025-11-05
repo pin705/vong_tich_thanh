@@ -30,20 +30,34 @@ export async function updateReputation(
     // Get faction info to check for allied/opposing factions
     const faction = await FactionSchema.findOne({ name: factionName });
     
-    if (faction) {
-      // Update allied factions (smaller gain)
+    // Only cascade reputation changes on direct updates (not recursive)
+    // This prevents infinite recursion from circular relationships
+    const shouldCascade = amount !== 0 && Math.abs(amount) > 1;
+    
+    if (faction && shouldCascade) {
+      // Update allied factions (smaller gain) - non-recursive
       if (faction.alliedFactions && faction.alliedFactions.length > 0) {
         const alliedAmount = Math.floor(amount * 0.25); // 25% of the gain
         for (const alliedFaction of faction.alliedFactions) {
-          await updateReputation(playerId, alliedFaction, alliedAmount);
+          // Update directly without recursion to prevent loops
+          const alliedPlayerFaction = await PlayerFactionSchema.findOneAndUpdate(
+            { player: playerId, factionName: alliedFaction },
+            { $inc: { reputation: alliedAmount } },
+            { upsert: true, new: true }
+          );
         }
       }
 
-      // Update opposing factions (equal loss)
+      // Update opposing factions (equal loss) - non-recursive
       if (faction.opposingFactions && faction.opposingFactions.length > 0) {
         const opposingAmount = -Math.abs(amount); // Negative reputation
         for (const opposingFaction of faction.opposingFactions) {
-          await updateReputation(playerId, opposingFaction, opposingAmount);
+          // Update directly without recursion to prevent loops
+          const opposingPlayerFaction = await PlayerFactionSchema.findOneAndUpdate(
+            { player: playerId, factionName: opposingFaction },
+            { $inc: { reputation: opposingAmount } },
+            { upsert: true, new: true }
+          );
         }
       }
     }

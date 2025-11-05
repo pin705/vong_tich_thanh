@@ -100,19 +100,19 @@ export default defineEventHandler(async (event) => {
     const resultItemName = recipe.craftingRecipe.result.itemName;
     const resultQuantity = recipe.craftingRecipe.result.quantity || 1;
 
+    // Find template item once (outside loop for efficiency)
+    const templateItem = await ItemSchema.findOne({ name: resultItemName });
+    
+    if (!templateItem) {
+      throw createError({
+        statusCode: 500,
+        statusMessage: `Không tìm thấy template cho vật phẩm: ${resultItemName}`
+      });
+    }
+
     // Create new items for the result
     const newItems: any[] = [];
     for (let i = 0; i < resultQuantity; i++) {
-      // Find a template item with this name to clone its properties
-      let templateItem = await ItemSchema.findOne({ name: resultItemName });
-      
-      if (!templateItem) {
-        throw createError({
-          statusCode: 500,
-          statusMessage: `Không tìm thấy template cho vật phẩm: ${resultItemName}`
-        });
-      }
-
       // Create a new item based on template
       const newItem = await ItemSchema.create({
         name: templateItem.name,
