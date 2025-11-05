@@ -141,5 +141,16 @@ export const PlayerSchema = defineMongooseModel({
       type: Schema.Types.ObjectId,
       ref: 'Item',
     }],
+    // Phase 27: Mail System - Unread mail indicator
+    hasUnreadMail: {
+      type: Boolean,
+      default: false,
+    },
+    // Phase 29: Admin Panel - User role
+    role: {
+      type: String,
+      enum: ['player', 'admin'],
+      default: 'player',
+    },
   },
 });
