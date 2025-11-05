@@ -26,6 +26,7 @@ async function sendPlayerState(peer: Peer, playerId: string) {
       maxMp: 50, // TODO: Add MP system to Player schema
       level: player.level,
       gold: player.gold,
+      premiumCurrency: player.premiumCurrency,
       inCombat: player.inCombat
     }
   }));

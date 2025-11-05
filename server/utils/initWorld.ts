@@ -78,6 +78,33 @@ export async function initializeWorld() {
       value: 100
     });
 
+    // Premium Shop Items
+    const theExpX2 = await ItemSchema.create({
+      name: 'Thẻ x2 EXP (1 Giờ)',
+      description: 'Một tấm thẻ phát sáng ánh xanh lục. Khi sử dụng, bạn sẽ nhận được gấp đôi kinh nghiệm trong 1 giờ.',
+      type: 'consumable',
+      value: 0,
+      premiumPrice: 50,
+      effects: {
+        buff: 'EXP_BOOST',
+        multiplier: 2,
+        duration_minutes: 60
+      }
+    });
+
+    const theExpX3 = await ItemSchema.create({
+      name: 'Thẻ x3 EXP (30 Phút)',
+      description: 'Một tấm thẻ phát sáng ánh vàng rực rỡ. Khi sử dụng, bạn sẽ nhận được gấp ba kinh nghiệm trong 30 phút.',
+      type: 'consumable',
+      value: 0,
+      premiumPrice: 80,
+      effects: {
+        buff: 'EXP_BOOST',
+        multiplier: 3,
+        duration_minutes: 30
+      }
+    });
+
     // Create rooms
     const cổngThành = await RoomSchema.create({
       name: 'Cổng Thành Cũ',
@@ -333,9 +360,29 @@ export async function initializeWorld() {
       experience: 0
     });
 
+    const thuongGiaBiAn = await AgentSchema.create({
+      name: 'Thương Gia Bí Ẩn',
+      description: 'Một người mặc áo choàng đen bí ẩn. Ánh mắt sắc bén nhìn thấu mọi thứ. Một hào quang kỳ lạ bao quanh người này.',
+      type: 'npc',
+      currentRoomId: khuCho._id,
+      hp: 100,
+      maxHp: 100,
+      level: 10,
+      damage: 25,
+      behavior: 'passive',
+      dialogue: [
+        '💎 Chào mừng đến với Cửa Hàng Cao Cấp. Tôi bán những vật phẩm đặc biệt...',
+        'Cổ Thạch là đồng tiền quý giá. Sử dụng khôn ngoan.',
+        'Những vật phẩm của tôi có thể thay đổi vận mệnh của bạn.'
+      ],
+      shopItems: [theExpX2._id, theExpX3._id],
+      experience: 0
+    });
+
     // Add agents to rooms
     cổngThành.agents.push(linhGac._id);
     khuCho.agents.push(thuongGia._id);
+    khuCho.agents.push(thuongGiaBiAn._id);
     hẻmTối.agents.push(chuotBienDi._id);
     rừngRậm.agents.push(sóiRừng._id);
     hang.agents.push(goblin._id);

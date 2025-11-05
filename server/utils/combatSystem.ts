@@ -5,6 +5,7 @@ import { RoomSchema } from '../../models/Room';
 import { gameState } from './gameState';
 import { partyService } from './partyService';
 import { scheduleAgentRespawn } from './npcAI';
+import { applyExpBuff } from './buffSystem';
 import { COMBAT_TICK_INTERVAL, FLEE_SUCCESS_CHANCE, EXPERIENCE_PER_LEVEL, HP_GAIN_PER_LEVEL, MINIMUM_DAMAGE } from './constants';
 
 // Helper function to categorize combat messages for semantic highlighting
@@ -38,6 +39,7 @@ async function sendCombatStateUpdate(playerId: string) {
       maxMp: 50, // TODO: Add MP system to Player schema
       level: player.level,
       gold: player.gold,
+      premiumCurrency: player.premiumCurrency,
       inCombat: player.inCombat
     }
   }));
@@ -124,9 +126,16 @@ async function distributeExperience(killer: any, totalExp: number, roomId: strin
   const playerParty = partyService.getPlayerParty(killer._id.toString());
   
   if (!playerParty) {
-    // Solo kill - give all EXP to killer
-    messages.push(`Bạn nhận được ${totalExp} điểm kinh nghiệm.`);
-    killer.experience += totalExp;
+    // Solo kill - apply EXP buff and give all EXP to killer
+    const { exp: modifiedExp, multiplier } = await applyExpBuff(killer._id.toString(), totalExp);
+    
+    if (multiplier > 1) {
+      messages.push(`⚡ Bạn nhận được ${modifiedExp} điểm kinh nghiệm (${multiplier}x boost!).`);
+    } else {
+      messages.push(`Bạn nhận được ${modifiedExp} điểm kinh nghiệm.`);
+    }
+    
+    killer.experience += modifiedExp;
     await killer.save();
     return messages;
   }
@@ -140,9 +149,16 @@ async function distributeExperience(killer: any, totalExp: number, roomId: strin
   const nearbyPartyMembers = playersInRoom.filter(p => memberIds.includes(p.id));
   
   if (nearbyPartyMembers.length === 0) {
-    // No party members nearby, give all EXP to killer
-    messages.push(`Bạn nhận được ${totalExp} điểm kinh nghiệm.`);
-    killer.experience += totalExp;
+    // No party members nearby, apply EXP buff and give all EXP to killer
+    const { exp: modifiedExp, multiplier } = await applyExpBuff(killer._id.toString(), totalExp);
+    
+    if (multiplier > 1) {
+      messages.push(`⚡ Bạn nhận được ${modifiedExp} điểm kinh nghiệm (${multiplier}x boost!).`);
+    } else {
+      messages.push(`Bạn nhận được ${modifiedExp} điểm kinh nghiệm.`);
+    }
+    
+    killer.experience += modifiedExp;
     await killer.save();
     return messages;
   }
@@ -150,25 +166,38 @@ async function distributeExperience(killer: any, totalExp: number, roomId: strin
   // Calculate EXP per member
   const expPerMember = Math.floor(totalExp / nearbyPartyMembers.length);
   
-  // Distribute EXP to each nearby party member
+  // Distribute EXP to each nearby party member (with individual buffs)
   for (const member of nearbyPartyMembers) {
     const memberPlayer = await PlayerSchema.findById(member.id);
     if (!memberPlayer) continue;
     
-    memberPlayer.experience += expPerMember;
+    // Apply individual EXP buff for this member
+    const { exp: modifiedExp, multiplier } = await applyExpBuff(member.id, expPerMember);
+    
+    memberPlayer.experience += modifiedExp;
     await memberPlayer.save();
     
     // Send notification to member
     if (member.ws) {
+      const buffMessage = multiplier > 1 ? ` (${multiplier}x boost!)` : '';
+      const prefix = multiplier > 1 ? '⚡ ' : '';
       member.ws.send(JSON.stringify({
         type: 'system',
         category: 'xp',
-        message: `Bạn nhận được ${expPerMember} EXP (Nhóm).`
+        message: `${prefix}Bạn nhận được ${modifiedExp} EXP (Nhóm)${buffMessage}`
       }));
     }
   }
   
-  messages.push(`Bạn nhận được ${expPerMember} điểm kinh nghiệm (Nhóm - ${nearbyPartyMembers.length} thành viên).`);
+  // Get killer's specific EXP (they're in the party too)
+  const killerMember = nearbyPartyMembers.find(m => m.id === killer._id.toString());
+  if (killerMember) {
+    const { exp: modifiedExp, multiplier } = await applyExpBuff(killer._id.toString(), expPerMember);
+    const buffMessage = multiplier > 1 ? ` (${multiplier}x boost!)` : '';
+    messages.push(`⚡ Bạn nhận được ${modifiedExp} điểm kinh nghiệm (Nhóm - ${nearbyPartyMembers.length} thành viên)${buffMessage}`);
+  } else {
+    messages.push(`Bạn nhận được ${expPerMember} điểm kinh nghiệm (Nhóm - ${nearbyPartyMembers.length} thành viên).`);
+  }
   
   return messages;
 }

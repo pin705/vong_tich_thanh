@@ -2,6 +2,7 @@ import { PlayerQuestSchema } from '~/models/PlayerQuest';
 import { QuestSchema } from '~/models/Quest';
 import { PlayerSchema } from '~/models/Player';
 import { ItemSchema } from '~/models/Item';
+import { applyExpBuff } from '~/server/utils/buffSystem';
 
 export default defineEventHandler(async (event) => {
   try {
@@ -48,9 +49,22 @@ export default defineEventHandler(async (event) => {
       return { success: false, message: 'Player not found' };
     }
 
-    // Add experience
+    // Prepare response rewards object
+    const actualRewards: any = {
+      exp: 0,
+      gold: quest.rewards.gold || 0,
+      items: quest.rewards.items || []
+    };
+
+    // Add experience (with buff)
     if (quest.rewards.exp) {
-      player.experience += quest.rewards.exp;
+      const { exp: modifiedExp, multiplier } = await applyExpBuff(playerId, quest.rewards.exp);
+      player.experience += modifiedExp;
+      
+      actualRewards.exp = modifiedExp;
+      if (multiplier > 1) {
+        actualRewards.expBonus = `(${multiplier}x boost!)`;
+      }
     }
 
     // Add gold
@@ -92,7 +106,7 @@ export default defineEventHandler(async (event) => {
     return {
       success: true,
       message: 'Đã hoàn thành nhiệm vụ!',
-      rewards: quest.rewards
+      rewards: actualRewards
     };
   } catch (error) {
     console.error('Error completing quest:', error);

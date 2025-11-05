@@ -38,6 +38,10 @@ export const PlayerSchema = defineMongooseModel({
       type: Number,
       default: 0,
     },
+    premiumCurrency: {
+      type: Number,
+      default: 0,
+    },
     inventory: [{
       type: Schema.Types.ObjectId,
       ref: 'Item',
