@@ -226,6 +226,21 @@
       @close="premiumShopPopupOpen = false"
       @itemPurchased="handlePremiumItemPurchased"
     />
+
+    <!-- Shop Popup (Phase 25: Vendor System) -->
+    <ShopPopup
+      ref="shopPopupRef"
+      :isOpen="shopPopupOpen"
+      :vendorId="shopData.vendorId"
+      :vendorName="shopData.vendorName"
+      :shopType="shopData.shopType"
+      :playerGold="playerState.gold"
+      :playerPremiumCurrency="playerState.premiumCurrency"
+      :playerInventory="playerState.inventoryItems"
+      @close="shopPopupOpen = false"
+      @sendCommand="sendCommandFromShop"
+      @itemPurchased="handleShopTransaction"
+    />
   </div>
 </template>
 
@@ -246,6 +261,7 @@ import QuestTrackerOverlay from '~/components/QuestTrackerOverlay.vue';
 import ProfessionChoiceOverlay from '~/components/ProfessionChoiceOverlay.vue';
 import TradingPopup from '~/components/TradingPopup.vue';
 import PremiumShopPopup from '~/components/PremiumShopPopup.vue';
+import ShopPopup from '~/components/ShopPopup.vue';
 
 definePageMeta({
   middleware: 'auth'
@@ -297,6 +313,8 @@ const partyInvitationPopupOpen = ref(false);
 const guildPopupOpen = ref(false);
 const auctionHousePopupOpen = ref(false);
 const premiumShopPopupOpen = ref(false);
+const shopPopupOpen = ref(false);
+const shopPopupRef = ref<InstanceType<typeof ShopPopup> | null>(null);
 const contextualPopupData = ref<{
   title: string;
   entityType: 'npc' | 'mob' | 'player' | null;
@@ -318,6 +336,17 @@ const tradingData = ref<{
   merchantName: '',
   merchantId: '',
   merchantItems: []
+});
+
+// Shop popup state (Phase 25: Vendor System)
+const shopData = ref<{
+  vendorId: string;
+  vendorName: string;
+  shopType: 'gold' | 'premium';
+}>({
+  vendorId: '',
+  vendorName: '',
+  shopType: 'gold'
 });
 
 // Party state
@@ -592,6 +621,19 @@ const handleContextualAction = async (action: { command: string }) => {
   } else if (action.command.startsWith('__premium_shop__:')) {
     // Open premium shop
     premiumShopPopupOpen.value = true;
+  } else if (action.command.startsWith('__vendor_shop__:')) {
+    // Phase 25: Vendor System - Open vendor shop
+    const parts = action.command.split(':');
+    const vendorId = parts[1];
+    const vendorName = parts[2];
+    const shopType = parts[3] as 'gold' | 'premium';
+    
+    shopData.value = {
+      vendorId,
+      vendorName,
+      shopType
+    };
+    shopPopupOpen.value = true;
   } else {
     // Execute normal command
     currentInput.value = action.command;
@@ -610,11 +652,20 @@ const getActionsForEntity = (type: 'player' | 'npc' | 'mob', name: string, entit
         { label: 'Tấn Công (Attack)', command: `attack ${name}`, disabled: false }
       ];
       
+      // Phase 25: Add vendor shop action for known vendors
+      if (name === 'Thương Gia') {
+        actions.splice(2, 0, { 
+          label: 'Xem Cửa Hàng (Shop)', 
+          command: `__vendor_shop__:${entityId}:${name}:gold`, 
+          disabled: false 
+        });
+      }
+      
       // Add premium shop action for "Thương Gia Bí Ẩn"
       if (name === 'Thương Gia Bí Ẩn') {
         actions.splice(2, 0, { 
           label: 'Cửa Hàng Cao Cấp', 
-          command: `__premium_shop__:${entityId}:${name}`, 
+          command: `__vendor_shop__:${entityId}:${name}:premium`, 
           disabled: false 
         });
       }
@@ -950,6 +1001,20 @@ const handlePremiumItemPurchased = () => {
   // Force a refresh by sending a look command
   currentInput.value = 'look';
   sendCommand();
+};
+
+// Phase 25: Vendor System - Shop handlers
+const sendCommandFromShop = (command: string) => {
+  currentInput.value = command;
+  sendCommand();
+};
+
+const handleShopTransaction = () => {
+  // Refresh inventory after buying/selling
+  setTimeout(() => {
+    currentInput.value = 'i';
+    sendCommand();
+  }, 300);
 };
 
 // Navigate command history
