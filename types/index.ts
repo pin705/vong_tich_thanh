@@ -32,6 +32,7 @@ export interface PlayerState {
   premiumCurrency: number;
   inCombat: boolean;
   class?: string;
+  profession?: string | null;
   resource?: number;
   maxResource?: number;
   talentPoints?: number;

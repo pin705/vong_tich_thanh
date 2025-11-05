@@ -238,13 +238,16 @@ async function checkLevelUp(player: any): Promise<string[]> {
 // Drop loot from defeated agent
 async function dropLoot(agent: any, roomId: string): Promise<string[]> {
   const messages: string[] = [];
-  
-  if (agent.loot && agent.loot.length > 0) {
-    const room = await RoomSchema.findById(roomId);
-    if (room) {
-      for (const lootId of agent.loot) {
-        // Create a new instance of the loot item
-        const originalItem = await ItemSchema.findById(lootId);
+  const room = await RoomSchema.findById(roomId);
+  if (!room) return messages;
+
+  // Phase 21: Use lootTable if available (priority)
+  if (agent.lootTable && agent.lootTable.length > 0) {
+    for (const lootEntry of agent.lootTable) {
+      // Roll for drop chance
+      const roll = Math.random();
+      if (roll <= lootEntry.dropChance) {
+        const originalItem = await ItemSchema.findById(lootEntry.itemId);
         if (originalItem) {
           const newItem = await ItemSchema.create({
             name: originalItem.name,
@@ -252,23 +255,60 @@ async function dropLoot(agent: any, roomId: string): Promise<string[]> {
             type: originalItem.type,
             value: originalItem.value,
             stats: originalItem.stats,
-            rarity: originalItem.rarity
+            rarity: originalItem.rarity,
+            quality: originalItem.quality,
+            slot: originalItem.slot,
+            requiredLevel: originalItem.requiredLevel,
+            setKey: originalItem.setKey,
+            setBonus: originalItem.setBonus,
+            recipe: originalItem.recipe,
+            resultItem: originalItem.resultItem
           });
           
           room.items.push(newItem._id);
           
-          // Highlight rare items with color
-          if (originalItem.rarity === 'epic' || originalItem.rarity === 'legendary') {
-            messages.push(`[!] [${agent.name}] làm rơi ra [${originalItem.name}] (${originalItem.rarity})!`);
+          // Highlight items by quality (prioritize quality over legacy rarity)
+          const itemQuality = originalItem.quality || originalItem.rarity;
+          if (itemQuality === 'Sử Thi' || itemQuality === 'legendary') {
+            messages.push(`[!] [${agent.name}] làm rơi ra [${originalItem.name}] (${itemQuality})!`);
+          } else if (itemQuality === 'Hiếm' || itemQuality === 'epic' || itemQuality === 'rare') {
+            messages.push(`[!] [${agent.name}] làm rơi ra [${originalItem.name}] (${itemQuality})!`);
           } else {
             messages.push(`[${agent.name}] làm rơi ra một [${originalItem.name}].`);
           }
         }
       }
-      await room.save();
     }
   }
-  
+  // Legacy loot system (fallback)
+  else if (agent.loot && agent.loot.length > 0) {
+    for (const lootId of agent.loot) {
+      // Create a new instance of the loot item
+      const originalItem = await ItemSchema.findById(lootId);
+      if (originalItem) {
+        const newItem = await ItemSchema.create({
+          name: originalItem.name,
+          description: originalItem.description,
+          type: originalItem.type,
+          value: originalItem.value,
+          stats: originalItem.stats,
+          rarity: originalItem.rarity,
+          quality: originalItem.quality
+        });
+        
+        room.items.push(newItem._id);
+        
+        // Highlight rare items with color
+        if (originalItem.rarity === 'epic' || originalItem.rarity === 'legendary') {
+          messages.push(`[!] [${agent.name}] làm rơi ra [${originalItem.name}] (${originalItem.rarity})!`);
+        } else {
+          messages.push(`[${agent.name}] làm rơi ra một [${originalItem.name}].`);
+        }
+      }
+    }
+  }
+
+  await room.save();
   return messages;
 }
 

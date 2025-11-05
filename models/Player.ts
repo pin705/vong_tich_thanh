@@ -108,5 +108,38 @@ export const PlayerSchema = defineMongooseModel({
       type: Boolean,
       default: false,
     },
+    // Phase 21: Equipment System
+    equipment: {
+      helmet: {
+        type: Schema.Types.ObjectId,
+        ref: 'Item',
+        default: null,
+      },
+      chest: {
+        type: Schema.Types.ObjectId,
+        ref: 'Item',
+        default: null,
+      },
+      legs: {
+        type: Schema.Types.ObjectId,
+        ref: 'Item',
+        default: null,
+      },
+      boots: {
+        type: Schema.Types.ObjectId,
+        ref: 'Item',
+        default: null,
+      },
+      weapon: {
+        type: Schema.Types.ObjectId,
+        ref: 'Item',
+        default: null,
+      },
+    },
+    // Phase 21: Crafting System - Known recipes
+    knownRecipes: [{
+      type: Schema.Types.ObjectId,
+      ref: 'Item',
+    }],
   },
 });

@@ -1,4 +1,5 @@
 import { defineMongooseModel } from '#nuxt/mongoose';
+import { Schema } from 'mongoose';
 
 export const ItemSchema = defineMongooseModel({
   name: 'Item',
@@ -13,7 +14,7 @@ export const ItemSchema = defineMongooseModel({
     },
     type: {
       type: String,
-      enum: ['weapon', 'armor', 'consumable', 'misc', 'craftingMaterial', 'recipe', 'furniture'],
+      enum: ['weapon', 'armor', 'consumable', 'misc', 'craftingMaterial', 'recipe', 'furniture', 'Equipment', 'Recipe', 'Material'],
       required: true,
     },
     value: {
@@ -28,6 +29,9 @@ export const ItemSchema = defineMongooseModel({
       damage: Number,
       defense: Number,
       healing: Number,
+      strength: Number,
+      agility: Number,
+      hp: Number,
     },
     effects: {
       type: Object,
@@ -56,5 +60,49 @@ export const ItemSchema = defineMongooseModel({
       enum: ['common', 'uncommon', 'rare', 'epic', 'legendary'],
       default: 'common',
     },
+    // Phase 21: Equipment System - Equipment slot
+    slot: {
+      type: String,
+      enum: ['helmet', 'chest', 'legs', 'boots', 'weapon', null],
+      default: null,
+    },
+    // Phase 21: Equipment System - Item quality
+    quality: {
+      type: String,
+      enum: ['Thô', 'Thường', 'Tốt', 'Hiếm', 'Sử Thi'],
+      default: 'Thường',
+    },
+    // Phase 21: Equipment System - Level requirement
+    requiredLevel: {
+      type: Number,
+      default: 1,
+    },
+    // Phase 21: Crafting System - Recipe structure
+    recipe: [{
+      materialId: {
+        type: Schema.Types.ObjectId,
+        ref: 'Item',
+      },
+      quantity: Number,
+    }],
+    // Phase 21: Crafting System - Result item
+    resultItem: {
+      type: Schema.Types.ObjectId,
+      ref: 'Item',
+      default: null,
+    },
+    // Phase 21: Equipment System - Set key for set bonuses
+    setKey: {
+      type: String,
+      default: null,
+    },
+    // Phase 21: Equipment System - Set bonuses
+    setBonus: [{
+      requiredPieces: Number,
+      stats: {
+        type: Map,
+        of: Number,
+      },
+    }],
   },
 });

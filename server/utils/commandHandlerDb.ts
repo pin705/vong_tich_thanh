@@ -706,8 +706,32 @@ export async function handleCommandDb(command: Command, playerId: string): Promi
           break;
         }
 
+        // Phase 21: Handle Recipe items - learn the recipe
+        if (useItem.type === 'Recipe') {
+          // Check if player already knows this recipe
+          if (player.knownRecipes && player.knownRecipes.some((r: any) => r.toString() === useItem._id.toString())) {
+            responses.push(`Bạn đã biết công thức [${useItem.name}] rồi!`);
+            break;
+          }
+          
+          // Add recipe to known recipes
+          if (!player.knownRecipes) {
+            player.knownRecipes = [];
+          }
+          player.knownRecipes.push(useItem._id);
+          
+          // Remove recipe item from inventory
+          player.inventory = player.inventory.filter((id: any) => id.toString() !== useItem._id.toString());
+          await player.save();
+          
+          responses.push(`[+] Bạn đã học công thức [${useItem.name}]!`);
+          responses.push('Bạn có thể chế tạo vật phẩm này từ menu [Chế Tạo].');
+          
+          // Don't delete the recipe item - keep it in the database as reference
+          break;
+        }
         // Handle consumable items
-        if (useItem.type === 'consumable') {
+        else if (useItem.type === 'consumable') {
           // Handle healing items
           if (useItem.stats?.healing) {
             const healAmount = useItem.stats.healing;

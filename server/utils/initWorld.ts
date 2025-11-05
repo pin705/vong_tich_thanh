@@ -105,6 +105,136 @@ export async function initializeWorld() {
       }
     });
 
+    // Phase 21: Crafting Materials
+    const daChuot = await ItemSchema.create({
+      name: 'Da Chuột',
+      description: 'Da của chuột biến dị, có thể dùng để chế tạo trang bị nhẹ.',
+      type: 'Material',
+      value: 2,
+      quality: 'Thường'
+    });
+
+    const vaiRach = await ItemSchema.create({
+      name: 'Vải Rách',
+      description: 'Mảnh vải cũ kỹ, vẫn có thể dùng để may vá.',
+      type: 'Material',
+      value: 1,
+      quality: 'Thường'
+    });
+
+    const loiCoNguHong = await ItemSchema.create({
+      name: 'Lõi Cổ Ngữ Hỏng',
+      description: 'Lõi năng lượng cổ đại đã hư hỏng, vẫn phát ra ánh sáng yếu ớt.',
+      type: 'Material',
+      value: 50,
+      quality: 'Hiếm',
+      rarity: 'rare'
+    });
+
+    const loiHoVeCoDai = await ItemSchema.create({
+      name: 'Lõi Hộ Vệ Cổ Đại',
+      description: 'Lõi năng lượng từ hộ vệ cổ đại, phát ra ánh sáng mạnh mẽ và ổn định.',
+      type: 'Material',
+      value: 200,
+      quality: 'Sử Thi',
+      rarity: 'legendary'
+    });
+
+    // Phase 21: Equipment Set - "Set Lãng Khách" (Level 10)
+    const muLangKhach = await ItemSchema.create({
+      name: 'Mũ Lãng Khách',
+      description: 'Mũ da nhẹ của những kẻ lang thang. Tăng sự nhanh nhẹn.',
+      type: 'Equipment',
+      slot: 'helmet',
+      value: 30,
+      quality: 'Thường',
+      requiredLevel: 8,
+      setKey: 'set_lang_khach_cap_10',
+      stats: {
+        agility: 2
+      }
+    });
+
+    const aoLangKhach = await ItemSchema.create({
+      name: 'Áo Lãng Khách',
+      description: 'Áo da bảo vệ thân thể. Nhẹ nhàng nhưng bền bỉ.',
+      type: 'Equipment',
+      slot: 'chest',
+      value: 50,
+      quality: 'Thường',
+      requiredLevel: 10,
+      setKey: 'set_lang_khach_cap_10',
+      stats: {
+        agility: 3
+      },
+      setBonus: [
+        {
+          requiredPieces: 2,
+          stats: new Map([['hp', 50]])
+        },
+        {
+          requiredPieces: 4,
+          stats: new Map([['agility', 10], ['hp', 100]])
+        }
+      ]
+    });
+
+    const quanLangKhach = await ItemSchema.create({
+      name: 'Quần Lãng Khách',
+      description: 'Quần da dẻo dai, thích hợp cho hành trình dài.',
+      type: 'Equipment',
+      slot: 'legs',
+      value: 40,
+      quality: 'Thường',
+      requiredLevel: 9,
+      setKey: 'set_lang_khach_cap_10',
+      stats: {
+        agility: 2,
+        hp: 20
+      }
+    });
+
+    const giayLangKhach = await ItemSchema.create({
+      name: 'Giày Lãng Khách',
+      description: 'Giày da mềm, giúp di chuyển êm ái và nhanh nhẹn.',
+      type: 'Equipment',
+      slot: 'boots',
+      value: 35,
+      quality: 'Thường',
+      requiredLevel: 8,
+      setKey: 'set_lang_khach_cap_10',
+      stats: {
+        agility: 2
+      }
+    });
+
+    // Phase 21: Crafting Recipes
+    const congThucMuLangKhach = await ItemSchema.create({
+      name: 'Công Thức: Mũ Lãng Khách',
+      description: 'Bản vẽ chi tiết cách chế tạo Mũ Lãng Khách.',
+      type: 'Recipe',
+      value: 20,
+      quality: 'Thường',
+      resultItem: muLangKhach._id,
+      recipe: [
+        { materialId: daChuot._id, quantity: 5 },
+        { materialId: vaiRach._id, quantity: 3 }
+      ]
+    });
+
+    const congThucMuSuThi = await ItemSchema.create({
+      name: 'Công Thức: Mũ Sử Thi',
+      description: 'Bản vẽ cổ xưa hướng dẫn chế tạo trang bị huyền thoại.',
+      type: 'Recipe',
+      value: 500,
+      quality: 'Sử Thi',
+      rarity: 'legendary',
+      recipe: [
+        { materialId: daChuot._id, quantity: 50 },
+        { materialId: loiHoVeCoDai._id, quantity: 1 }
+      ]
+    });
+
     // Create rooms
     const cổngThành = await RoomSchema.create({
       name: 'Cổng Thành Cũ',
@@ -273,7 +403,11 @@ export async function initializeWorld() {
       damage: 5,
       behavior: 'aggressive',
       loot: [duoiChuot._id],
-      experience: 15
+      experience: 15,
+      lootTable: [
+        { itemId: daChuot._id, dropChance: 0.5 }, // 50% chance
+        { itemId: vaiRach._id, dropChance: 0.3 }  // 30% chance
+      ]
     });
 
     const sóiRừng = await AgentSchema.create({
@@ -287,7 +421,11 @@ export async function initializeWorld() {
       damage: 8,
       behavior: 'wander',
       loot: [],
-      experience: 20
+      experience: 20,
+      lootTable: [
+        { itemId: daChuot._id, dropChance: 0.4 },
+        { itemId: vaiRach._id, dropChance: 0.4 }
+      ]
     });
 
     const goblin = await AgentSchema.create({
@@ -301,7 +439,12 @@ export async function initializeWorld() {
       damage: 10,
       behavior: 'aggressive',
       loot: [binhMau._id],
-      experience: 30
+      experience: 30,
+      lootTable: [
+        { itemId: daChuot._id, dropChance: 0.6 },
+        { itemId: vaiRach._id, dropChance: 0.5 },
+        { itemId: loiCoNguHong._id, dropChance: 0.1 } // 10% chance for rare
+      ]
     });
 
     const linhTuần = await AgentSchema.create({

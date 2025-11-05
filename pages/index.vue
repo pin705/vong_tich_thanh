@@ -107,6 +107,7 @@
       :maxResource="playerState.maxResource"
       :gold="playerState.gold"
       :premiumCurrency="playerState.premiumCurrency"
+      :profession="playerState.profession"
       :stats="playerState.stats"
       :skills="playerSkills"
       :branches="talentBranches"
@@ -115,6 +116,7 @@
       @close="characterMenuOpen = false"
       @assignSkill="handleAssignSkill"
       @allocateTalent="handleAllocateTalent"
+      @openProfessionChoice="handleOpenProfessionChoice"
     />
     
     <!-- Settings Overlay -->
@@ -884,6 +886,8 @@ const handleChooseProfession = async (professionId: string) => {
     if (response.success) {
       addMessage(`Đã chọn nghề nghiệp: ${professionId}!`, 'system');
       professionChoiceOpen.value = false;
+      // Update player state profession
+      playerState.value.profession = professionId;
       // Reload quests to show the starting quest completion
       await loadQuests();
     }
@@ -892,6 +896,12 @@ const handleChooseProfession = async (professionId: string) => {
     const errorMsg = error.data?.message || 'Không thể chọn nghề nghiệp.';
     addMessage(errorMsg, 'error');
   }
+};
+
+// Handle opening profession choice from character menu
+const handleOpenProfessionChoice = () => {
+  characterMenuOpen.value = false;
+  professionChoiceOpen.value = true;
 };
 
 // Load merchant shop data
@@ -1089,6 +1099,7 @@ const connectWebSocket = () => {
               nextLevelExp: payload.nextLevelExp ?? playerState.value.nextLevelExp,
               gold: payload.currency ?? payload.gold ?? playerState.value.gold,
               premiumCurrency: payload.premiumCurrency ?? playerState.value.premiumCurrency,
+              profession: payload.profession ?? playerState.value.profession,
               inCombat: payload.inCombat ?? playerState.value.inCombat,
               stats: payload.stats ? {
                 damage: payload.stats.damage ?? playerState.value.stats.damage,
