@@ -110,6 +110,33 @@
       @themeChange="handleThemeChange"
       @fontSizeChange="handleFontSizeChange"
     />
+
+    <!-- World Map Overlay -->
+    <WorldMapOverlay
+      :isOpen="worldMapOpen"
+      :currentRoomName="currentRoomName"
+      :rooms="worldRooms"
+      @close="worldMapOpen = false"
+      @navigateTo="handleWorldMapNavigation"
+    />
+
+    <!-- Quest Tracker Overlay -->
+    <QuestTrackerOverlay
+      :isOpen="questsOpen"
+      :quests="playerQuests"
+      @close="questsOpen = false"
+      @completeQuest="handleCompleteQuest"
+      @abandonQuest="handleAbandonQuest"
+      @repeatQuest="handleRepeatQuest"
+      @trackQuest="handleTrackQuest"
+    />
+
+    <!-- Profession Choice Overlay -->
+    <ProfessionChoiceOverlay
+      :isOpen="professionChoiceOpen"
+      @close="professionChoiceOpen = false"
+      @chooseProfession="handleChooseProfession"
+    />
   </div>
 </template>
 
@@ -126,6 +153,9 @@ import FooterTabBar from '~/components/FooterTabBar.vue';
 import Popover from '~/components/Popover.vue';
 import OccupantsListPopup from '~/components/OccupantsListPopup.vue';
 import ContextualPopup from '~/components/ContextualPopup.vue';
+import WorldMapOverlay from '~/components/WorldMapOverlay.vue';
+import QuestTrackerOverlay from '~/components/QuestTrackerOverlay.vue';
+import ProfessionChoiceOverlay from '~/components/ProfessionChoiceOverlay.vue';
 
 definePageMeta({
   middleware: 'auth'
@@ -148,6 +178,9 @@ const helpOpen = ref(false);
 const skillsOpen = ref(false);
 const talentsOpen = ref(false);
 const settingsOpen = ref(false);
+const worldMapOpen = ref(false);
+const questsOpen = ref(false);
+const professionChoiceOpen = ref(false);
 
 // Popup states
 const inventoryPopupOpen = ref(false);
@@ -220,6 +253,13 @@ const exits = ref<ExitsState>({
   up: false,
   down: false
 });
+
+// World map state
+const currentRoomName = ref('Không rõ');
+const worldRooms = ref<any[]>([]);
+
+// Quest state
+const playerQuests = ref<any[]>([]);
 
 // Separate main output messages (room descriptions, combat, etc.) from chat
 const mainMessages = computed(() => {
@@ -295,6 +335,14 @@ const handleTabClick = async (tabId: string) => {
       break;
     case 'settings':
       settingsOpen.value = true;
+      break;
+    case 'worldmap':
+      await loadWorldMap();
+      worldMapOpen.value = true;
+      break;
+    case 'quests':
+      await loadQuests();
+      questsOpen.value = true;
       break;
   }
 };
@@ -482,6 +530,125 @@ const handleAllocateTalent = async (talentId: string) => {
   } catch (error: any) {
     console.error('Error allocating talent:', error);
     const errorMsg = error.data?.message || 'Không thể cộng điểm thiên phú.';
+    addMessage(errorMsg, 'error');
+  }
+};
+
+// Load world map
+const loadWorldMap = async () => {
+  try {
+    const response = await $fetch('/api/world/map');
+    if (response.success) {
+      worldRooms.value = response.rooms || [];
+      currentRoomName.value = response.currentRoomName || 'Không rõ';
+    }
+  } catch (error) {
+    console.error('Error loading world map:', error);
+    addMessage('Không thể tải bản đồ thế giới.', 'error');
+    // Provide some default rooms so the UI doesn't break
+    worldRooms.value = [];
+  }
+};
+
+// Handle world map navigation
+const handleWorldMapNavigation = (roomId: string) => {
+  currentInput.value = `goto ${roomId}`;
+  sendCommand();
+};
+
+// Load quests
+const loadQuests = async () => {
+  try {
+    const response = await $fetch('/api/player/quests');
+    if (response.success) {
+      playerQuests.value = response.quests || [];
+    }
+  } catch (error) {
+    console.error('Error loading quests:', error);
+    addMessage('Không thể tải danh sách nhiệm vụ.', 'error');
+    playerQuests.value = [];
+  }
+};
+
+// Handle quest completion
+const handleCompleteQuest = async (questId: string) => {
+  try {
+    const response = await $fetch('/api/player/quests/complete', {
+      method: 'POST',
+      body: { questId }
+    });
+    
+    if (response.success) {
+      addMessage('Đã hoàn thành nhiệm vụ!', 'system');
+      await loadQuests();
+    }
+  } catch (error: any) {
+    console.error('Error completing quest:', error);
+    const errorMsg = error.data?.message || 'Không thể hoàn thành nhiệm vụ.';
+    addMessage(errorMsg, 'error');
+  }
+};
+
+// Handle quest abandonment
+const handleAbandonQuest = async (questId: string) => {
+  try {
+    const response = await $fetch('/api/player/quests/abandon', {
+      method: 'POST',
+      body: { questId }
+    });
+    
+    if (response.success) {
+      addMessage('Đã hủy bỏ nhiệm vụ.', 'system');
+      await loadQuests();
+    }
+  } catch (error: any) {
+    console.error('Error abandoning quest:', error);
+    const errorMsg = error.data?.message || 'Không thể hủy bỏ nhiệm vụ.';
+    addMessage(errorMsg, 'error');
+  }
+};
+
+// Handle repeating quest
+const handleRepeatQuest = async (questId: string) => {
+  try {
+    const response = await $fetch('/api/player/quests/repeat', {
+      method: 'POST',
+      body: { questId }
+    });
+    
+    if (response.success) {
+      addMessage('Đã nhận lại nhiệm vụ.', 'system');
+      await loadQuests();
+    }
+  } catch (error: any) {
+    console.error('Error repeating quest:', error);
+    const errorMsg = error.data?.message || 'Không thể nhận lại nhiệm vụ.';
+    addMessage(errorMsg, 'error');
+  }
+};
+
+// Handle quest tracking
+const handleTrackQuest = (questId: string) => {
+  addMessage(`Đang theo dõi nhiệm vụ: ${questId}`, 'system');
+};
+
+// Handle profession choice
+const handleChooseProfession = async (professionId: string) => {
+  try {
+    const response = await $fetch('/api/player/profession', {
+      method: 'POST',
+      body: { profession: professionId }
+    });
+    
+    if (response.success) {
+      addMessage(`Đã chọn nghề nghiệp: ${professionId}!`, 'system');
+      professionChoiceOpen.value = false;
+      // Reload quests to show the starting quest completion
+      await loadQuests();
+    }
+  } catch (error: any) {
+    console.error('Error choosing profession:', error);
+    const errorMsg = error.data?.message || 'Không thể chọn nghề nghiệp.';
     addMessage(errorMsg, 'error');
   }
 };
