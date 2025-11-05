@@ -106,20 +106,11 @@ export async function calculateStats(playerId: string): Promise<PlayerStats> {
           stats: bonus.stats
         });
 
-        // Apply bonus stats
+        // Apply bonus stats (Map from MongoDB)
         const bonusStats = bonus.stats;
-        if (bonusStats instanceof Map) {
-          for (const [stat, value] of bonusStats.entries()) {
-            if (stat in equipmentStats) {
-              (equipmentStats as any)[stat] += value;
-            }
-          }
-        } else {
-          // Handle as plain object
-          for (const [stat, value] of Object.entries(bonusStats)) {
-            if (stat in equipmentStats) {
-              (equipmentStats as any)[stat] += value as number;
-            }
+        for (const [stat, value] of bonusStats.entries()) {
+          if (stat in equipmentStats) {
+            (equipmentStats as any)[stat] += value;
           }
         }
       }
@@ -192,11 +183,8 @@ export async function applyStatsToPlayer(playerId: string): Promise<{ success: b
   for (const set of stats.setBonus) {
     const bonusDescriptions = set.activeBonus.map((bonus: any) => {
       const statDescriptions: string[] = [];
-      const bonusStats = bonus.stats instanceof Map ? 
-        Array.from(bonus.stats.entries()) : 
-        Object.entries(bonus.stats);
       
-      for (const [stat, value] of bonusStats) {
+      for (const [stat, value] of bonus.stats.entries()) {
         statDescriptions.push(`+${value} ${stat}`);
       }
       return `(${bonus.requiredPieces}/${set.equippedCount}): ${statDescriptions.join(', ')}`;

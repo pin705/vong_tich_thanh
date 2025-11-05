@@ -54,7 +54,7 @@ export default defineEventHandler(async (event) => {
     const item = player.inventory[itemIndex] as any;
 
     // Check if item is equipment
-    if (item.type !== 'Equipment' && item.slot !== slot) {
+    if (item.type !== 'Equipment' || item.slot !== slot) {
       throw createError({
         statusCode: 400,
         statusMessage: 'Vật phẩm này không thể trang bị ở vị trí đó.'

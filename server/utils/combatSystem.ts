@@ -267,11 +267,12 @@ async function dropLoot(agent: any, roomId: string): Promise<string[]> {
           
           room.items.push(newItem._id);
           
-          // Highlight items by quality
-          if (originalItem.quality === 'Sử Thi' || originalItem.rarity === 'legendary') {
-            messages.push(`[!] [${agent.name}] làm rơi ra [${originalItem.name}] (${originalItem.quality || originalItem.rarity})!`);
-          } else if (originalItem.quality === 'Hiếm' || originalItem.rarity === 'epic' || originalItem.rarity === 'rare') {
-            messages.push(`[!] [${agent.name}] làm rơi ra [${originalItem.name}] (${originalItem.quality || originalItem.rarity})!`);
+          // Highlight items by quality (prioritize quality over legacy rarity)
+          const itemQuality = originalItem.quality || originalItem.rarity;
+          if (itemQuality === 'Sử Thi' || itemQuality === 'legendary') {
+            messages.push(`[!] [${agent.name}] làm rơi ra [${originalItem.name}] (${itemQuality})!`);
+          } else if (itemQuality === 'Hiếm' || itemQuality === 'epic' || itemQuality === 'rare') {
+            messages.push(`[!] [${agent.name}] làm rơi ra [${originalItem.name}] (${itemQuality})!`);
           } else {
             messages.push(`[${agent.name}] làm rơi ra một [${originalItem.name}].`);
           }

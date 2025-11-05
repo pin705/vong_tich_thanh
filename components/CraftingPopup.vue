@@ -133,7 +133,7 @@ function selectRecipe(recipe: Recipe) {
 }
 
 function getMaterialCount(materialId: string): number {
-  return props.inventory.filter((item: any) => item.id === materialId).length;
+  return props.inventory.filter((item: any) => item.id === materialId || item._id === materialId).length;
 }
 
 function hasSufficientMaterial(material: Material): boolean {
