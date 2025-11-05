@@ -586,16 +586,16 @@ export async function handleCommandDb(command: Command, playerId: string): Promi
         // Check price based on shop type
         const isPremiumShop = buyVendor.shopType === 'premium';
         const itemPrice = isPremiumShop ? buyItem.premiumPrice : buyItem.price;
-        const currencySymbol = isPremiumShop ? '💎' : '💰';
+        const buyCurrencySymbol = isPremiumShop ? '💎' : '💰';
 
         if (isPremiumShop) {
           if (player.premiumCurrency < itemPrice) {
-            responses.push(`Bạn không có đủ Cổ Thạch để mua [${buyItem.name}]. Cần ${itemPrice} ${currencySymbol}, bạn chỉ có ${player.premiumCurrency} ${currencySymbol}.`);
+            responses.push(`Bạn không có đủ Cổ Thạch để mua [${buyItem.name}]. Cần ${itemPrice} ${buyCurrencySymbol}, bạn chỉ có ${player.premiumCurrency} ${buyCurrencySymbol}.`);
             break;
           }
         } else {
           if (player.gold < itemPrice) {
-            responses.push(`Bạn không có đủ vàng để mua [${buyItem.name}]. Cần ${itemPrice} ${currencySymbol}, bạn chỉ có ${player.gold} ${currencySymbol}.`);
+            responses.push(`Bạn không có đủ vàng để mua [${buyItem.name}]. Cần ${itemPrice} ${buyCurrencySymbol}, bạn chỉ có ${player.gold} ${buyCurrencySymbol}.`);
             break;
           }
         }
@@ -629,11 +629,11 @@ export async function handleCommandDb(command: Command, playerId: string): Promi
         player.inventory.push(newBuyItem._id);
         await player.save();
 
-        responses.push(`Bạn đã mua [${buyItem.name}] với giá ${itemPrice} ${currencySymbol}!`);
+        responses.push(`Bạn đã mua [${buyItem.name}] với giá ${itemPrice} ${buyCurrencySymbol}!`);
         if (isPremiumShop) {
-          responses.push(`Cổ Thạch còn lại: ${player.premiumCurrency} ${currencySymbol}`);
+          responses.push(`Cổ Thạch còn lại: ${player.premiumCurrency} ${buyCurrencySymbol}`);
         } else {
-          responses.push(`Vàng còn lại: ${player.gold} ${currencySymbol}`);
+          responses.push(`Vàng còn lại: ${player.gold} ${buyCurrencySymbol}`);
         }
         break;
 
