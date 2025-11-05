@@ -1,0 +1,57 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Terminal Color Palette */
+:root {
+  --bg-black: #0a0a0a;
+  --text-dim: #008800;
+  --text-bright: #00ff00;
+  --text-accent: #ffb000;
+  --text-cyan: #00ffff;
+  --text-danger: #ff0000;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background-color: var(--bg-black);
+  color: var(--text-dim);
+  font-family: 'VT323', 'Source Code Pro', monospace;
+  font-size: 18px;
+  line-height: 1.4;
+}
+
+/* Remove any default styling */
+button, input, select, textarea {
+  font-family: 'VT323', 'Source Code Pro', monospace;
+  border: none;
+  outline: none;
+  background: transparent;
+  color: inherit;
+}
+
+/* Scrollbar styling for terminal feel */
+::-webkit-scrollbar {
+  width: 12px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-black);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--text-dim);
+  border: 2px solid var(--bg-black);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-bright);
+}
