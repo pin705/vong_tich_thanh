@@ -20,10 +20,13 @@ export default defineEventHandler(async (event) => {
       });
     }
 
+    // Default to mutant_warrior if no class set (backward compatibility)
+    const playerClass = player.class || 'mutant_warrior';
+
     return {
       success: true,
       skills: player.skills || [],
-      playerClass: player.class,
+      playerClass,
     };
   } catch (error) {
     console.error('Error fetching skills:', error);

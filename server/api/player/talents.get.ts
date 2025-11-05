@@ -21,7 +21,9 @@ export default defineEventHandler(async (event) => {
       });
     }
 
-    const branches = getTalentsByClass(player.class);
+    // Default to mutant_warrior if no class set (backward compatibility)
+    const playerClass = player.class || 'mutant_warrior';
+    const branches = getTalentsByClass(playerClass);
     const allocatedTalents: Record<string, number> = {};
     
     // Convert Map to object
@@ -33,7 +35,7 @@ export default defineEventHandler(async (event) => {
 
     return {
       success: true,
-      playerClass: player.class,
+      playerClass,
       playerLevel: player.level,
       talentPoints: player.talentPoints || 0,
       branches,

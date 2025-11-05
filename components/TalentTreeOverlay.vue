@@ -181,7 +181,7 @@ function canUnlock(talent: TalentNode): boolean {
   if (talent.prerequisiteTalents && talent.prerequisiteTalents.length > 0) {
     for (const prereqId of talent.prerequisiteTalents) {
       const prereq = findTalent(prereqId);
-      if (prereq && getCurrentRank(prereqId) < prereq.maxRank) {
+      if (prereq && getCurrentRank(prereqId) === 0) {
         return false;
       }
     }

@@ -54,7 +54,7 @@ export const PlayerSchema = defineMongooseModel({
     class: {
       type: String,
       enum: ['mutant_warrior', 'rune_historian', 'stalker', 'scrap_engineer'],
-      default: 'mutant_warrior',
+      default: 'mutant_warrior', // Default for new players; existing players can remain null
     },
     // Class resources
     resource: {
