@@ -1,10 +1,21 @@
 <template>
   <div class="terminal-container" @click="focusInput">
+    <!-- Player Status Header -->
+    <PlayerStatusHeader
+      :hp="playerState.hp"
+      :maxHp="playerState.maxHp"
+      :resource="playerState.resource"
+      :maxResource="playerState.maxResource"
+      :currency="playerState.gold"
+      :premiumCurrency="playerState.premiumCurrency"
+    />
+
     <!-- Main Output Area (85-90%) -->
     <div class="main-output-pane">
       <div ref="outputArea" class="output-area">
         <div v-for="message in mainMessages" :key="message.id" :class="getMessageClass(message)">
-          {{ message.text }}
+          <span v-if="message.type === 'loot'" v-html="renderClickableItems(message.text)"></span>
+          <template v-else>{{ message.text }}</template>
         </div>
       </div>
     </div>
@@ -217,6 +228,7 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, nextTick, watch, computed } from 'vue';
 import type { Message, ChatMessage, PlayerState, TargetState, ExitsState, RoomOccupantsState, SelectedTarget, Skill } from '~/types';
+import PlayerStatusHeader from '~/components/PlayerStatusHeader.vue';
 import InventoryPane from '~/components/InventoryPane.vue';
 import HelpOverlay from '~/components/HelpOverlay.vue';
 import SkillbookOverlay from '~/components/SkillbookOverlay.vue';
@@ -435,6 +447,66 @@ const addMessage = (text: string, type: Message['type'] = 'normal', user?: strin
 // Get CSS class for message type
 const getMessageClass = (message: Message) => {
   return `message message-${message.type}`;
+};
+
+// Render clickable items in loot messages
+const renderClickableItems = (text: string): string => {
+  // Match item names in brackets like [Cỏ Chữa Lành] or [Đuôi Chuột]
+  const itemRegex = /\[([^\]]+)\]/g;
+  let counter = 0;
+  return text.replace(itemRegex, (match, itemName) => {
+    // Sanitize item name to prevent XSS
+    const sanitizedName = itemName.replace(/[<>"'&]/g, (char) => {
+      const entities: Record<string, string> = {
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#39;',
+        '&': '&amp;'
+      };
+      return entities[char] || char;
+    });
+    // Create a clickable span with unique ID for event handling
+    const itemId = `clickable-item-${Date.now()}-${counter++}`;
+    // Store the item name for event handling
+    setTimeout(() => {
+      const element = document.getElementById(itemId);
+      if (element) {
+        element.addEventListener('click', () => handleItemClick(sanitizedName));
+      }
+    }, 0);
+    return `<span id="${itemId}" class="clickable-item">[${sanitizedName}]</span>`;
+  });
+};
+
+// Handle item click from loot messages
+const handleItemClick = async (itemName: string) => {
+  // Check if item is in player's inventory
+  const item = playerState.value.inventoryItems.find(i => i && i.name === itemName);
+  
+  if (!item) {
+    addMessage(`Vật phẩm [${itemName}] không có trong túi đồ.`, 'system');
+    return;
+  }
+  
+  // Open contextual popup for the item
+  const actions = [
+    { label: 'Xem Xét (Look)', command: `look ${itemName}`, disabled: false },
+    { label: 'Sử Dụng (Use)', command: `use ${itemName}`, disabled: item.type !== 'consumable' },
+    { label: 'Vứt Bỏ (Drop)', command: `drop ${itemName}`, disabled: false }
+  ];
+  
+  contextualPopupData.value = {
+    title: `${itemName} (${item.type})`,
+    entityType: null,
+    entityData: {
+      description: item.description,
+      stats: item.stats
+    },
+    actions
+  };
+  
+  contextualPopupOpen.value = true;
 };
 
 // Focus input field
@@ -1010,12 +1082,14 @@ const connectWebSocket = () => {
               name: payload.name || playerState.value.name,
               hp: payload.hp ?? playerState.value.hp,
               maxHp: payload.maxHp ?? playerState.value.maxHp,
-              mp: payload.mp ?? playerState.value.mp,
-              maxMp: payload.maxMp ?? playerState.value.maxMp,
+              mp: payload.mp ?? payload.resource ?? playerState.value.mp,
+              maxMp: payload.maxMp ?? payload.maxResource ?? playerState.value.maxMp,
+              resource: payload.resource ?? playerState.value.resource ?? 0,
+              maxResource: payload.maxResource ?? playerState.value.maxResource ?? 100,
               level: payload.level ?? playerState.value.level,
               exp: payload.exp ?? playerState.value.exp,
               nextLevelExp: payload.nextLevelExp ?? playerState.value.nextLevelExp,
-              gold: payload.gold ?? playerState.value.gold,
+              gold: payload.currency ?? payload.gold ?? playerState.value.gold,
               premiumCurrency: payload.premiumCurrency ?? playerState.value.premiumCurrency,
               inCombat: payload.inCombat ?? playerState.value.inCombat,
               stats: payload.stats ? {
@@ -1342,6 +1416,19 @@ watch(messages, () => {
 
 .message-chat_guild {
   color: var(--theme-text-chat-guild);
+}
+
+/* Clickable items in loot messages */
+.clickable-item {
+  cursor: pointer;
+  text-decoration: underline;
+  color: var(--text-accent);
+  transition: color 0.2s;
+}
+
+.clickable-item:hover {
+  color: var(--text-bright);
+  text-shadow: 0 0 3px currentColor;
 }
 
 .input-area {

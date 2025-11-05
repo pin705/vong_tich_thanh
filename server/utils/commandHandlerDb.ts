@@ -8,6 +8,7 @@ import { gameState } from './gameState';
 import { DEV_FEATURE_MESSAGE, SMALL_POTION_HEALING } from './constants';
 import { startCombat, fleeCombat } from './combatSystem';
 import { partyService } from './partyService';
+import { tradeService } from './tradeService';
 
 // Helper function to format room description
 async function formatRoomDescription(room: any, player: any): Promise<string[]> {
@@ -161,12 +162,31 @@ export async function handleCommandDb(command: Command, playerId: string): Promi
           
           // Check agents
           if (room.agents && room.agents.length > 0) {
-            const agents = await AgentSchema.find({ _id: { $in: room.agents } });
+            const agents = await AgentSchema.find({ _id: { $in: room.agents } }).populate('loot');
             const agent = agents.find((a: any) => 
               a.name.toLowerCase().includes(targetLower)
             );
             if (agent) {
               responses.push(agent.description);
+              responses.push('');
+              
+              // Show rewards for mobs
+              if (agent.type === 'mob') {
+                responses.push('--- Phần Thưởng (Dự Kiến) ---');
+                responses.push(`EXP: ${agent.experience}`);
+                
+                // Gold is not directly stored, but can be assumed from level
+                const estimatedGold = Math.floor(agent.level * 2);
+                responses.push(`Vàng: ~${estimatedGold}`);
+                
+                // Show loot items
+                if (agent.loot && agent.loot.length > 0) {
+                  const lootNames = agent.loot.map((item: any) => `[${item.name}]`).join(', ');
+                  responses.push(`Vật phẩm: ${lootNames}`);
+                }
+                responses.push('');
+              }
+              
               break;
             }
           }
@@ -1370,6 +1390,372 @@ export async function handleCommandDb(command: Command, playerId: string): Promi
         responses.push(`Đã ${newPvpState ? 'BẬT' : 'TẮT'} chế độ PvP.`);
         if (newPvpState) {
           responses.push('Cảnh báo: Bạn có thể bị tấn công bởi người chơi khác ở khu vực không an toàn!');
+        }
+        break;
+      }
+
+      case 'trade': {
+        // Player-to-player trading system
+        const subCommand = target?.toLowerCase();
+        const subTarget = args?.[0];
+
+        if (!subCommand) {
+          responses.push('Sử dụng: trade [invite/accept/decline/add/gold/lock/confirm/cancel]');
+          break;
+        }
+
+        switch (subCommand) {
+          case 'invite': {
+            if (!subTarget) {
+              responses.push('Mời ai giao dịch? Cú pháp: trade invite [tên người chơi]');
+              break;
+            }
+
+            // Find target player
+            const tradeRoom = await RoomSchema.findById(player.currentRoomId);
+            if (!tradeRoom) break;
+
+            const playersInRoom = gameState.getPlayersInRoom(tradeRoom._id.toString());
+            const targetPlayer = playersInRoom.find(p =>
+              p.username.toLowerCase().includes(subTarget.toLowerCase()) && p.id !== playerId
+            );
+
+            if (!targetPlayer) {
+              responses.push(`Không tìm thấy người chơi "${subTarget}" ở đây.`);
+              break;
+            }
+
+            const inviteResult = tradeService.inviteTrade(playerId, targetPlayer.id);
+            responses.push(inviteResult.message);
+
+            if (inviteResult.success) {
+              // Send invitation to target player
+              const targetPlayerObj = gameState.getPlayer(targetPlayer.id);
+              if (targetPlayerObj?.ws) {
+                targetPlayerObj.ws.send(JSON.stringify({
+                  type: 'system',
+                  category: 'trade',
+                  message: `[${player.username}] muốn giao dịch với bạn. Gõ "trade accept" để chấp nhận.`
+                }));
+              }
+            }
+            break;
+          }
+
+          case 'accept': {
+            // Get pending invitation
+            const invitation = tradeService.getPendingInvitation(playerId);
+            if (!invitation) {
+              responses.push('Không có lời mời giao dịch nào.');
+              break;
+            }
+
+            const acceptResult = tradeService.acceptTrade(playerId, invitation.inviterId);
+            responses.push(acceptResult.message);
+
+            if (acceptResult.success) {
+              // Notify both players
+              const inviterPlayer = gameState.getPlayer(invitation.inviterId);
+              if (inviterPlayer?.ws) {
+                inviterPlayer.ws.send(JSON.stringify({
+                  type: 'system',
+                  category: 'trade',
+                  message: `[${player.username}] đã chấp nhận giao dịch!`
+                }));
+              }
+            }
+            break;
+          }
+
+          case 'decline': {
+            // Get pending invitation
+            const invitation = tradeService.getPendingInvitation(playerId);
+            if (!invitation) {
+              responses.push('Không có lời mời giao dịch nào.');
+              break;
+            }
+
+            const declineResult = tradeService.declineTrade(playerId, invitation.inviterId);
+            responses.push(declineResult.message);
+
+            if (declineResult.success) {
+              // Notify inviter
+              const inviterPlayer = gameState.getPlayer(invitation.inviterId);
+              if (inviterPlayer?.ws) {
+                inviterPlayer.ws.send(JSON.stringify({
+                  type: 'system',
+                  category: 'trade',
+                  message: `[${player.username}] đã từ chối giao dịch.`
+                }));
+              }
+            }
+            break;
+          }
+
+          case 'add': {
+            // Add item to trade
+            if (!subTarget) {
+              responses.push('Thêm vật phẩm nào? Cú pháp: trade add [tên vật phẩm]');
+              break;
+            }
+
+            // Find item in inventory
+            const items = await ItemSchema.find({ _id: { $in: player.inventory } });
+            const item = items.find((i: any) =>
+              i.name.toLowerCase().includes(subTarget.toLowerCase())
+            );
+
+            if (!item) {
+              responses.push(`Bạn không có "${subTarget}" trong túi đồ.`);
+              break;
+            }
+
+            const addResult = tradeService.addItem(playerId, item._id.toString());
+            responses.push(addResult.message);
+
+            if (addResult.success) {
+              // Notify other player
+              const playerTrade = tradeService.getPlayerTrade(playerId);
+              if (playerTrade) {
+                const otherPlayerId = playerTrade.isInitiator
+                  ? playerTrade.trade.targetId
+                  : playerTrade.trade.initiatorId;
+                const otherPlayer = gameState.getPlayer(otherPlayerId);
+                if (otherPlayer?.ws) {
+                  otherPlayer.ws.send(JSON.stringify({
+                    type: 'system',
+                    category: 'trade',
+                    message: `[${player.username}] đã thêm [${item.name}] vào giao dịch.`
+                  }));
+                }
+              }
+            }
+            break;
+          }
+
+          case 'gold': {
+            // Add gold to trade
+            if (!subTarget) {
+              responses.push('Thêm bao nhiêu vàng? Cú pháp: trade gold [số lượng]');
+              break;
+            }
+
+            const amount = parseInt(subTarget);
+            if (isNaN(amount) || amount <= 0) {
+              responses.push('Số lượng vàng không hợp lệ.');
+              break;
+            }
+
+            if (amount > player.gold) {
+              responses.push('Bạn không có đủ vàng.');
+              break;
+            }
+
+            const goldResult = tradeService.addGold(playerId, amount);
+            responses.push(goldResult.message);
+
+            if (goldResult.success) {
+              // Notify other player
+              const playerTrade = tradeService.getPlayerTrade(playerId);
+              if (playerTrade) {
+                const otherPlayerId = playerTrade.isInitiator
+                  ? playerTrade.trade.targetId
+                  : playerTrade.trade.initiatorId;
+                const otherPlayer = gameState.getPlayer(otherPlayerId);
+                if (otherPlayer?.ws) {
+                  otherPlayer.ws.send(JSON.stringify({
+                    type: 'system',
+                    category: 'trade',
+                    message: `[${player.username}] đã thêm ${amount} vàng vào giao dịch.`
+                  }));
+                }
+              }
+            }
+            break;
+          }
+
+          case 'lock': {
+            // Lock trade
+            const lockResult = tradeService.lockTrade(playerId);
+            responses.push(lockResult.message);
+
+            if (lockResult.success) {
+              // Notify other player
+              const playerTrade = tradeService.getPlayerTrade(playerId);
+              if (playerTrade) {
+                const otherPlayerId = playerTrade.isInitiator
+                  ? playerTrade.trade.targetId
+                  : playerTrade.trade.initiatorId;
+                const otherPlayer = gameState.getPlayer(otherPlayerId);
+                if (otherPlayer?.ws) {
+                  otherPlayer.ws.send(JSON.stringify({
+                    type: 'system',
+                    category: 'trade',
+                    message: `[${player.username}] đã khóa giao dịch của họ.`
+                  }));
+                }
+              }
+            }
+            break;
+          }
+
+          case 'confirm': {
+            // Confirm trade
+            const confirmResult = tradeService.confirmTrade(playerId);
+            responses.push(confirmResult.message);
+
+            if (confirmResult.success) {
+              const playerTrade = tradeService.getPlayerTrade(playerId);
+              if (!playerTrade) break;
+
+              const otherPlayerId = playerTrade.isInitiator
+                ? playerTrade.trade.targetId
+                : playerTrade.trade.initiatorId;
+              const otherPlayer = gameState.getPlayer(otherPlayerId);
+
+              if (confirmResult.bothConfirmed) {
+                // Execute trade
+                const trade = tradeService.completeTrade(playerTrade.tradeId);
+                if (!trade) break;
+
+                // Get both players
+                const initiator = await PlayerSchema.findById(trade.initiatorId);
+                const target = await PlayerSchema.findById(trade.targetId);
+
+                if (!initiator || !target) {
+                  responses.push('Lỗi: Không tìm thấy người chơi.');
+                  break;
+                }
+
+                // Validate gold amounts
+                if (initiator.gold < trade.initiatorGold) {
+                  responses.push('Lỗi: Người khởi tạo không có đủ vàng để hoàn tất giao dịch.');
+                  if (otherPlayer?.ws) {
+                    otherPlayer.ws.send(JSON.stringify({
+                      type: 'system',
+                      category: 'trade',
+                      message: 'Giao dịch thất bại: Người kia không có đủ vàng.'
+                    }));
+                  }
+                  break;
+                }
+                if (target.gold < trade.targetGold) {
+                  responses.push('Lỗi: Người đối tác không có đủ vàng để hoàn tất giao dịch.');
+                  if (otherPlayer?.ws) {
+                    otherPlayer.ws.send(JSON.stringify({
+                      type: 'system',
+                      category: 'trade',
+                      message: 'Giao dịch thất bại: Bạn không có đủ vàng.'
+                    }));
+                  }
+                  break;
+                }
+
+                // Validate items still exist in inventories
+                let validationFailed = false;
+                for (const itemId of trade.initiatorItems) {
+                  if (!initiator.inventory.some((id: any) => id.toString() === itemId)) {
+                    responses.push('Lỗi: Một số vật phẩm của bạn không còn tồn tại.');
+                    if (otherPlayer?.ws) {
+                      otherPlayer.ws.send(JSON.stringify({
+                        type: 'system',
+                        category: 'trade',
+                        message: 'Giao dịch thất bại: Người kia không còn vật phẩm đã đưa ra.'
+                      }));
+                    }
+                    validationFailed = true;
+                    break;
+                  }
+                }
+                if (validationFailed) break;
+                
+                for (const itemId of trade.targetItems) {
+                  if (!target.inventory.some((id: any) => id.toString() === itemId)) {
+                    responses.push('Lỗi: Một số vật phẩm của đối tác không còn tồn tại.');
+                    if (otherPlayer?.ws) {
+                      otherPlayer.ws.send(JSON.stringify({
+                        type: 'system',
+                        category: 'trade',
+                        message: 'Giao dịch thất bại: Bạn không còn vật phẩm đã đưa ra.'
+                      }));
+                    }
+                    validationFailed = true;
+                    break;
+                  }
+                }
+                if (validationFailed) break;
+
+                // Exchange items
+                for (const itemId of trade.initiatorItems) {
+                  initiator.inventory = initiator.inventory.filter((id: any) => id.toString() !== itemId);
+                  target.inventory.push(itemId);
+                }
+                for (const itemId of trade.targetItems) {
+                  target.inventory = target.inventory.filter((id: any) => id.toString() !== itemId);
+                  initiator.inventory.push(itemId);
+                }
+
+                // Exchange gold
+                initiator.gold -= trade.initiatorGold;
+                target.gold += trade.initiatorGold;
+                target.gold -= trade.targetGold;
+                initiator.gold += trade.targetGold;
+
+                await initiator.save();
+                await target.save();
+
+                responses.push('✨ Giao dịch thành công!');
+
+                // Notify other player
+                if (otherPlayer?.ws) {
+                  otherPlayer.ws.send(JSON.stringify({
+                    type: 'system',
+                    category: 'trade',
+                    message: '✨ Giao dịch thành công!'
+                  }));
+                }
+              } else {
+                // Notify other player that this player confirmed
+                if (otherPlayer?.ws) {
+                  otherPlayer.ws.send(JSON.stringify({
+                    type: 'system',
+                    category: 'trade',
+                    message: `[${player.username}] đã xác nhận giao dịch. Gõ "trade confirm" để hoàn tất.`
+                  }));
+                }
+              }
+            }
+            break;
+          }
+
+          case 'cancel': {
+            // Get trade info BEFORE canceling
+            const playerTrade = tradeService.getPlayerTrade(playerId);
+            
+            // Cancel trade
+            const cancelResult = tradeService.cancelTrade(playerId);
+            responses.push(cancelResult.message);
+
+            if (cancelResult.success && playerTrade) {
+              const otherPlayerId = playerTrade.isInitiator
+                ? playerTrade.trade.targetId
+                : playerTrade.trade.initiatorId;
+              const otherPlayer = gameState.getPlayer(otherPlayerId);
+              if (otherPlayer?.ws) {
+                otherPlayer.ws.send(JSON.stringify({
+                  type: 'system',
+                  category: 'trade',
+                  message: `[${player.username}] đã hủy giao dịch.`
+                }));
+              }
+            }
+            break;
+          }
+
+          default:
+            responses.push('Lệnh giao dịch không hợp lệ.');
+            responses.push('Sử dụng: trade [invite/accept/decline/add/gold/lock/confirm/cancel]');
+            break;
         }
         break;
       }
