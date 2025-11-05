@@ -298,7 +298,7 @@ export async function initializeWorld() {
 
     const huấnLuyệnViên = await AgentSchema.create({
       name: 'Huấn Luyện Viên',
-      description: 'Một chiến binh kỳ cựu với nhiều vết scar. Anh ta đang giảng dạy các chiến binh trẻ.',
+      description: 'Một chiến binh kỳ cựu với nhiều vết sẹo. Anh ta đang giảng dạy các chiến binh trẻ.',
       type: 'npc',
       currentRoomId: sânLuyệnTập._id,
       hp: 100,

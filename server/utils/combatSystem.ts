@@ -4,7 +4,7 @@ import { ItemSchema } from '../../models/Item';
 import { RoomSchema } from '../../models/Room';
 import { gameState } from './gameState';
 import { scheduleAgentRespawn } from './npcAI';
-import { COMBAT_TICK_INTERVAL, FLEE_SUCCESS_CHANCE, EXPERIENCE_PER_LEVEL, HP_GAIN_PER_LEVEL } from './constants';
+import { COMBAT_TICK_INTERVAL, FLEE_SUCCESS_CHANCE, EXPERIENCE_PER_LEVEL, HP_GAIN_PER_LEVEL, MINIMUM_DAMAGE } from './constants';
 
 // Calculate damage with some randomness
 function calculateDamage(baseDamage: number): number {
@@ -225,7 +225,7 @@ export async function executeCombatTick(playerId: string, agentId: string): Prom
     // Agent attacks back
     const agentDamage = calculateDamage(agent.damage);
     const playerDefense = await calculatePlayerDefense(player);
-    const actualDamage = Math.max(1, agentDamage - playerDefense); // Minimum 1 damage
+    const actualDamage = Math.max(MINIMUM_DAMAGE, agentDamage - playerDefense);
     
     player.hp = Math.max(0, player.hp - actualDamage);
     await player.save();

@@ -191,8 +191,8 @@ async function processPatrolBehavior(agent: any): Promise<void> {
       gameState.broadcastToRoom(
         nextRoom._id.toString(),
         {
-          type: 'normal',
-          message: `[${agent.name}] đi vào.`
+          type: 'accent',
+          message: `[${agent.name}] đi vào từ một hướng khác.`
         }
       );
     }
