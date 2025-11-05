@@ -21,8 +21,8 @@ async function sendCombatStateUpdate(playerId: string) {
       name: player.username,
       hp: player.hp,
       maxHp: player.maxHp,
-      mp: 50,
-      maxMp: 50,
+      mp: 50, // TODO: Add MP system to Player schema
+      maxMp: 50, // TODO: Add MP system to Player schema
       level: player.level,
       gold: player.gold,
       inCombat: player.inCombat
