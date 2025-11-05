@@ -3,6 +3,7 @@ import { AgentSchema } from '../../models/Agent';
 import { ItemSchema } from '../../models/Item';
 import { RoomSchema } from '../../models/Room';
 import { gameState } from './gameState';
+import { scheduleAgentRespawn } from './npcAI';
 import { COMBAT_TICK_INTERVAL, FLEE_SUCCESS_CHANCE, EXPERIENCE_PER_LEVEL, HP_GAIN_PER_LEVEL } from './constants';
 
 // Calculate damage with some randomness
@@ -154,13 +155,32 @@ export async function executeCombatTick(playerId: string, agentId: string): Prom
       const lootMessages = await dropLoot(agent, player.currentRoomId.toString());
       messages.push(...lootMessages);
       
-      // Respawn agent after a delay (remove from room for now)
+      // Save agent data for respawn and remove from room
+      const agentData = {
+        _id: agent._id,
+        name: agent.name,
+        description: agent.description,
+        type: agent.type,
+        maxHp: agent.maxHp,
+        level: agent.level,
+        damage: agent.damage,
+        behavior: agent.behavior,
+        patrolRoute: agent.patrolRoute,
+        dialogue: agent.dialogue,
+        shopItems: agent.shopItems,
+        loot: agent.loot,
+        experience: agent.experience
+      };
+      
       if (room) {
         room.agents = room.agents.filter((id: any) => id.toString() !== agent._id.toString());
         await room.save();
+        
+        // Schedule respawn
+        scheduleAgentRespawn(agentData, room._id.toString());
       }
       
-      // Delete the agent (it will respawn from init-world if needed)
+      // Delete the agent
       await AgentSchema.findByIdAndDelete(agent._id);
       
       gameState.stopCombat(playerId);
