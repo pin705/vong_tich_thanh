@@ -6,6 +6,7 @@ import { AgentSchema } from '../../models/Agent';
 import { gameState } from './gameState';
 import { DEV_FEATURE_MESSAGE, SMALL_POTION_HEALING } from './constants';
 import { startCombat, fleeCombat } from './combatSystem';
+import { partyService } from './partyService';
 
 // Helper function to format room description
 async function formatRoomDescription(room: any, player: any): Promise<string[]> {
@@ -111,6 +112,16 @@ export async function handleCommandDb(command: Command, playerId: string): Promi
         responses.push('CLASS & THIÊN PHÚ:');
         responses.push('  skills          (sk)     - Xem sổ kỹ năng');
         responses.push('  talents    (thienphu)    - Xem bảng thiên phú');
+        responses.push('');
+        responses.push('TỔ ĐỘI (PARTY):');
+        responses.push('  party invite [tên]  (moi)- Mời người chơi vào nhóm');
+        responses.push('  party accept             - Chấp nhận lời mời');
+        responses.push('  party decline            - Từ chối lời mời');
+        responses.push('  party leave        (roi) - Rời nhóm');
+        responses.push('  party kick [tên]         - Đuổi thành viên (trưởng nhóm)');
+        responses.push('  party promote [tên]      - Trao quyền trưởng nhóm');
+        responses.push('  party loot [rule]        - Đặt quy tắc nhặt đồ');
+        responses.push('  p [tin nhắn]             - Chat với nhóm');
         responses.push('');
         responses.push('KHÁC:');
         responses.push('  help                     - Hiển thị trợ giúp');
@@ -357,6 +368,13 @@ export async function handleCommandDb(command: Command, playerId: string): Promi
           break;
         }
 
+        // Check party loot rules
+        const lootCheck = partyService.canLoot(playerId);
+        if (!lootCheck.canLoot) {
+          responses.push(lootCheck.reason || 'Bạn không thể nhặt đồ lúc này.');
+          break;
+        }
+
         const getRoom = await RoomSchema.findById(player.currentRoomId);
         if (!getRoom || !getRoom.items || getRoom.items.length === 0) {
           responses.push(`Không có "${target}" ở đây để nhặt.`);
@@ -381,6 +399,25 @@ export async function handleCommandDb(command: Command, playerId: string): Promi
         await player.save();
 
         responses.push(`Bạn nhặt [${getItem.name}].`);
+        
+        // Advance loot turn if in party with round-robin
+        const getPlayerParty = partyService.getPlayerParty(playerId);
+        if (getPlayerParty && getPlayerParty.party.lootRule === 'round-robin') {
+          partyService.advanceLootTurn(getPlayerParty.partyId);
+          
+          // Notify next looter
+          const nextLooter = partyService.getNextLooter(getPlayerParty.partyId);
+          if (nextLooter) {
+            const nextLooterPlayer = gameState.getPlayer(nextLooter);
+            if (nextLooterPlayer?.ws) {
+              nextLooterPlayer.ws.send(JSON.stringify({
+                type: 'system',
+                category: 'loot',
+                message: 'Đến lượt bạn nhặt đồ.'
+              }));
+            }
+          }
+        }
         
         // Broadcast to room
         gameState.broadcastToRoom(
@@ -735,6 +772,443 @@ export async function handleCommandDb(command: Command, playerId: string): Promi
         const gotoRoomDesc = await formatRoomDescription(gotoRoom, player);
         responses.push(...gotoRoomDesc);
         break;
+
+      case 'party':
+      case 'p':
+      case 'moi':
+      case 'roi': {
+        // Get subcommand
+        const subCommand = target?.toLowerCase();
+        const subTarget = args?.[0];
+        
+        // Check if this is party chat (p [message] instead of p [subcommand])
+        // Party chat if: action is 'p' AND target is not a party subcommand
+        const partySubcommands = ['invite', 'accept', 'decline', 'leave', 'kick', 'promote', 'loot'];
+        if (action === 'p' && target && !partySubcommands.includes(subCommand)) {
+          // This is party chat
+          const chatMessage = [target, ...(args || [])].filter(Boolean).join(' ');
+          
+          if (!chatMessage) {
+            responses.push('Bạn muốn nói gì với nhóm?');
+            break;
+          }
+          
+          const playerParty = partyService.getPlayerParty(playerId);
+          if (!playerParty) {
+            responses.push('Bạn không ở trong nhóm nào.');
+            break;
+          }
+          
+          // Broadcast to all party members
+          const memberIds = partyService.getPartyMemberIds(playerParty.partyId);
+          const members = gameState.getPlayersByIds(memberIds);
+          
+          members.forEach(member => {
+            if (member.ws) {
+              member.ws.send(JSON.stringify({
+                type: 'chat',
+                category: 'party',
+                user: player.username,
+                message: chatMessage
+              }));
+            }
+          });
+          
+          // Don't add to responses - it will be shown via chat system
+          break;
+        }
+        
+        // Handle "moi" alias for "party invite"
+        if (action === 'moi') {
+          // moi [player] -> party invite [player]
+          const targetPlayerName = target;
+          if (!targetPlayerName) {
+            responses.push('Mời ai vào nhóm? Cú pháp: moi [tên người chơi]');
+            break;
+          }
+          
+          // Find target player by name
+          const currentRoom = await RoomSchema.findById(player.currentRoomId);
+          if (!currentRoom) break;
+          
+          const playersInRoom = gameState.getPlayersInRoom(currentRoom._id.toString());
+          const targetPlayerInfo = playersInRoom.find(p => 
+            p.username.toLowerCase().includes(targetPlayerName.toLowerCase()) && p.id !== playerId
+          );
+          
+          if (!targetPlayerInfo) {
+            responses.push(`Không tìm thấy người chơi "${targetPlayerName}" ở đây.`);
+            break;
+          }
+          
+          const inviteResult = partyService.invitePlayer(playerId, targetPlayerInfo.id);
+          responses.push(inviteResult.message);
+          
+          if (inviteResult.success) {
+            // Send invitation to target player
+            const targetPlayer = gameState.getPlayer(targetPlayerInfo.id);
+            if (targetPlayer?.ws) {
+              targetPlayer.ws.send(JSON.stringify({
+                type: 'party_invitation',
+                payload: {
+                  inviterId: playerId,
+                  inviterName: player.username,
+                  partyId: inviteResult.partyId
+                }
+              }));
+            }
+            
+            // Update party ID in game state
+            gameState.updatePlayerParty(playerId, inviteResult.partyId!);
+          }
+          break;
+        }
+        
+        // Handle "roi" alias for "party leave"
+        if (action === 'roi') {
+          // Get party info BEFORE leaving
+          const playerPartyBeforeLeave = partyService.getPlayerParty(playerId);
+          const partyIdBeforeLeave = playerPartyBeforeLeave?.partyId;
+          
+          const leaveResult = partyService.leaveParty(playerId);
+          responses.push(leaveResult.message);
+          
+          if (leaveResult.success) {
+            gameState.updatePlayerParty(playerId, null);
+            
+            // Notify remaining party members (if party still exists)
+            if (partyIdBeforeLeave) {
+              const memberIds = partyService.getPartyMemberIds(partyIdBeforeLeave);
+              const members = gameState.getPlayersByIds(memberIds);
+              members.forEach(member => {
+                if (member.ws) {
+                  member.ws.send(JSON.stringify({
+                    type: 'system',
+                    category: 'party',
+                    message: `[${player.username}] đã rời nhóm.`
+                  }));
+                  
+                  if (leaveResult.newLeaderId === member.id) {
+                    member.ws.send(JSON.stringify({
+                      type: 'system',
+                      category: 'party',
+                      message: `Bạn đã trở thành nhóm trưởng.`
+                    }));
+                  }
+                }
+              });
+            }
+          }
+          break;
+        }
+        
+        // Handle regular party commands
+        if (!subCommand) {
+          // No subcommand - show party status
+          const playerParty = partyService.getPlayerParty(playerId);
+          if (!playerParty) {
+            responses.push('Bạn không ở trong nhóm nào.');
+            responses.push('Sử dụng: party invite [tên] để mời người khác.');
+          } else {
+            const { party } = playerParty;
+            responses.push('═══════════════════════════════════');
+            responses.push('           TỔ ĐỘI                  ');
+            responses.push('═══════════════════════════════════');
+            
+            const memberIds = Array.from(party.memberIds);
+            const members = await PlayerSchema.find({ _id: { $in: memberIds } });
+            
+            for (const member of members) {
+              const isLeader = member._id.toString() === party.leaderId;
+              const prefix = isLeader ? '(L)' : '   ';
+              responses.push(`${prefix} [${member.username}] - Level ${member.level}`);
+              responses.push(`     HP: ${member.hp}/${member.maxHp}`);
+            }
+            
+            responses.push('');
+            responses.push(`Quy tắc nhặt đồ: ${party.lootRule === 'leader-only' ? 'Chỉ Trưởng Nhóm' : 'Theo Lượt'}`);
+          }
+          break;
+        }
+        
+        switch (subCommand) {
+          case 'invite': {
+            if (!subTarget) {
+              responses.push('Mời ai vào nhóm? Cú pháp: party invite [tên]');
+              break;
+            }
+            
+            // Find target player by name
+            const currentRoom = await RoomSchema.findById(player.currentRoomId);
+            if (!currentRoom) break;
+            
+            const playersInRoom = gameState.getPlayersInRoom(currentRoom._id.toString());
+            const targetPlayerInfo = playersInRoom.find(p => 
+              p.username.toLowerCase().includes(subTarget.toLowerCase()) && p.id !== playerId
+            );
+            
+            if (!targetPlayerInfo) {
+              responses.push(`Không tìm thấy người chơi "${subTarget}" ở đây.`);
+              break;
+            }
+            
+            const inviteResult = partyService.invitePlayer(playerId, targetPlayerInfo.id);
+            responses.push(inviteResult.message);
+            
+            if (inviteResult.success) {
+              // Send invitation to target player
+              const targetPlayer = gameState.getPlayer(targetPlayerInfo.id);
+              if (targetPlayer?.ws) {
+                targetPlayer.ws.send(JSON.stringify({
+                  type: 'party_invitation',
+                  payload: {
+                    inviterId: playerId,
+                    inviterName: player.username,
+                    partyId: inviteResult.partyId
+                  }
+                }));
+              }
+              
+              // Update party ID in game state
+              gameState.updatePlayerParty(playerId, inviteResult.partyId!);
+            }
+            break;
+          }
+          
+          case 'accept': {
+            // Get pending invitations
+            const invitations = partyService.getPendingInvitations(playerId);
+            if (invitations.length === 0) {
+              responses.push('Không có lời mời nào.');
+              break;
+            }
+            
+            // Accept the most recent invitation
+            const invitation = invitations[0];
+            const inviter = await PlayerSchema.findById(invitation.inviterId);
+            if (!inviter) {
+              responses.push('Không tìm thấy người mời.');
+              break;
+            }
+            
+            const acceptResult = partyService.acceptInvitation(playerId, invitation.inviterId);
+            responses.push(acceptResult.message);
+            
+            if (acceptResult.success) {
+              gameState.updatePlayerParty(playerId, acceptResult.partyId!);
+              
+              // Notify party members
+              const memberIds = partyService.getPartyMemberIds(acceptResult.partyId!);
+              const members = gameState.getPlayersByIds(memberIds);
+              members.forEach(member => {
+                if (member.ws && member.id !== playerId) {
+                  member.ws.send(JSON.stringify({
+                    type: 'system',
+                    category: 'party',
+                    message: `[${player.username}] đã tham gia nhóm.`
+                  }));
+                }
+              });
+            }
+            break;
+          }
+          
+          case 'decline': {
+            // Get pending invitations
+            const invitations = partyService.getPendingInvitations(playerId);
+            if (invitations.length === 0) {
+              responses.push('Không có lời mời nào.');
+              break;
+            }
+            
+            // Decline the most recent invitation
+            const invitation = invitations[0];
+            const declineResult = partyService.declineInvitation(playerId, invitation.inviterId);
+            responses.push(declineResult.message);
+            break;
+          }
+          
+          case 'leave': {
+            // Get party info BEFORE leaving
+            const playerPartyBeforeLeave = partyService.getPlayerParty(playerId);
+            const partyIdBeforeLeave = playerPartyBeforeLeave?.partyId;
+            
+            const leaveResult = partyService.leaveParty(playerId);
+            responses.push(leaveResult.message);
+            
+            if (leaveResult.success) {
+              gameState.updatePlayerParty(playerId, null);
+              
+              // Notify remaining party members (if party still exists)
+              if (partyIdBeforeLeave) {
+                const memberIds = partyService.getPartyMemberIds(partyIdBeforeLeave);
+                const members = gameState.getPlayersByIds(memberIds);
+                members.forEach(member => {
+                  if (member.ws) {
+                    member.ws.send(JSON.stringify({
+                      type: 'system',
+                      category: 'party',
+                      message: `[${player.username}] đã rời nhóm.`
+                    }));
+                    
+                    if (leaveResult.newLeaderId === member.id) {
+                      member.ws.send(JSON.stringify({
+                        type: 'system',
+                        category: 'party',
+                        message: `Bạn đã trở thành nhóm trưởng.`
+                      }));
+                    }
+                  }
+                });
+              }
+            }
+            break;
+          }
+          
+          case 'kick': {
+            if (!subTarget) {
+              responses.push('Đuổi ai khỏi nhóm? Cú pháp: party kick [tên]');
+              break;
+            }
+            
+            // Find target player in party
+            const playerParty = partyService.getPlayerParty(playerId);
+            if (!playerParty) {
+              responses.push('Bạn không ở trong nhóm nào.');
+              break;
+            }
+            
+            const memberIds = Array.from(playerParty.party.memberIds);
+            const members = await PlayerSchema.find({ _id: { $in: memberIds } });
+            const targetMember = members.find(m => 
+              m.username.toLowerCase().includes(subTarget.toLowerCase()) && m._id.toString() !== playerId
+            );
+            
+            if (!targetMember) {
+              responses.push(`Không tìm thấy thành viên "${subTarget}" trong nhóm.`);
+              break;
+            }
+            
+            const kickResult = partyService.kickPlayer(playerId, targetMember._id.toString());
+            responses.push(kickResult.message);
+            
+            if (kickResult.success) {
+              gameState.updatePlayerParty(targetMember._id.toString(), null);
+              
+              // Notify kicked player
+              const kickedPlayer = gameState.getPlayer(targetMember._id.toString());
+              if (kickedPlayer?.ws) {
+                kickedPlayer.ws.send(JSON.stringify({
+                  type: 'system',
+                  category: 'party',
+                  message: `Bạn đã bị đuổi khỏi nhóm.`
+                }));
+              }
+              
+              // Notify other party members
+              const remainingMemberIds = partyService.getPartyMemberIds(playerParty.partyId);
+              const remainingMembers = gameState.getPlayersByIds(remainingMemberIds);
+              remainingMembers.forEach(member => {
+                if (member.ws && member.id !== playerId) {
+                  member.ws.send(JSON.stringify({
+                    type: 'system',
+                    category: 'party',
+                    message: `[${targetMember.username}] đã bị đuổi khỏi nhóm.`
+                  }));
+                }
+              });
+            }
+            break;
+          }
+          
+          case 'promote': {
+            if (!subTarget) {
+              responses.push('Trao quyền cho ai? Cú pháp: party promote [tên]');
+              break;
+            }
+            
+            // Find target player in party
+            const playerParty = partyService.getPlayerParty(playerId);
+            if (!playerParty) {
+              responses.push('Bạn không ở trong nhóm nào.');
+              break;
+            }
+            
+            const memberIds = Array.from(playerParty.party.memberIds);
+            const members = await PlayerSchema.find({ _id: { $in: memberIds } });
+            const targetMember = members.find(m => 
+              m.username.toLowerCase().includes(subTarget.toLowerCase())
+            );
+            
+            if (!targetMember) {
+              responses.push(`Không tìm thấy thành viên "${subTarget}" trong nhóm.`);
+              break;
+            }
+            
+            const promoteResult = partyService.promotePlayer(playerId, targetMember._id.toString());
+            responses.push(promoteResult.message);
+            
+            if (promoteResult.success) {
+              // Notify all party members
+              const allMemberIds = partyService.getPartyMemberIds(playerParty.partyId);
+              const allMembers = gameState.getPlayersByIds(allMemberIds);
+              allMembers.forEach(member => {
+                if (member.ws) {
+                  member.ws.send(JSON.stringify({
+                    type: 'system',
+                    category: 'party',
+                    message: `[${targetMember.username}] đã trở thành nhóm trưởng.`
+                  }));
+                }
+              });
+            }
+            break;
+          }
+          
+          case 'loot': {
+            if (!subTarget) {
+              responses.push('Chọn quy tắc nhặt đồ:');
+              responses.push('  party loot leader-only  - Chỉ trưởng nhóm');
+              responses.push('  party loot round-robin  - Theo lượt');
+              break;
+            }
+            
+            const lootRule = subTarget.toLowerCase();
+            if (lootRule !== 'leader-only' && lootRule !== 'round-robin') {
+              responses.push('Quy tắc không hợp lệ. Sử dụng: leader-only hoặc round-robin');
+              break;
+            }
+            
+            const lootResult = partyService.setLootRule(playerId, lootRule as 'leader-only' | 'round-robin');
+            responses.push(lootResult.message);
+            
+            if (lootResult.success) {
+              // Notify party members
+              const playerParty = partyService.getPlayerParty(playerId);
+              if (playerParty) {
+                const memberIds = partyService.getPartyMemberIds(playerParty.partyId);
+                const members = gameState.getPlayersByIds(memberIds);
+                members.forEach(member => {
+                  if (member.ws && member.id !== playerId) {
+                    member.ws.send(JSON.stringify({
+                      type: 'system',
+                      category: 'party',
+                      message: lootResult.message
+                    }));
+                  }
+                });
+              }
+            }
+            break;
+          }
+          
+          default:
+            responses.push('Lệnh nhóm không hợp lệ.');
+            responses.push('Các lệnh: party [invite/accept/decline/leave/kick/promote/loot]');
+            break;
+        }
+        break;
+      }
 
       case 'quit':
         responses.push('Tạm biệt! Hẹn gặp lại.');

@@ -3,6 +3,7 @@ import { AgentSchema } from '../../models/Agent';
 import { ItemSchema } from '../../models/Item';
 import { RoomSchema } from '../../models/Room';
 import { gameState } from './gameState';
+import { partyService } from './partyService';
 import { scheduleAgentRespawn } from './npcAI';
 import { COMBAT_TICK_INTERVAL, FLEE_SUCCESS_CHANCE, EXPERIENCE_PER_LEVEL, HP_GAIN_PER_LEVEL, MINIMUM_DAMAGE } from './constants';
 
@@ -115,6 +116,63 @@ async function calculatePlayerDefense(player: any): Promise<number> {
   return defense;
 }
 
+// Distribute experience to party members or solo player
+async function distributeExperience(killer: any, totalExp: number, roomId: string): Promise<string[]> {
+  const messages: string[] = [];
+  
+  // Check if killer is in a party
+  const playerParty = partyService.getPlayerParty(killer._id.toString());
+  
+  if (!playerParty) {
+    // Solo kill - give all EXP to killer
+    messages.push(`Bạn nhận được ${totalExp} điểm kinh nghiệm.`);
+    killer.experience += totalExp;
+    await killer.save();
+    return messages;
+  }
+  
+  // Party kill - distribute EXP to nearby members
+  const { party } = playerParty;
+  const memberIds = Array.from(party.memberIds);
+  
+  // Get party members in the same room (nearby)
+  const playersInRoom = gameState.getPlayersInRoom(roomId);
+  const nearbyPartyMembers = playersInRoom.filter(p => memberIds.includes(p.id));
+  
+  if (nearbyPartyMembers.length === 0) {
+    // No party members nearby, give all EXP to killer
+    messages.push(`Bạn nhận được ${totalExp} điểm kinh nghiệm.`);
+    killer.experience += totalExp;
+    await killer.save();
+    return messages;
+  }
+  
+  // Calculate EXP per member
+  const expPerMember = Math.floor(totalExp / nearbyPartyMembers.length);
+  
+  // Distribute EXP to each nearby party member
+  for (const member of nearbyPartyMembers) {
+    const memberPlayer = await PlayerSchema.findById(member.id);
+    if (!memberPlayer) continue;
+    
+    memberPlayer.experience += expPerMember;
+    await memberPlayer.save();
+    
+    // Send notification to member
+    if (member.ws) {
+      member.ws.send(JSON.stringify({
+        type: 'system',
+        category: 'xp',
+        message: `Bạn nhận được ${expPerMember} EXP (Nhóm).`
+      }));
+    }
+  }
+  
+  messages.push(`Bạn nhận được ${expPerMember} điểm kinh nghiệm (Nhóm - ${nearbyPartyMembers.length} thành viên).`);
+  
+  return messages;
+}
+
 // Check if player should level up and handle level up
 async function checkLevelUp(player: any): Promise<string[]> {
   const messages: string[] = [];
@@ -206,9 +264,11 @@ export async function executeCombatTick(playerId: string, agentId: string): Prom
     if (agent.hp <= 0) {
       messages.push('');
       messages.push(`Bạn đã hạ gục [${agent.name}]!`);
-      messages.push(`Bạn nhận được ${agent.experience} điểm kinh nghiệm.`);
       
-      player.experience += agent.experience;
+      // Handle EXP distribution (with party support)
+      const expMessages = await distributeExperience(player, agent.experience, room._id.toString());
+      messages.push(...expMessages);
+      
       player.inCombat = false;
       player.combatTarget = undefined;
       await player.save();
@@ -220,6 +280,37 @@ export async function executeCombatTick(playerId: string, agentId: string): Prom
       // Drop loot
       const lootMessages = await dropLoot(agent, player.currentRoomId.toString());
       messages.push(...lootMessages);
+      
+      // Notify about loot turn if in party
+      const killerParty = partyService.getPlayerParty(playerId);
+      if (killerParty) {
+        const { party } = killerParty;
+        
+        if (party.lootRule === 'leader-only') {
+          const leaderPlayer = await PlayerSchema.findById(party.leaderId);
+          if (leaderPlayer) {
+            messages.push(`Loot Rule: Chỉ [${leaderPlayer.username}] (Trưởng Nhóm) có thể nhặt đồ.`);
+          }
+        } else if (party.lootRule === 'round-robin') {
+          const nextLooter = partyService.getNextLooter(killerParty.partyId);
+          if (nextLooter) {
+            const nextLooterPlayer = await PlayerSchema.findById(nextLooter);
+            if (nextLooterPlayer) {
+              messages.push(`Loot Turn: Đến lượt [${nextLooterPlayer.username}] nhặt đồ.`);
+              
+              // Notify next looter via websocket
+              const nextLooterObj = gameState.getPlayer(nextLooter);
+              if (nextLooterObj?.ws) {
+                nextLooterObj.ws.send(JSON.stringify({
+                  type: 'system',
+                  category: 'loot',
+                  message: 'Đến lượt bạn nhặt đồ!'
+                }));
+              }
+            }
+          }
+        }
+      }
       
       // Save agent data for respawn and remove from room
       const agentData = {

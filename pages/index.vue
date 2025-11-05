@@ -143,6 +143,40 @@
       @buy="handleBuyItem"
       @sell="handleSellItem"
     />
+
+    <!-- Party Popup -->
+    <Popover
+      :isOpen="partyPopupOpen"
+      title="Quản Lý Nhóm"
+      width="600px"
+      @close="partyPopupOpen = false"
+    >
+      <PartyPopup
+        :hasParty="partyState.hasParty"
+        :partyMembers="partyState.members"
+        :lootRule="partyState.lootRule"
+        :currentPlayerId="user?.id || ''"
+        :isLeader="partyState.isLeader"
+        @memberClick="handlePartyMemberClick"
+        @lootRuleChange="handleLootRuleChange"
+        @leaveParty="handleLeaveParty"
+      />
+    </Popover>
+
+    <!-- Party Invitation Popup -->
+    <Popover
+      :isOpen="partyInvitationPopupOpen"
+      title="Lời Mời Nhóm"
+      width="400px"
+      @close="declinePartyInvitation"
+    >
+      <PartyInvitationPopup
+        :inviterName="partyInvitationData.inviterName"
+        :inviterClass="partyInvitationData.inviterClass"
+        @accept="acceptPartyInvitation"
+        @decline="declinePartyInvitation"
+      />
+    </Popover>
   </div>
 </template>
 
@@ -209,6 +243,8 @@ const mapPopupOpen = ref(false);
 const occupantsPopupOpen = ref(false);
 const contextualPopupOpen = ref(false);
 const tradingPopupOpen = ref(false);
+const partyPopupOpen = ref(false);
+const partyInvitationPopupOpen = ref(false);
 const contextualPopupData = ref<{
   title: string;
   entityType: 'npc' | 'mob' | 'player' | null;
@@ -230,6 +266,32 @@ const tradingData = ref<{
   merchantName: '',
   merchantId: '',
   merchantItems: []
+});
+
+// Party state
+const partyState = ref<{
+  hasParty: boolean;
+  members: any[];
+  lootRule: 'leader-only' | 'round-robin';
+  isLeader: boolean;
+}>({
+  hasParty: false,
+  members: [],
+  lootRule: 'round-robin',
+  isLeader: false
+});
+
+// Party invitation data
+const partyInvitationData = ref<{
+  inviterId: string;
+  inviterName: string;
+  inviterClass: string;
+  partyId: string;
+}>({
+  inviterId: '',
+  inviterName: '',
+  inviterClass: 'mutant_warrior',
+  partyId: ''
 });
 
 // Skills and talents state
@@ -359,7 +421,7 @@ const handleTabClick = async (tabId: string) => {
       inventoryPopupOpen.value = true;
       break;
     case 'party':
-      addMessage('Chức năng nhóm đang được phát triển...', 'system');
+      partyPopupOpen.value = true;
       break;
     case 'skills':
       await loadSkills();
@@ -437,7 +499,7 @@ const getActionsForEntity = (type: 'player' | 'npc' | 'mob', name: string, entit
         { label: 'Nói Chuyện (Say)', command: `say Xin chào ${name}!`, disabled: false },
         { label: 'Xem Xét (Look)', command: `look ${name}`, disabled: false },
         { label: 'Giao Dịch (Trade)', command: `trade ${name}`, disabled: true },
-        { label: 'Mời Vào Nhóm (Party)', command: `party invite ${name}`, disabled: true }
+        { label: 'Mời Vào Nhóm (Party)', command: `party invite ${name}`, disabled: false }
       ];
     default:
       return [];
@@ -930,6 +992,39 @@ const connectWebSocket = () => {
             };
           }
           break;
+        case 'party_invitation':
+          // Received party invitation
+          if (payload) {
+            partyInvitationData.value = {
+              inviterId: payload.inviterId,
+              inviterName: payload.inviterName,
+              inviterClass: payload.inviterClass || 'mutant_warrior',
+              partyId: payload.partyId
+            };
+            partyInvitationPopupOpen.value = true;
+          }
+          break;
+        case 'party_state':
+          // Update party state
+          if (payload) {
+            partyState.value = {
+              hasParty: payload.hasParty || false,
+              members: payload.members || [],
+              lootRule: payload.lootRule || 'round-robin',
+              isLeader: payload.isLeader || false
+            };
+          }
+          break;
+        case 'chat':
+          // Handle chat messages with categories
+          if (data.category === 'party') {
+            // Party chat - display in main output with special formatting
+            addMessage(`[Nhóm][${data.user}]: ${data.message}`, 'party_chat');
+          } else {
+            // Other chat types
+            addMessage(data.message || payload, 'chat_log', data.user);
+          }
+          break;
         default:
           console.log('Unknown message type:', type);
       }
@@ -976,6 +1071,53 @@ const handleFontSizeChange = (sizeId: string) => {
   FONT_SIZE_IDS.forEach(id => document.body.classList.remove(`font-size-${id}`));
   // Add new font size class
   document.body.classList.add(`font-size-${sizeId}`);
+};
+
+// Party handlers
+const handlePartyMemberClick = (member: any) => {
+  // Open contextual popup for party member
+  const actions = [
+    { label: 'Thăng Nhóm Trưởng', command: `party promote ${member.name}`, disabled: !partyState.value.isLeader },
+    { label: 'Mời Khỏi Nhóm', command: `party kick ${member.name}`, disabled: !partyState.value.isLeader },
+    { label: 'Chat Riêng', command: `say Xin chào ${member.name}!`, disabled: false }
+  ];
+  
+  contextualPopupData.value = {
+    title: `${member.name} (Thành viên nhóm)`,
+    entityType: 'player',
+    entityData: {
+      description: `Thành viên nhóm - Level ${member.level || 1}`,
+      hp: member.hp,
+      maxHp: member.maxHp
+    },
+    actions
+  };
+  
+  partyPopupOpen.value = false;
+  contextualPopupOpen.value = true;
+};
+
+const handleLootRuleChange = (rule: 'leader-only' | 'round-robin') => {
+  currentInput.value = `party loot ${rule}`;
+  sendCommand();
+};
+
+const handleLeaveParty = () => {
+  currentInput.value = 'party leave';
+  sendCommand();
+  partyPopupOpen.value = false;
+};
+
+const acceptPartyInvitation = () => {
+  currentInput.value = 'party accept';
+  sendCommand();
+  partyInvitationPopupOpen.value = false;
+};
+
+const declinePartyInvitation = () => {
+  currentInput.value = 'party decline';
+  sendCommand();
+  partyInvitationPopupOpen.value = false;
 };
 
 // Lifecycle hooks
@@ -1086,6 +1228,10 @@ watch(messages, () => {
 
 .message-combat_log {
   color: var(--text-bright);
+}
+
+.message-party_chat {
+  color: #4da6ff; /* Light blue for party chat */
 }
 
 /* Semantic Message Types (Phase 15) */
