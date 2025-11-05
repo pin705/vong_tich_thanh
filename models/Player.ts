@@ -50,5 +50,34 @@ export const PlayerSchema = defineMongooseModel({
       type: Schema.Types.ObjectId,
       ref: 'Agent',
     },
+    // Phase 12: Class & Talent System
+    class: {
+      type: String,
+      enum: ['mutant_warrior', 'rune_historian', 'stalker', 'scrap_engineer'],
+      default: 'mutant_warrior', // Default for new players; existing players can remain null
+    },
+    // Class resources
+    resource: {
+      type: Number,
+      default: 0,
+    },
+    maxResource: {
+      type: Number,
+      default: 100,
+    },
+    // Talent system
+    talentPoints: {
+      type: Number,
+      default: 0,
+    },
+    talents: {
+      type: Map,
+      of: Number,
+      default: {},
+    },
+    skills: [{
+      type: Schema.Types.ObjectId,
+      ref: 'Skill',
+    }],
   },
 });

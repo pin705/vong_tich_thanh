@@ -108,6 +108,10 @@ export async function handleCommandDb(command: Command, playerId: string): Promi
         responses.push('  buy [vật]                - Mua vật phẩm');
         responses.push('  sell [vật]               - Bán vật phẩm');
         responses.push('');
+        responses.push('CLASS & THIÊN PHÚ:');
+        responses.push('  skills          (sk)     - Xem sổ kỹ năng');
+        responses.push('  talents    (thienphu)    - Xem bảng thiên phú');
+        responses.push('');
         responses.push('KHÁC:');
         responses.push('  help                     - Hiển thị trợ giúp');
         responses.push('  quit                     - Thoát game');
@@ -662,6 +666,19 @@ export async function handleCommandDb(command: Command, playerId: string): Promi
 
       case '':
         // Empty command - do nothing
+        break;
+
+      case 'skills':
+      case 'sk':
+        responses.push(DEV_FEATURE_MESSAGE);
+        responses.push('Sử dụng nút "Skills" ở thanh tab dưới để xem sổ kỹ năng.');
+        break;
+
+      case 'talents':
+      case 't':
+      case 'thienphu':
+        responses.push(DEV_FEATURE_MESSAGE);
+        responses.push('Sử dụng nút "Talents" ở thanh tab dưới để xem bảng thiên phú.');
         break;
 
       case 'quit':
