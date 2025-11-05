@@ -113,6 +113,16 @@ export async function handleCommandDb(command: Command, playerId: string): Promi
         responses.push('  skills          (sk)     - Xem sổ kỹ năng');
         responses.push('  talents    (thienphu)    - Xem bảng thiên phú');
         responses.push('');
+        responses.push('TỔ ĐỘI (PARTY):');
+        responses.push('  party invite [tên]  (moi)- Mời người chơi vào nhóm');
+        responses.push('  party accept             - Chấp nhận lời mời');
+        responses.push('  party decline            - Từ chối lời mời');
+        responses.push('  party leave        (roi) - Rời nhóm');
+        responses.push('  party kick [tên]         - Đuổi thành viên (trưởng nhóm)');
+        responses.push('  party promote [tên]      - Trao quyền trưởng nhóm');
+        responses.push('  party loot [rule]        - Đặt quy tắc nhặt đồ');
+        responses.push('  p [tin nhắn]             - Chat với nhóm');
+        responses.push('');
         responses.push('KHÁC:');
         responses.push('  help                     - Hiển thị trợ giúp');
         responses.push('  quit                     - Thoát game');
@@ -358,6 +368,13 @@ export async function handleCommandDb(command: Command, playerId: string): Promi
           break;
         }
 
+        // Check party loot rules
+        const lootCheck = partyService.canLoot(playerId);
+        if (!lootCheck.canLoot) {
+          responses.push(lootCheck.reason || 'Bạn không thể nhặt đồ lúc này.');
+          break;
+        }
+
         const getRoom = await RoomSchema.findById(player.currentRoomId);
         if (!getRoom || !getRoom.items || getRoom.items.length === 0) {
           responses.push(`Không có "${target}" ở đây để nhặt.`);
@@ -382,6 +399,25 @@ export async function handleCommandDb(command: Command, playerId: string): Promi
         await player.save();
 
         responses.push(`Bạn nhặt [${getItem.name}].`);
+        
+        // Advance loot turn if in party with round-robin
+        const getPlayerParty = partyService.getPlayerParty(playerId);
+        if (getPlayerParty && getPlayerParty.party.lootRule === 'round-robin') {
+          partyService.advanceLootTurn(getPlayerParty.partyId);
+          
+          // Notify next looter
+          const nextLooter = partyService.getNextLooter(getPlayerParty.partyId);
+          if (nextLooter) {
+            const nextLooterPlayer = gameState.getPlayer(nextLooter);
+            if (nextLooterPlayer?.ws) {
+              nextLooterPlayer.ws.send(JSON.stringify({
+                type: 'system',
+                category: 'loot',
+                message: 'Đến lượt bạn nhặt đồ.'
+              }));
+            }
+          }
+        }
         
         // Broadcast to room
         gameState.broadcastToRoom(
