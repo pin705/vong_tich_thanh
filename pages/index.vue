@@ -27,6 +27,13 @@
 import { ref, onMounted, onUnmounted, nextTick, watch } from 'vue';
 import type { Message } from '~/types';
 
+definePageMeta({
+  middleware: 'auth'
+});
+
+const { user, logout } = useAuth();
+const router = useRouter();
+
 // State
 const messages = ref<Message[]>([]);
 const currentInput = ref('');
@@ -68,12 +75,20 @@ const focusInput = () => {
 };
 
 // Send command via WebSocket
-const sendCommand = () => {
+const sendCommand = async () => {
   const input = currentInput.value.trim();
   if (!input) return;
 
   // Echo command
   addMessage(`> ${input}`, 'system');
+
+  // Handle quit command
+  if (input.toLowerCase() === 'quit') {
+    addMessage('Đang đăng xuất...', 'system');
+    await logout();
+    await router.push('/login');
+    return;
+  }
 
   // Send to server
   if (ws.value && isConnected.value) {
@@ -102,7 +117,7 @@ const connectWebSocket = () => {
     addMessage('    VONG TÍCH THÀNH - MUD', 'accent');
     addMessage('═══════════════════════════════════════════════════', 'system');
     addMessage('', 'normal');
-    addMessage('Chào mừng đến với Vong Tích Thành!', 'action');
+    addMessage(`Chào mừng ${user.value?.username || 'Player'} đến với Vong Tích Thành!`, 'action');
     addMessage('', 'normal');
     addMessage('[Cổng Thành Cũ]', 'accent');
     addMessage('Bạn đang đứng trước một cổng thành bằng đá đã sụp đổ một nửa.', 'normal');
@@ -112,15 +127,15 @@ const connectWebSocket = () => {
     addMessage('Lối ra: [bắc]', 'normal');
     addMessage('Một [Lính Gác] đang đứng đây.', 'accent');
     addMessage('', 'normal');
-    addMessage('Gõ "help" để xem danh sách lệnh.', 'system');
+    addMessage('Gõ "help" để xem danh sách lệnh, hoặc "quit" để thoát.', 'system');
     addMessage('', 'normal');
 
-    // Authenticate (simplified for demo)
+    // Authenticate with user session
     ws.value?.send(JSON.stringify({
       type: 'auth',
       payload: {
-        playerId: 'demo-player',
-        username: 'Player',
+        playerId: user.value?.id || 'demo-player',
+        username: user.value?.username || 'Player',
         roomId: 'starting-room'
       }
     }));
