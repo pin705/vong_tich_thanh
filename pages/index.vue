@@ -203,6 +203,14 @@
         @close="auctionHousePopupOpen = false"
       />
     </Popover>
+
+    <!-- Premium Shop Popup -->
+    <PremiumShopPopup
+      :isOpen="premiumShopPopupOpen"
+      :playerPremiumCurrency="playerState.premiumCurrency"
+      @close="premiumShopPopupOpen = false"
+      @itemPurchased="handlePremiumItemPurchased"
+    />
   </div>
 </template>
 
@@ -222,6 +230,7 @@ import MapWorldOverlay from '~/components/MapWorldOverlay.vue';
 import QuestTrackerOverlay from '~/components/QuestTrackerOverlay.vue';
 import ProfessionChoiceOverlay from '~/components/ProfessionChoiceOverlay.vue';
 import TradingPopup from '~/components/TradingPopup.vue';
+import PremiumShopPopup from '~/components/PremiumShopPopup.vue';
 
 definePageMeta({
   middleware: 'auth'
@@ -273,6 +282,7 @@ const partyPopupOpen = ref(false);
 const partyInvitationPopupOpen = ref(false);
 const guildPopupOpen = ref(false);
 const auctionHousePopupOpen = ref(false);
+const premiumShopPopupOpen = ref(false);
 const contextualPopupData = ref<{
   title: string;
   entityType: 'npc' | 'mob' | 'player' | null;
@@ -507,6 +517,9 @@ const handleContextualAction = async (action: { command: string }) => {
     // Load merchant shop data
     await loadMerchantShop(merchantId, merchantName);
     tradingPopupOpen.value = true;
+  } else if (action.command.startsWith('__premium_shop__:')) {
+    // Open premium shop
+    premiumShopPopupOpen.value = true;
   } else {
     // Execute normal command
     currentInput.value = action.command;
@@ -518,12 +531,23 @@ const handleContextualAction = async (action: { command: string }) => {
 const getActionsForEntity = (type: 'player' | 'npc' | 'mob', name: string, entityId: string) => {
   switch (type) {
     case 'npc':
-      return [
+      const actions = [
         { label: 'Nói Chuyện (Talk)', command: `talk ${name}`, disabled: false },
         { label: 'Xem Xét (Look)', command: `look ${name}`, disabled: false },
         { label: 'Giao Dịch (Trade)', command: `__trade__:${entityId}:${name}`, disabled: false },
         { label: 'Tấn Công (Attack)', command: `attack ${name}`, disabled: false }
       ];
+      
+      // Add premium shop action for "Thương Gia Bí Ẩn"
+      if (name === 'Thương Gia Bí Ẩn') {
+        actions.splice(2, 0, { 
+          label: '💎 Cửa Hàng Cao Cấp', 
+          command: `__premium_shop__:${entityId}:${name}`, 
+          disabled: false 
+        });
+      }
+      
+      return actions;
     case 'mob':
       return [
         { label: 'Tấn Công (Attack)', command: `attack ${name}`, disabled: false },
@@ -838,6 +862,14 @@ const handleSellItem = (itemId: string) => {
     sendCommand();
     tradingPopupOpen.value = false;
   }
+};
+
+// Handle premium item purchased
+const handlePremiumItemPurchased = () => {
+  // Refresh player state - will be updated via WebSocket
+  // Force a refresh by sending a look command
+  currentInput.value = 'look';
+  sendCommand();
 };
 
 // Navigate command history
