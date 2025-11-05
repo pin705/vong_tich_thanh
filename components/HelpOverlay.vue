@@ -446,4 +446,48 @@ const filteredCommands = computed(() => {
   border-left-color: var(--text-accent);
   font-family: monospace;
 }
+
+/* Mobile responsiveness */
+@media (max-width: 768px) {
+  .help-content {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto 1fr;
+  }
+
+  .categories-sidebar {
+    border-right: none;
+    border-bottom: 1px solid var(--text-dim);
+    padding-right: 0;
+    padding-bottom: 1rem;
+    overflow-y: visible;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .category-item {
+    display: inline-block;
+    border: 1px solid var(--text-dim);
+    border-radius: 4px;
+    padding: 0.25rem 0.5rem;
+    margin-bottom: 0;
+  }
+
+  .commands-list {
+    border-right: none;
+    border-bottom: 1px solid var(--text-dim);
+    padding-right: 0;
+    padding-bottom: 1rem;
+    max-height: 200px;
+  }
+
+  .command-detail {
+    padding-left: 0;
+    padding-top: 1rem;
+  }
+
+  .search-input {
+    font-size: 16px;
+  }
+}
 </style>
