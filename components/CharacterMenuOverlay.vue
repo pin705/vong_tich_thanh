@@ -11,6 +11,7 @@
           [1] Thông Tin
         </button>
         <button
+          v-if="profession"
           class="tab-button"
           :class="{ active: activeTab === 'skills' }"
           @click="activeTab = 'skills'"
@@ -18,6 +19,7 @@
           [2] Kỹ Năng
         </button>
         <button
+          v-if="profession"
           class="tab-button"
           :class="{ active: activeTab === 'talents' }"
           @click="activeTab = 'talents'"
@@ -58,6 +60,18 @@
             <span class="info-label">Cổ Thạch:</span>
             <span class="info-value">{{ premiumCurrency }}</span>
           </div>
+          <div class="info-row">
+            <span class="info-label">Nghề nghiệp:</span>
+            <span class="info-value">{{ profession || 'Lãng Khách' }}</span>
+          </div>
+        </div>
+
+        <!-- Profession Choice Call to Action -->
+        <div v-if="!profession && level >= 5" class="profession-cta-section">
+          <button class="profession-cta-button" @click="emit('openProfessionChoice')">
+            <span class="cta-icon">!</span> CHỌN NGHỀ NGHIỆP !
+          </button>
+          <p class="cta-message">Bạn đã đạt đủ cấp độ để chọn nghề nghiệp!</p>
         </div>
 
         <!-- Player Stats -->
@@ -201,6 +215,7 @@ interface Props {
   maxResource: number;
   gold: number;
   premiumCurrency: number;
+  profession?: string | null;
   stats: {
     damage: number;
     defense: number;
@@ -220,6 +235,7 @@ const emit = defineEmits<{
   close: [];
   assignSkill: [skill: Skill];
   allocateTalent: [talentId: string];
+  openProfessionChoice: [];
 }>();
 
 const activeTab = ref<'info' | 'skills' | 'talents'>('info');
@@ -315,6 +331,65 @@ const loading = ref(false);
   color: var(--text-bright);
   font-size: 16px;
   font-weight: bold;
+}
+
+/* Profession CTA Styles */
+.profession-cta-section {
+  margin-top: 1.5rem;
+  padding: 1.5rem;
+  background-color: rgba(255, 176, 0, 0.1);
+  border: 2px solid #ffb000;
+  text-align: center;
+}
+
+.profession-cta-button {
+  width: 100%;
+  padding: 1rem;
+  background: linear-gradient(135deg, #ffb000 0%, #ff8800 100%);
+  border: 2px solid #ffd700;
+  color: #000000;
+  font-size: 20px;
+  font-weight: bold;
+  cursor: pointer;
+  font-family: 'VT323', 'Source Code Pro', monospace;
+  transition: all 0.3s;
+  margin-bottom: 0.75rem;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+.profession-cta-button:hover {
+  background: linear-gradient(135deg, #ffd700 0%, #ffb000 100%);
+  transform: scale(1.05);
+  box-shadow: 0 0 20px rgba(255, 176, 0, 0.6);
+}
+
+.cta-icon {
+  display: inline-block;
+  animation: bounce 1s ease-in-out infinite;
+}
+
+.cta-message {
+  color: #ffb000;
+  font-size: 16px;
+  margin: 0;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    box-shadow: 0 0 10px rgba(255, 176, 0, 0.5);
+  }
+  50% {
+    box-shadow: 0 0 20px rgba(255, 176, 0, 0.8);
+  }
+}
+
+@keyframes bounce {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-5px);
+  }
 }
 
 /* Skills Tab Styles */

@@ -30,6 +30,12 @@
             {{ entityData.description }}
           </div>
 
+          <!-- Guild Information (Phase 20.2) -->
+          <div v-if="entityData?.guild" class="entity-guild-info">
+            <span class="guild-label">Bang hội:</span>
+            <span class="guild-value">[{{ entityData.guild.tag }}] {{ entityData.guild.name }}</span>
+          </div>
+
           <!-- Custom Content Slot -->
           <div v-if="$slots.default" class="popup-custom-content">
             <slot></slot>
@@ -62,6 +68,10 @@ interface EntityData {
   maxHp?: number;
   status?: string;
   description?: string;
+  guild?: {
+    name: string;
+    tag: string;
+  };
 }
 
 interface Action {
@@ -223,6 +233,24 @@ const hpPercentage = computed(() => {
   background-color: rgba(0, 136, 0, 0.05);
   border-left: 2px solid var(--text-dim);
   white-space: pre-wrap;
+}
+
+.entity-guild-info {
+  color: var(--text-bright);
+  margin-bottom: 1rem;
+  padding: 0.75rem;
+  background-color: rgba(0, 136, 136, 0.1);
+  border-left: 2px solid var(--text-cyan);
+}
+
+.guild-label {
+  color: var(--text-dim);
+  margin-right: 0.5rem;
+}
+
+.guild-value {
+  color: var(--text-accent);
+  font-weight: bold;
 }
 
 .popup-custom-content {
