@@ -230,11 +230,6 @@ const focusInput = () => {
   }
 };
 
-// Handle target selection (legacy - now replaced by contextual popup)
-const handleSelectTarget = (type: 'player' | 'npc' | 'mob', id: string, name: string) => {
-  selectedTarget.value = { type, id, name };
-};
-
 // Handle tab bar clicks
 const handleTabClick = (tabId: string) => {
   switch (tabId) {

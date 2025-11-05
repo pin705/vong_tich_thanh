@@ -102,15 +102,6 @@ const hpPercentage = computed(() => {
   if (!props.entityData?.hp || !props.entityData?.maxHp) return 0;
   return Math.floor((props.entityData.hp / props.entityData.maxHp) * 100);
 });
-
-const entityTypeLabel = computed(() => {
-  const labels = {
-    npc: '(NPC)',
-    mob: '(Quái vật)',
-    player: '(Người chơi)'
-  };
-  return props.entityType ? labels[props.entityType] : '';
-});
 </script>
 
 <style scoped>
