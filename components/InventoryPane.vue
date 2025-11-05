@@ -467,4 +467,30 @@ const executeAction = (action: string) => {
   background-color: rgba(0, 255, 0, 0.1);
   border-color: var(--text-bright);
 }
+
+/* Mobile responsiveness */
+@media (max-width: 768px) {
+  .inventory-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.4rem;
+  }
+
+  .item-icon {
+    font-size: 20px;
+  }
+
+  .item-name {
+    font-size: 10px;
+  }
+
+  .tab-button {
+    font-size: 14px;
+    padding: 0.4rem;
+  }
+
+  .info-row,
+  .stat-row {
+    font-size: 14px;
+  }
+}
 </style>

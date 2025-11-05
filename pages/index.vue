@@ -716,4 +716,39 @@ watch(messages, () => {
   background-color: var(--text-dim);
   color: var(--bg-black);
 }
+
+.input-field::placeholder {
+  color: var(--text-dim);
+  opacity: 0.6;
+}
+
+/* Mobile responsiveness */
+@media (max-width: 768px) {
+  .main-output-pane {
+    margin: 0.25rem;
+  }
+
+  .output-area {
+    padding: 0.5rem;
+    font-size: 16px;
+  }
+
+  .message {
+    font-size: 16px;
+    line-height: 1.3;
+  }
+
+  .input-area {
+    padding: 0.4rem 0.75rem;
+  }
+
+  .prompt {
+    font-size: 18px;
+    margin-right: 0.4rem;
+  }
+
+  .input-field {
+    font-size: 16px;
+  }
+}
 </style>
