@@ -175,3 +175,164 @@ Phase 6: World Expansion
  Character classes
  Skills and abilities
 
+ Phase 7: Nâng Cấp Giao Diện Tác Vụ (UI/UX "Client 2.0")
+Mục tiêu: Giải quyết các vấn đề về "khó thao tác" bằng cách chia màn hình thành nhiều "khung" (panes) thông tin chuyên dụng, thay vì một log chat duy nhất.
+
+Task 7.1: Tái Cấu Trúc Bố Cục (Multi-Pane Layout):
+
+Vấn đề: Mọi thứ (chat, combat, di chuyển) đều ở chung một chỗ, trôi rất nhanh.
+
+Giải pháp: Dùng CSS Grid hoặc Flexbox để chia layout chính (file layouts/game.vue) thành một cấu trúc "dashboard" cổ điển:
+
+Khung 1 (Lớn, trái): [Output Chính] - Chỉ hiển thị mô tả phòng, kết quả look, thông báo di chuyển, và log chiến đấu.
+
+Khung 2 (Nhỏ, trên-phải): [Thông Tin Người Chơi] - (Giải quyết "thông tin người chơi").
+
+Khung 3 (Nhỏ, giữa-phải): [Mini-Map] - (Giải quyết "không có mini-map").
+
+Khung 4 (Nhỏ, dưới-phải): [Log Giao Tiếp] - (Giải quyết "khó giao tiếp").
+
+Khung 5 (Dưới cùng, toàn chiều ngang): [Dòng Lệnh Input] - Vẫn như cũ.
+
+Task 7.2: Triển khai Khung Thông Tin (Player/Target Info):
+
+Vấn đề: Không biết mình còn bao nhiêu HP/MP, hoặc quái vật còn bao nhiêu máu.
+
+Giải pháp:
+
+Tạo một component StatusPane (đặt vào Khung 2).
+
+Component này nhận dữ liệu (HP, MP, Tên...) từ WebSocket (state của người chơi).
+
+Hiển thị thông tin người chơi:
+
+[ Bạn: Kẻ Tìm Về ]
+HP: [||||||----] 60/100
+MP: [||||||||||] 50/50
+Khi vào combat, tự động hiển thị thông tin mục tiêu:
+
+[ Mục tiêu: Goblin ]
+HP: [|||-------] 30/100
+(Đây là cách hiển thị "không nhựa", dùng ký tự | và - để làm thanh progress bar).
+
+Task 7.3: Triển khai Khung Mini-Map (ASCII Map):
+
+Vấn đề: Không biết các lối ra, "khó di chuyển".
+
+Giải pháp:
+
+Tạo một component MapPane (đặt vào Khung 3).
+
+Server (Nitro) khi người chơi di chuyển (go) hoặc look, ngoài việc gửi mô tả, sẽ gửi thêm một object exits: { north: true, south: false, ... }.
+
+Component này sẽ render một bản đồ ASCII đơn giản dựa trên object đó:
+
+[Bắc]
+  |
+[Tây]-[Phòng Này]-[Đông]
+
+(Nếu không có lối 'Nam', nó sẽ không render chữ 'Nam')
+Task 7.4: Tách Luồng Chat (Chat Log):
+
+Vấn đề: Lệnh say bị trôi mất giữa hàng loạt log chiến đấu (Bạn chém..., Goblin cắn...).
+
+Giải pháp:
+
+Tạo component ChatPane (đặt vào Khung 4).
+
+Cải tổ WebSocket: Server phải "tag" (gắn thẻ) loại tin nhắn.
+
+{ type: 'combat_log', message: 'Bạn chém...' } -> Gửi vào [Output Chính].
+
+{ type: 'chat_log', user: 'PlayerA', message: 'Cứu tôi!' } -> Gửi vào [Log Giao Tiếp].
+
+Điều này giúp cuộc hội thoại không bao giờ bị gián đoạn bởi chiến đấu.
+
+Task 7.5: Cải Thiện Chất Lượng Input (QoL):
+
+Vấn đề: Gõ lệnh lặp đi lặp lại rất mệt.
+
+Giải pháp:
+
+Lịch sử lệnh: Trong component Input, bắt sự kiện phím "Mũi tên Lên" / "Mũi tên Xuống" để cho phép người chơi cuộn lại các lệnh đã gõ trước đó.
+
+Tô màu Input: Chữ người chơi gõ có thể có màu khác (ví dụ: màu trắng) so với chữ của hệ thống (màu xanh lá) để dễ phân biệt.
+
+
+Task 7.5 (MỚI): Khung "Thực Thể Xung Quanh" (Room Occupants)
+Vấn đề: Phải look liên tục để biết có ai trong phòng.
+
+Giải pháp: Tạo một Khung (Pane) mới, có thể đặt ngay dưới [Mini-Map]. Khung này tự động cập nhật (qua WebSocket) mỗi khi có ai đó vào/ra phòng.
+
+Giao diện (Không "nhựa"):
+
+[ Xung Quanh ]
+(P) Player_A      <-- (P) = Player
+(P) Player_B
+(N) Lính Gác       <-- (N) = NPC
+(M) Chuột Biến Dị   <-- (M) = Mob (Quái)
+Lợi ích: Người chơi có một danh sách trực quan, "sống" về mọi thứ họ có thể tương tác trong phòng. Đây là bước 1 để giải quyết yêu cầu của bạn.
+
+Task 7.6 (MỚI): Hệ Thống "Mục Tiêu" & "Hành Động Ngữ Cảnh"
+Vấn đề: Phải gõ talk Lính Gác, attack Chuột Biến Dị.
+
+Giải pháp: Đây là phần quan trọng nhất, thực hiện đề xuất "click" của bạn.
+
+Chọn Mục Tiêu (Targeting): Khi người chơi Click (Trái) vào (N) Lính Gác trong khung [Xung Quanh] (Task 7.5):
+
+Khung [Thông Tin Người Chơi] (Task 7.2) sẽ cập nhật:
+
+[ Mục tiêu: Lính Gác ]
+HP: [||||||||||] 100/100
+(Thân thiện)
+Biến currentTarget (mục tiêu hiện tại) trên client được thiết lập.
+
+Hiển thị Hành Động (Contextual Actions):
+
+Tạo một Khung (Pane) mới ngay dưới khung [Xung Quanh] gọi là [Hành Động].
+
+Khung này sẽ tự động cập nhật dựa trên currentTarget là ai.
+
+Kịch bản 1: Click vào (N) Lính Gác (NPC Thân thiện)
+
+Khung [Hành Động] hiển thị:
+
+[ Hành Động: Lính Gác ]
+[1] talk          <-- Đây là văn bản, không phải button
+[2] look
+[3] trade (mờ)    <-- (Nếu NPC này không bán hàng)
+Kịch bản 2: Click vào (M) Chuột Biến Dị (Mob Thù địch)
+
+Khung [Hành Động] hiển thị:
+
+[ Hành Động: Chuột Biến Dị ]
+[1] attack
+[2] look
+Kịch bản 3: Click vào (P) Player_A (Người chơi khác)
+
+Khung [Hành Động] hiển thị:
+
+[ Hành Động: Player_A ]
+[1] talk
+[2] trade
+[3] party invite
+[4] guild invite
+[5] look
+Task 7.7 (MỚI): Thực Thi "Click-Hành Động"
+Giải pháp:
+
+Khi người chơi Click (Trái) vào dòng chữ [1] talk trong khung [Hành Động].
+
+Client (Vue.js) sẽ tự động lấy currentTarget (là Lính Gác) và hành động (là talk).
+
+Nó tự động gửi lệnh lên WebSocket server: ws.send({ command: "talk 'Lính Gác'" }).
+
+Tại sao cách này "Không Nhựa"?
+
+Người chơi không click vào một "button" <img> hay <button> bo tròn.
+
+Họ click vào một dòng văn bản ([1] talk).
+
+Giao diện vẫn 100% là text, 100% là "retro terminal".
+
+Chúng ta chỉ đang dùng "click" như một "phím tắt" (macro) siêu thông minh, đúng như mong muốn của bạn.
