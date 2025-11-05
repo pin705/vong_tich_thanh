@@ -94,7 +94,7 @@ definePageMeta({
   middleware: 'auth'
 });
 
-const { user, logout } = useAuth();
+const { user, clear } = useUserSession();
 const router = useRouter();
 
 // State
@@ -241,7 +241,7 @@ const sendCommand = async () => {
   // Handle quit command
   if (input.toLowerCase() === 'quit') {
     addMessage('Đang đăng xuất...', 'system');
-    await logout();
+    await clear();
     await router.push('/login');
     return;
   }
