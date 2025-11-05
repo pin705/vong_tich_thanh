@@ -1,5 +1,5 @@
 <template>
-  <FullscreenOverlay :isOpen="isOpen" @close="$emit('close')">
+  <FullscreenOverlay :isOpen="isOpen" @close="$emit('close')" title="Sổ Kỹ Năng">
     <div class="skillbook-container">
       <!-- Header -->
       <div class="skillbook-header">
@@ -67,16 +67,16 @@
           <div class="skill-detail-body">
             <p>{{ selectedSkill.description }}</p>
             <div class="skill-stats">
-              <div v-if="selectedSkill.resourceCost > 0">
+              <div v-if="selectedSkill.resourceCost && selectedSkill.resourceCost > 0">
                 <strong>Tài nguyên:</strong> {{ selectedSkill.resourceCost }} {{ getResourceName() }}
               </div>
-              <div v-if="selectedSkill.cooldown > 0">
+              <div v-if="selectedSkill.cooldown && selectedSkill.cooldown > 0">
                 <strong>Thời gian hồi:</strong> {{ selectedSkill.cooldown }} giây
               </div>
-              <div v-if="selectedSkill.damage > 0">
+              <div v-if="selectedSkill.damage && selectedSkill.damage > 0">
                 <strong>Sát thương:</strong> {{ selectedSkill.damage }}
               </div>
-              <div v-if="selectedSkill.healing > 0">
+              <div v-if="selectedSkill.healing && selectedSkill.healing > 0">
                 <strong>Hồi máu:</strong> {{ selectedSkill.healing }}
               </div>
             </div>
@@ -322,5 +322,87 @@ function assignToHotkey() {
 .hint {
   color: #008800;
   font-size: 0.9rem;
+}
+
+/* Mobile responsiveness */
+@media (max-width: 768px) {
+  .skillbook-header h2 {
+    font-size: 1.2rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .tab-bar {
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+
+  .tab-button {
+    padding: 0.4rem 0.75rem;
+    font-size: 0.95rem;
+    flex: 1;
+    min-width: 0;
+  }
+
+  .skillbook-content {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+    padding: 0.5rem;
+  }
+
+  .skills-list {
+    padding: 0.75rem;
+    max-height: 40vh;
+  }
+
+  .skill-item {
+    padding: 0.6rem;
+    margin-bottom: 0.4rem;
+  }
+
+  .skill-number {
+    min-width: 1.5rem;
+    font-size: 0.9rem;
+  }
+
+  .skill-name {
+    font-size: 0.95rem;
+  }
+
+  .skill-cost,
+  .skill-description-short {
+    font-size: 0.85rem;
+  }
+
+  .skill-detail {
+    padding: 0.75rem;
+    max-height: 40vh;
+    overflow-y: auto;
+  }
+
+  .skill-detail-header {
+    font-size: 1.1rem;
+  }
+
+  .skill-detail-body p {
+    font-size: 0.9rem;
+  }
+
+  .skill-stats {
+    padding: 0.75rem;
+    font-size: 0.9rem;
+  }
+
+  .action-button {
+    padding: 0.6rem 1rem;
+    font-size: 0.95rem;
+  }
+
+  .skillbook-footer {
+    padding: 0.75rem;
+  }
+
+  .hint {
+    font-size: 0.8rem;
+  }
 }
 </style>

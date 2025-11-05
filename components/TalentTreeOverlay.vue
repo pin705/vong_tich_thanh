@@ -1,5 +1,5 @@
 <template>
-  <FullscreenOverlay :isOpen="isOpen" @close="$emit('close')">
+  <FullscreenOverlay :isOpen="isOpen" @close="$emit('close')" title="Bảng Thiên Phú">
     <div class="talent-tree-container">
       <!-- Header -->
       <div class="talent-tree-header">
@@ -486,5 +486,83 @@ function formatEffect(key: string, value: any): string {
 .hint {
   color: #008800;
   font-size: 0.9rem;
+}
+
+/* Mobile responsiveness */
+@media (max-width: 768px) {
+  .talent-tree-header h2 {
+    font-size: 1.2rem;
+  }
+
+  .talent-points {
+    font-size: 1rem;
+  }
+
+  .talent-branches {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+    padding: 0.5rem;
+  }
+
+  .talent-branch {
+    padding: 0.75rem;
+  }
+
+  .branch-name {
+    font-size: 1rem;
+  }
+
+  .branch-description {
+    font-size: 0.85rem;
+  }
+
+  .talent-node {
+    padding: 0.5rem;
+  }
+
+  .talent-tier {
+    font-size: 0.75rem;
+  }
+
+  .talent-name {
+    font-size: 0.9rem;
+  }
+
+  .talent-requirement {
+    font-size: 0.75rem;
+  }
+
+  .talent-detail {
+    position: fixed;
+    left: 0.5rem;
+    right: 0.5rem;
+    top: auto;
+    bottom: 0.5rem;
+    width: auto;
+    max-height: 50vh;
+    z-index: 10;
+  }
+
+  .talent-detail-header {
+    font-size: 1.1rem;
+  }
+
+  .talent-info {
+    padding: 0.75rem;
+    font-size: 0.9rem;
+  }
+
+  .action-button {
+    padding: 0.6rem;
+    font-size: 0.9rem;
+  }
+
+  .talent-tree-footer {
+    padding: 0.75rem;
+  }
+
+  .hint {
+    font-size: 0.8rem;
+  }
 }
 </style>

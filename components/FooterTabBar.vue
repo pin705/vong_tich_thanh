@@ -22,9 +22,10 @@ interface Tab {
 
 const tabs: Tab[] = [
   { id: 'map', label: '[Bản Đồ]' },
+  { id: 'worldmap', label: '[Thế Giới]' },
   { id: 'occupants', label: '[Xung Quanh]' },
   { id: 'inventory', label: '[Túi Đồ]' },
-  { id: 'party', label: '[Nhóm]' },
+  { id: 'quests', label: '[Nhiệm Vụ]' },
   { id: 'skills', label: '[Kỹ Năng]' },
   { id: 'talents', label: '[Thiên Phú]' },
   { id: 'settings', label: '[Cài Đặt]' }

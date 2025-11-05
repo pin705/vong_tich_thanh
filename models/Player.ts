@@ -79,5 +79,19 @@ export const PlayerSchema = defineMongooseModel({
       type: Schema.Types.ObjectId,
       ref: 'Skill',
     }],
+    // Profession system
+    profession: {
+      type: String,
+      enum: ['blacksmith', 'alchemist', 'enchanter', 'hunter', 'miner', 'herbalist', null],
+      default: null,
+    },
+    professionLevel: {
+      type: Number,
+      default: 0,
+    },
+    professionExp: {
+      type: Number,
+      default: 0,
+    },
   },
 });
