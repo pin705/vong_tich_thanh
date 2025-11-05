@@ -4,7 +4,8 @@ import { RoomSchema } from '../../models/Room';
 import { ItemSchema } from '../../models/Item';
 import { AgentSchema } from '../../models/Agent';
 import { gameState } from './gameState';
-import { DEV_FEATURE_MESSAGE } from './constants';
+import { DEV_FEATURE_MESSAGE, SMALL_POTION_HEALING } from './constants';
+import { startCombat, fleeCombat } from './combatSystem';
 
 // Helper function to format room description
 async function formatRoomDescription(room: any, player: any): Promise<string[]> {
@@ -564,8 +565,31 @@ export async function handleCommandDb(command: Command, playerId: string): Promi
           break;
         }
         
-        responses.push(`Bạn không thể tấn công "${target}" ở đây.`);
-        responses.push(DEV_FEATURE_MESSAGE);
+        // Check if already in combat
+        if (player.inCombat) {
+          responses.push('Bạn đã đang trong chiến đấu!');
+          break;
+        }
+        
+        const attackRoom = await RoomSchema.findById(player.currentRoomId);
+        if (!attackRoom || !attackRoom.agents || attackRoom.agents.length === 0) {
+          responses.push(`Bạn không thể tấn công "${target}" ở đây.`);
+          break;
+        }
+
+        const attackAgents = await AgentSchema.find({ _id: { $in: attackRoom.agents } });
+        const attackAgent = attackAgents.find((a: any) => 
+          a.name.toLowerCase().includes(target.toLowerCase())
+        );
+
+        if (!attackAgent) {
+          responses.push(`Bạn không thể tấn công "${target}" ở đây.`);
+          break;
+        }
+
+        // Start combat
+        const combatMessages = await startCombat(player._id.toString(), attackAgent._id.toString());
+        responses.push(...combatMessages);
         break;
 
       case 'use':
@@ -574,8 +598,52 @@ export async function handleCommandDb(command: Command, playerId: string): Promi
           break;
         }
         
-        responses.push(`Bạn không thể sử dụng "${target}" ngay bây giờ.`);
-        responses.push(DEV_FEATURE_MESSAGE);
+        const useItems = await ItemSchema.find({ _id: { $in: player.inventory } });
+        const useItem = useItems.find((i: any) => 
+          i.name.toLowerCase().includes(target.toLowerCase())
+        );
+
+        if (!useItem) {
+          responses.push(`Bạn không có "${target}" trong túi đồ.`);
+          break;
+        }
+
+        // Handle consumable items
+        if (useItem.type === 'consumable') {
+          if (useItem.stats?.healing) {
+            const healAmount = useItem.stats.healing;
+            const oldHp = player.hp;
+            player.hp = Math.min(player.maxHp, player.hp + healAmount);
+            const actualHeal = player.hp - oldHp;
+            
+            // Remove item from inventory
+            player.inventory = player.inventory.filter((id: any) => id.toString() !== useItem._id.toString());
+            await player.save();
+            
+            // Delete the consumed item
+            await ItemSchema.findByIdAndDelete(useItem._id);
+            
+            responses.push(`Bạn sử dụng [${useItem.name}], hồi phục ${actualHeal} HP.`);
+            responses.push(`HP hiện tại: ${player.hp}/${player.maxHp}`);
+            
+            // Broadcast to room
+            const useRoom = await RoomSchema.findById(player.currentRoomId);
+            if (useRoom) {
+              gameState.broadcastToRoom(
+                useRoom._id.toString(),
+                {
+                  type: 'normal',
+                  message: `[${player.username}] sử dụng [${useItem.name}].`
+                },
+                player._id.toString()
+              );
+            }
+          } else {
+            responses.push(`Bạn không thể sử dụng [${useItem.name}] ngay bây giờ.`);
+          }
+        } else {
+          responses.push(`[${useItem.name}] không phải là vật phẩm có thể sử dụng.`);
+        }
         break;
 
       case 'flee':
@@ -585,7 +653,8 @@ export async function handleCommandDb(command: Command, playerId: string): Promi
           break;
         }
         
-        responses.push(DEV_FEATURE_MESSAGE);
+        const fleeMessages = await fleeCombat(player._id.toString());
+        responses.push(...fleeMessages);
         break;
 
       case '':
