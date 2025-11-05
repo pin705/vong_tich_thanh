@@ -51,14 +51,15 @@
       />
     </Popover>
 
-    <Popover
+    <MapWorldOverlay
       :isOpen="mapPopupOpen"
-      title="Bản Đồ"
-      width="400px"
+      :exits="exits"
+      :currentRoomName="currentRoomName"
+      :rooms="worldRooms"
       @close="mapPopupOpen = false"
-    >
-      <MapPane :exits="exits" @navigate="handleMapNavigation" />
-    </Popover>
+      @navigate="handleMapNavigation"
+      @navigateTo="handleWorldMapNavigation"
+    />
 
     <OccupantsListPopup
       :isOpen="occupantsPopupOpen"
@@ -111,14 +112,7 @@
       @fontSizeChange="handleFontSizeChange"
     />
 
-    <!-- World Map Overlay -->
-    <WorldMapOverlay
-      :isOpen="worldMapOpen"
-      :currentRoomName="currentRoomName"
-      :rooms="worldRooms"
-      @close="worldMapOpen = false"
-      @navigateTo="handleWorldMapNavigation"
-    />
+
 
     <!-- Quest Tracker Overlay -->
     <QuestTrackerOverlay
@@ -137,13 +131,24 @@
       @close="professionChoiceOpen = false"
       @chooseProfession="handleChooseProfession"
     />
+
+    <!-- Trading Popup -->
+    <TradingPopup
+      :isOpen="tradingPopupOpen"
+      :merchantName="tradingData.merchantName"
+      :merchantItems="tradingData.merchantItems"
+      :playerItems="playerState.inventoryItems"
+      :playerGold="playerState.gold"
+      @close="tradingPopupOpen = false"
+      @buy="handleBuyItem"
+      @sell="handleSellItem"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, nextTick, watch, computed } from 'vue';
 import type { Message, ChatMessage, PlayerState, TargetState, ExitsState, RoomOccupantsState, SelectedTarget, Skill } from '~/types';
-import MapPane from '~/components/MapPane.vue';
 import InventoryPane from '~/components/InventoryPane.vue';
 import HelpOverlay from '~/components/HelpOverlay.vue';
 import SkillbookOverlay from '~/components/SkillbookOverlay.vue';
@@ -153,9 +158,10 @@ import FooterTabBar from '~/components/FooterTabBar.vue';
 import Popover from '~/components/Popover.vue';
 import OccupantsListPopup from '~/components/OccupantsListPopup.vue';
 import ContextualPopup from '~/components/ContextualPopup.vue';
-import WorldMapOverlay from '~/components/WorldMapOverlay.vue';
+import MapWorldOverlay from '~/components/MapWorldOverlay.vue';
 import QuestTrackerOverlay from '~/components/QuestTrackerOverlay.vue';
 import ProfessionChoiceOverlay from '~/components/ProfessionChoiceOverlay.vue';
+import TradingPopup from '~/components/TradingPopup.vue';
 
 definePageMeta({
   middleware: 'auth'
@@ -187,6 +193,7 @@ const inventoryPopupOpen = ref(false);
 const mapPopupOpen = ref(false);
 const occupantsPopupOpen = ref(false);
 const contextualPopupOpen = ref(false);
+const tradingPopupOpen = ref(false);
 const contextualPopupData = ref<{
   title: string;
   entityType: 'npc' | 'mob' | 'player' | null;
@@ -197,6 +204,17 @@ const contextualPopupData = ref<{
   entityType: null,
   entityData: {},
   actions: []
+});
+
+// Trading popup state
+const tradingData = ref<{
+  merchantName: string;
+  merchantId: string;
+  merchantItems: any[];
+}>({
+  merchantName: '',
+  merchantId: '',
+  merchantItems: []
 });
 
 // Skills and talents state
@@ -314,6 +332,9 @@ const focusInput = () => {
 const handleTabClick = async (tabId: string) => {
   switch (tabId) {
     case 'map':
+    case 'worldmap':
+      // Load world map data before opening
+      await loadWorldMap();
       mapPopupOpen.value = true;
       break;
     case 'occupants':
@@ -336,10 +357,6 @@ const handleTabClick = async (tabId: string) => {
     case 'settings':
       settingsOpen.value = true;
       break;
-    case 'worldmap':
-      await loadWorldMap();
-      worldMapOpen.value = true;
-      break;
     case 'quests':
       await loadQuests();
       questsOpen.value = true;
@@ -352,7 +369,7 @@ const handleEntitySelect = (type: 'player' | 'npc' | 'mob', entity: { id: string
   selectedTarget.value = { type, id: entity.id, name: entity.name };
   
   // Prepare contextual popup data
-  const actions = getActionsForEntity(type, entity.name);
+  const actions = getActionsForEntity(type, entity.name, entity.id);
   
   contextualPopupData.value = {
     title: `${entity.name} (${getEntityTypeLabel(type)})`,
@@ -368,19 +385,31 @@ const handleEntitySelect = (type: 'player' | 'npc' | 'mob', entity: { id: string
 };
 
 // Handle contextual action execution
-const handleContextualAction = (action: { command: string }) => {
-  currentInput.value = action.command;
-  sendCommand();
+const handleContextualAction = async (action: { command: string }) => {
+  // Check if this is a trade action
+  if (action.command.startsWith('__trade__:')) {
+    const parts = action.command.split(':');
+    const merchantId = parts[1];
+    const merchantName = parts[2];
+    
+    // Load merchant shop data
+    await loadMerchantShop(merchantId, merchantName);
+    tradingPopupOpen.value = true;
+  } else {
+    // Execute normal command
+    currentInput.value = action.command;
+    sendCommand();
+  }
 };
 
 // Get actions for entity type
-const getActionsForEntity = (type: 'player' | 'npc' | 'mob', name: string) => {
+const getActionsForEntity = (type: 'player' | 'npc' | 'mob', name: string, entityId: string) => {
   switch (type) {
     case 'npc':
       return [
         { label: 'Nói Chuyện (Talk)', command: `talk ${name}`, disabled: false },
         { label: 'Xem Xét (Look)', command: `look ${name}`, disabled: false },
-        { label: 'Giao Dịch (Trade)', command: `list`, disabled: false },
+        { label: 'Giao Dịch (Trade)', command: `__trade__:${entityId}:${name}`, disabled: false },
         { label: 'Tấn Công (Attack)', command: `attack ${name}`, disabled: false }
       ];
     case 'mob':
@@ -650,6 +679,46 @@ const handleChooseProfession = async (professionId: string) => {
     console.error('Error choosing profession:', error);
     const errorMsg = error.data?.message || 'Không thể chọn nghề nghiệp.';
     addMessage(errorMsg, 'error');
+  }
+};
+
+// Load merchant shop data
+const loadMerchantShop = async (merchantId: string, merchantName: string) => {
+  // For now, use the "list" command to get merchant items
+  // In the future, this could be a dedicated API endpoint
+  tradingData.value = {
+    merchantName,
+    merchantId,
+    merchantItems: [] // Will be populated via WebSocket response
+  };
+  
+  // Send list command to get merchant items via WebSocket
+  // The response will populate the trading data
+  currentInput.value = 'list';
+  
+  // Note: This is a workaround. Ideally, we'd have a dedicated API endpoint
+  // that returns merchant shop items directly without going through WebSocket
+};
+
+// Handle buy item
+const handleBuyItem = (itemId: string) => {
+  // Find the item name from merchant items
+  const item = tradingData.value.merchantItems.find(i => i.id === itemId);
+  if (item) {
+    currentInput.value = `buy ${item.name}`;
+    sendCommand();
+    tradingPopupOpen.value = false;
+  }
+};
+
+// Handle sell item
+const handleSellItem = (itemId: string) => {
+  // Find the item name from player inventory
+  const item = playerState.value.inventoryItems.find(i => i && i.id === itemId);
+  if (item) {
+    currentInput.value = `sell ${item.name}`;
+    sendCommand();
+    tradingPopupOpen.value = false;
   }
 };
 
