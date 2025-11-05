@@ -3,6 +3,7 @@ import { parseCommand } from '../utils/commandParser';
 import { handleCommand } from '../utils/commandHandler';
 import { handleCommandDb } from '../utils/commandHandlerDb';
 import { gameState } from '../utils/gameState';
+import { partyService } from '../utils/partyService';
 import { PlayerSchema } from '../../models/Player';
 import { RoomSchema } from '../../models/Room';
 import { AgentSchema } from '../../models/Agent';
@@ -114,6 +115,54 @@ async function broadcastRoomOccupants(roomId: string) {
   }
 }
 
+// Helper function to send party state
+async function sendPartyState(peer: Peer, playerId: string) {
+  const playerParty = partyService.getPlayerParty(playerId);
+  
+  if (!playerParty) {
+    // No party
+    peer.send(JSON.stringify({
+      type: 'party_state',
+      payload: {
+        hasParty: false,
+        members: [],
+        lootRule: 'round-robin',
+        isLeader: false
+      }
+    }));
+    return;
+  }
+  
+  const { party, partyId } = playerParty;
+  
+  // Get member details
+  const memberIds = Array.from(party.memberIds);
+  const members = await PlayerSchema.find({ _id: { $in: memberIds } });
+  
+  const memberData = members.map(member => ({
+    id: member._id.toString(),
+    name: member.username,
+    class: member.class || 'mutant_warrior',
+    level: member.level,
+    hp: member.hp,
+    maxHp: member.maxHp,
+    resource: member.resource || 0,
+    maxResource: member.maxResource || 100,
+    isLeader: member._id.toString() === party.leaderId,
+    statusEffects: [] // TODO: Add status effects when implemented
+  }));
+  
+  peer.send(JSON.stringify({
+    type: 'party_state',
+    payload: {
+      hasParty: true,
+      members: memberData,
+      lootRule: party.lootRule,
+      isLeader: playerId === party.leaderId
+    }
+  }));
+}
+
 export default defineWebSocketHandler({
   async open(peer: Peer) {
     console.log('[WS] Client connected:', peer.id);
@@ -195,10 +244,11 @@ export default defineWebSocketHandler({
             message: ''
           }));
           
-          // Send player state, exits, room occupants, and initial room info
+          // Send player state, exits, room occupants, party state, and initial room info
           await sendPlayerState(peer, playerId);
           await sendExits(peer, authRoom._id.toString());
           await sendRoomOccupants(peer, authRoom._id.toString(), playerId);
+          await sendPartyState(peer, playerId);
           
           // Send room description
           for (const response of initialResponses) {
@@ -277,12 +327,13 @@ export default defineWebSocketHandler({
             }
           }
           
-          // Send updated player state, exits, and room occupants after command
+          // Send updated player state, exits, room occupants, and party state after command
           const playerAfterCmd = await PlayerSchema.findById(playerIdForCmd);
           if (playerAfterCmd) {
             await sendPlayerState(peer, playerIdForCmd);
             await sendExits(peer, playerAfterCmd.currentRoomId.toString());
             await sendRoomOccupants(peer, playerAfterCmd.currentRoomId.toString(), playerIdForCmd);
+            await sendPartyState(peer, playerIdForCmd);
           }
           break;
 

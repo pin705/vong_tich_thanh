@@ -1004,6 +1004,17 @@ const connectWebSocket = () => {
             partyInvitationPopupOpen.value = true;
           }
           break;
+        case 'party_state':
+          // Update party state
+          if (payload) {
+            partyState.value = {
+              hasParty: payload.hasParty || false,
+              members: payload.members || [],
+              lootRule: payload.lootRule || 'round-robin',
+              isLeader: payload.isLeader || false
+            };
+          }
+          break;
         case 'chat':
           // Handle chat messages with categories
           if (data.category === 'party') {
