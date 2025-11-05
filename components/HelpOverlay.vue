@@ -13,7 +13,6 @@
           type="text"
           class="search-input"
           placeholder="Tìm kiếm lệnh..."
-          @input="filterCommands"
         />
       </div>
 
@@ -287,10 +286,6 @@ const filteredCommands = computed(() => {
   
   return commands;
 });
-
-const filterCommands = () => {
-  // Trigger computed property update
-};
 </script>
 
 <style scoped>

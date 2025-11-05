@@ -22,7 +22,7 @@
 interface StatusEffect {
   id: string;
   name: string;
-  type: 'buff' | 'debuff';
+  type: 'buff' | 'debuff' | 'poison' | 'regeneration' | 'shield' | 'speed' | 'strength';
   description: string;
   duration?: number; // in seconds
   icon?: string;

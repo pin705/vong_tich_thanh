@@ -220,8 +220,14 @@ const getItemIcon = (type: string): string => {
   return icons[type] || '?';
 };
 
+// Constants for item name truncation
+const MAX_ITEM_NAME_LENGTH = 10;
+const TRUNCATE_AT_LENGTH = 8;
+
 const truncateName = (name: string): string => {
-  return name.length > 10 ? name.substring(0, 8) + '...' : name;
+  return name.length > MAX_ITEM_NAME_LENGTH 
+    ? name.substring(0, TRUNCATE_AT_LENGTH) + '...' 
+    : name;
 };
 
 const getTypeName = (type: string): string => {

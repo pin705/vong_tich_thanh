@@ -28,7 +28,7 @@
         </div>
 
         <!-- Combat Target Info (shown when in combat) -->
-        <div v-if="playerState.inCombat && targetState.name" class="target-pane">
+        <div v-if="playerState.inCombat && (selectedTarget?.name || targetState.name)" class="target-pane">
           <StatusPane
             :playerName="playerState.name"
             :hp="playerState.hp"
@@ -38,7 +38,7 @@
             :level="playerState.level"
             :gold="playerState.gold"
             :inCombat="playerState.inCombat"
-            :targetName="targetState.name"
+            :targetName="selectedTarget?.name || targetState.name"
             :targetHp="targetState.hp"
             :targetMaxHp="targetState.maxHp"
           />
