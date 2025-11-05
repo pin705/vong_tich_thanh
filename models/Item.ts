@@ -20,10 +20,18 @@ export const ItemSchema = defineMongooseModel({
       type: Number,
       default: 0,
     },
+    premiumPrice: {
+      type: Number,
+      default: 0,
+    },
     stats: {
       damage: Number,
       defense: Number,
       healing: Number,
+    },
+    effects: {
+      type: Object,
+      default: null,
     },
     // Phase 20: Crafting System
     craftingRecipe: {
