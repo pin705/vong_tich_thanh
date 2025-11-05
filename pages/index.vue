@@ -13,8 +13,22 @@
 
       <!-- Right Panel: Info Panes -->
       <div class="side-panel">
-        <!-- Player/Target Info -->
+        <!-- Player/Target Info & Inventory -->
         <div class="info-pane">
+          <InventoryPane
+            :playerName="playerState.name"
+            :level="playerState.level"
+            :exp="playerState.exp"
+            :nextLevelExp="playerState.nextLevelExp"
+            :gold="playerState.gold"
+            :stats="playerState.stats"
+            :inventoryItems="playerState.inventoryItems"
+            @executeAction="handleInventoryAction"
+          />
+        </div>
+
+        <!-- Combat Target Info (shown when in combat) -->
+        <div v-if="playerState.inCombat && (selectedTarget?.name || targetState.name)" class="target-pane">
           <StatusPane
             :playerName="playerState.name"
             :hp="playerState.hp"
@@ -32,7 +46,7 @@
 
         <!-- Mini-Map -->
         <div class="map-pane-container">
-          <MapPane :exits="exits" />
+          <MapPane :exits="exits" @navigate="handleMapNavigation" />
         </div>
 
         <!-- Room Occupants -->
@@ -74,10 +88,16 @@
         @keydown.enter="sendCommand"
         @keydown.up="navigateHistory(-1)"
         @keydown.down="navigateHistory(1)"
+        @keydown.ctrl.h.prevent="toggleHelp"
+        @keydown.meta.h.prevent="toggleHelp"
+        @keydown.f1.prevent="toggleHelp"
         autocomplete="off"
         spellcheck="false"
       />
     </div>
+
+    <!-- Help Overlay -->
+    <HelpOverlay :isOpen="helpOpen" @close="helpOpen = false" />
   </div>
 </template>
 
@@ -89,6 +109,8 @@ import MapPane from '~/components/MapPane.vue';
 import ChatPane from '~/components/ChatPane.vue';
 import RoomOccupantsPane from '~/components/RoomOccupantsPane.vue';
 import ActionsPane from '~/components/ActionsPane.vue';
+import InventoryPane from '~/components/InventoryPane.vue';
+import HelpOverlay from '~/components/HelpOverlay.vue';
 
 definePageMeta({
   middleware: 'auth'
@@ -107,6 +129,7 @@ const outputArea = ref<HTMLElement | null>(null);
 const inputField = ref<HTMLInputElement | null>(null);
 const ws = ref<WebSocket | null>(null);
 const isConnected = ref(false);
+const helpOpen = ref(false);
 
 // Room occupants state
 const roomOccupants = ref<RoomOccupantsState>({
@@ -126,8 +149,19 @@ const playerState = ref<PlayerState>({
   mp: 50,
   maxMp: 50,
   level: 1,
+  exp: 0,
+  nextLevelExp: 100,
   gold: 0,
-  inCombat: false
+  inCombat: false,
+  stats: {
+    damage: 5,
+    defense: 0,
+    critChance: 5,
+    critDamage: 150,
+    lifesteal: 0,
+    dodge: 5
+  },
+  inventoryItems: Array(20).fill(null)
 });
 
 // Target state
@@ -208,6 +242,41 @@ const executeAction = (command: string) => {
   sendCommand();
 };
 
+// Handle inventory actions
+const handleInventoryAction = (action: string, itemId: string) => {
+  const commandMap: Record<string, string> = {
+    use: `use ${itemId}`,
+    equip: `equip ${itemId}`,
+    drop: `drop ${itemId}`
+  };
+  
+  const command = commandMap[action];
+  if (command) {
+    currentInput.value = command;
+    sendCommand();
+  }
+};
+
+// Handle map navigation
+const handleMapNavigation = (direction: string) => {
+  const directionMap: Record<string, string> = {
+    north: 'n',
+    south: 's',
+    east: 'e',
+    west: 'w',
+    up: 'u',
+    down: 'd'
+  };
+  
+  currentInput.value = directionMap[direction] || direction;
+  sendCommand();
+};
+
+// Toggle help overlay
+const toggleHelp = () => {
+  helpOpen.value = !helpOpen.value;
+};
+
 // Navigate command history
 const navigateHistory = (direction: number) => {
   if (commandHistory.value.length === 0) return;
@@ -243,6 +312,13 @@ const sendCommand = async () => {
     addMessage('Đang đăng xuất...', 'system');
     await clear();
     await router.push('/login');
+    return;
+  }
+
+  // Handle help command
+  if (input.toLowerCase() === 'help') {
+    helpOpen.value = true;
+    currentInput.value = '';
     return;
   }
 
@@ -342,8 +418,19 @@ const connectWebSocket = () => {
               mp: payload.mp ?? playerState.value.mp,
               maxMp: payload.maxMp ?? playerState.value.maxMp,
               level: payload.level ?? playerState.value.level,
+              exp: payload.exp ?? playerState.value.exp,
+              nextLevelExp: payload.nextLevelExp ?? playerState.value.nextLevelExp,
               gold: payload.gold ?? playerState.value.gold,
-              inCombat: payload.inCombat ?? playerState.value.inCombat
+              inCombat: payload.inCombat ?? playerState.value.inCombat,
+              stats: payload.stats ? {
+                damage: payload.stats.damage ?? playerState.value.stats.damage,
+                defense: payload.stats.defense ?? playerState.value.stats.defense,
+                critChance: payload.stats.critChance ?? playerState.value.stats.critChance,
+                critDamage: payload.stats.critDamage ?? playerState.value.stats.critDamage,
+                lifesteal: payload.stats.lifesteal ?? playerState.value.stats.lifesteal,
+                dodge: payload.stats.dodge ?? playerState.value.stats.dodge
+              } : playerState.value.stats,
+              inventoryItems: payload.inventoryItems || playerState.value.inventoryItems
             };
           }
           break;
@@ -453,9 +540,8 @@ watch(messages, () => {
 .main-output-pane {
   display: flex;
   flex-direction: column;
-  background-color: rgba(0, 136, 0, 0.05);
-  border: 1px solid var(--text-dim);
-  border-radius: 4px;
+  background-color: rgba(0, 136, 0, 0.03);
+  border: 1px solid rgba(0, 136, 0, 0.3);
   overflow: hidden;
 }
 
@@ -477,7 +563,15 @@ watch(messages, () => {
 
 .info-pane {
   flex: 0 0 auto;
-  min-height: 180px;
+  min-height: 200px;
+  max-height: 300px;
+  overflow: hidden;
+}
+
+.target-pane {
+  flex: 0 0 auto;
+  min-height: 120px;
+  max-height: 150px;
 }
 
 .map-pane-container {
@@ -540,7 +634,7 @@ watch(messages, () => {
   display: flex;
   align-items: center;
   padding: 0.75rem 1rem;
-  border-top: 2px solid var(--text-dim);
+  border-top: 1px solid rgba(0, 136, 0, 0.5);
   background-color: var(--bg-black);
 }
 

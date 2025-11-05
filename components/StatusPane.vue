@@ -1,5 +1,12 @@
 <template>
   <div class="status-pane">
+    <!-- Status Effects -->
+    <StatusEffects 
+      v-if="statusEffects && statusEffects.length > 0"
+      :effects="statusEffects"
+      @effectClick="handleEffectClick"
+    />
+
     <div class="status-section">
       <div class="status-title">[ Bạn: {{ playerName }} ]</div>
       <div class="stat-row">
@@ -29,12 +36,36 @@
         <span class="stat-bar">{{ renderBar(targetHp, targetMaxHp) }}</span>
         <span class="stat-value">{{ targetHp }}/{{ targetMaxHp }}</span>
       </div>
+      
+      <!-- Boss Cast Bar -->
+      <div v-if="targetCasting" class="cast-bar-container">
+        <div class="cast-label">{{ targetCasting.skillName }}</div>
+        <div class="cast-bar-wrapper">
+          <div class="cast-bar" :style="{ width: `${targetCasting.progress}%` }"></div>
+        </div>
+        <div class="cast-time">{{ (targetCasting.remaining / 1000).toFixed(1) }}s</div>
+      </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed } from 'vue';
+import StatusEffects from './StatusEffects.vue';
+
+interface StatusEffect {
+  id: string;
+  name: string;
+  type: 'buff' | 'debuff';
+  description: string;
+  duration?: number;
+}
+
+interface TargetCasting {
+  skillName: string;
+  progress: number; // 0-100
+  remaining: number; // milliseconds
+}
 
 const props = defineProps({
   playerName: {
@@ -80,8 +111,24 @@ const props = defineProps({
   targetMaxHp: {
     type: Number,
     default: 0
+  },
+  statusEffects: {
+    type: Array as () => StatusEffect[],
+    default: () => []
+  },
+  targetCasting: {
+    type: Object as () => TargetCasting | null,
+    default: null
   }
 });
+
+const emit = defineEmits<{
+  effectClick: [effect: StatusEffect];
+}>();
+
+const handleEffectClick = (effect: StatusEffect) => {
+  emit('effectClick', effect);
+};
 
 const renderBar = (current: number, max: number): string => {
   if (max === 0) return '[----------]';
@@ -95,9 +142,8 @@ const renderBar = (current: number, max: number): string => {
 <style scoped>
 .status-pane {
   padding: 0.75rem;
-  background-color: rgba(0, 136, 0, 0.05);
-  border: 1px solid var(--text-dim);
-  border-radius: 4px;
+  background-color: rgba(0, 136, 0, 0.03);
+  border: 1px solid rgba(0, 136, 0, 0.3);
   font-family: 'VT323', 'Source Code Pro', monospace;
   font-size: 16px;
   line-height: 1.6;
@@ -113,7 +159,7 @@ const renderBar = (current: number, max: number): string => {
 }
 
 .target-section {
-  border-top: 1px solid var(--text-dim);
+  border-top: 1px solid rgba(0, 136, 0, 0.3);
   padding-top: 0.75rem;
 }
 
@@ -145,5 +191,39 @@ const renderBar = (current: number, max: number): string => {
 
 .stat-value {
   color: var(--text-bright);
+}
+
+.cast-bar-container {
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid rgba(0, 136, 0, 0.3);
+}
+
+.cast-label {
+  color: var(--text-accent);
+  font-weight: bold;
+  margin-bottom: 0.25rem;
+  font-size: 15px;
+}
+
+.cast-bar-wrapper {
+  height: 16px;
+  background-color: rgba(0, 0, 0, 0.5);
+  border: 1px solid var(--text-dim);
+  position: relative;
+  overflow: hidden;
+  margin-bottom: 0.25rem;
+}
+
+.cast-bar {
+  height: 100%;
+  background: linear-gradient(90deg, var(--text-danger), var(--text-accent));
+  transition: width 0.1s linear;
+}
+
+.cast-time {
+  color: var(--text-bright);
+  font-size: 14px;
+  text-align: right;
 }
 </style>

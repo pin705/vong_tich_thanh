@@ -4,7 +4,11 @@
     <div class="map-container">
       <div class="map-row">
         <span class="map-cell"></span>
-        <span class="map-cell" :class="{ 'has-exit': exits.north }">
+        <span 
+          class="map-cell map-direction" 
+          :class="{ 'has-exit': exits.north, 'clickable': exits.north }"
+          @click="exits.north && goDirection('north')"
+        >
           {{ exits.north ? '[Bắc]' : '' }}
         </span>
         <span class="map-cell"></span>
@@ -17,7 +21,11 @@
         <span class="map-cell"></span>
       </div>
       <div class="map-row">
-        <span class="map-cell" :class="{ 'has-exit': exits.west }">
+        <span 
+          class="map-cell map-direction" 
+          :class="{ 'has-exit': exits.west, 'clickable': exits.west }"
+          @click="exits.west && goDirection('west')"
+        >
           {{ exits.west ? '[Tây]' : '' }}
         </span>
         <span class="map-cell map-connector" :class="{ 'has-west': exits.west, 'has-east': exits.east }">
@@ -27,7 +35,11 @@
         <span class="map-cell map-connector" :class="{ 'has-east': exits.east }">
           {{ exits.east ? '-' : '' }}
         </span>
-        <span class="map-cell" :class="{ 'has-exit': exits.east }">
+        <span 
+          class="map-cell map-direction" 
+          :class="{ 'has-exit': exits.east, 'clickable': exits.east }"
+          @click="exits.east && goDirection('east')"
+        >
           {{ exits.east ? '[Đông]' : '' }}
         </span>
       </div>
@@ -40,7 +52,11 @@
       </div>
       <div class="map-row">
         <span class="map-cell"></span>
-        <span class="map-cell" :class="{ 'has-exit': exits.south }">
+        <span 
+          class="map-cell map-direction" 
+          :class="{ 'has-exit': exits.south, 'clickable': exits.south }"
+          @click="exits.south && goDirection('south')"
+        >
           {{ exits.south ? '[Nam]' : '' }}
         </span>
         <span class="map-cell"></span>
@@ -62,14 +78,21 @@ interface Exits {
 const props = defineProps<{
   exits: Exits;
 }>();
+
+const emit = defineEmits<{
+  navigate: [direction: string];
+}>();
+
+const goDirection = (direction: string) => {
+  emit('navigate', direction);
+};
 </script>
 
 <style scoped>
 .map-pane {
   padding: 0.75rem;
-  background-color: rgba(0, 136, 0, 0.05);
-  border: 1px solid var(--text-dim);
-  border-radius: 4px;
+  background-color: rgba(0, 136, 0, 0.03);
+  border: 1px solid rgba(0, 136, 0, 0.3);
   font-family: 'VT323', 'Source Code Pro', monospace;
   font-size: 14px;
   line-height: 1.4;
@@ -123,5 +146,15 @@ const props = defineProps<{
 .map-connector.has-north,
 .map-connector.has-south {
   color: var(--text-bright);
+}
+
+.map-direction.clickable {
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.map-direction.clickable:hover {
+  color: var(--text-accent);
+  text-decoration: underline;
 }
 </style>
