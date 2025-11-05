@@ -135,7 +135,7 @@ async function distributeExperience(killer: any, totalExp: number, roomId: strin
     const { exp: modifiedExp, multiplier } = await applyExpBuff(killer._id.toString(), totalExp);
     
     if (multiplier > 1) {
-      messages.push(`⚡ Bạn nhận được ${modifiedExp} điểm kinh nghiệm (${multiplier}x boost!).`);
+      messages.push(`[+] Bạn nhận được ${modifiedExp} điểm kinh nghiệm (${multiplier}x boost!).`);
     } else {
       messages.push(`Bạn nhận được ${modifiedExp} điểm kinh nghiệm.`);
     }
@@ -158,7 +158,7 @@ async function distributeExperience(killer: any, totalExp: number, roomId: strin
     const { exp: modifiedExp, multiplier } = await applyExpBuff(killer._id.toString(), totalExp);
     
     if (multiplier > 1) {
-      messages.push(`⚡ Bạn nhận được ${modifiedExp} điểm kinh nghiệm (${multiplier}x boost!).`);
+      messages.push(`[+] Bạn nhận được ${modifiedExp} điểm kinh nghiệm (${multiplier}x boost!).`);
     } else {
       messages.push(`Bạn nhận được ${modifiedExp} điểm kinh nghiệm.`);
     }
@@ -185,7 +185,7 @@ async function distributeExperience(killer: any, totalExp: number, roomId: strin
     // Send notification to member
     if (member.ws) {
       const buffMessage = multiplier > 1 ? ` (${multiplier}x boost!)` : '';
-      const prefix = multiplier > 1 ? '⚡ ' : '';
+      const prefix = multiplier > 1 ? '[+] ' : '';
       member.ws.send(JSON.stringify({
         type: 'system',
         category: 'xp',
@@ -199,7 +199,7 @@ async function distributeExperience(killer: any, totalExp: number, roomId: strin
   if (killerMember) {
     const { exp: modifiedExp, multiplier } = await applyExpBuff(killer._id.toString(), expPerMember);
     const buffMessage = multiplier > 1 ? ` (${multiplier}x boost!)` : '';
-    messages.push(`⚡ Bạn nhận được ${modifiedExp} điểm kinh nghiệm (Nhóm - ${nearbyPartyMembers.length} thành viên)${buffMessage}`);
+    messages.push(`[+] Bạn nhận được ${modifiedExp} điểm kinh nghiệm (Nhóm - ${nearbyPartyMembers.length} thành viên)${buffMessage}`);
   } else {
     messages.push(`Bạn nhận được ${expPerMember} điểm kinh nghiệm (Nhóm - ${nearbyPartyMembers.length} thành viên).`);
   }
@@ -227,7 +227,7 @@ async function checkLevelUp(player: any): Promise<string[]> {
     messages.push(`    HP tối đa tăng thêm ${HP_GAIN_PER_LEVEL}!`);
     messages.push(`    HP đã được hồi phục đầy!`);
     if (player.level >= 10) {
-      messages.push(`    🌟 Bạn nhận được 1 điểm thiên phú!`);
+      messages.push(`    [*] Bạn nhận được 1 điểm thiên phú!`);
     }
     messages.push('═══════════════════════════════════');
   }
@@ -259,7 +259,7 @@ async function dropLoot(agent: any, roomId: string): Promise<string[]> {
           
           // Highlight rare items with color
           if (originalItem.rarity === 'epic' || originalItem.rarity === 'legendary') {
-            messages.push(`✨ [${agent.name}] làm rơi ra [${originalItem.name}] (${originalItem.rarity})!`);
+            messages.push(`[!] [${agent.name}] làm rơi ra [${originalItem.name}] (${originalItem.rarity})!`);
           } else {
             messages.push(`[${agent.name}] làm rơi ra một [${originalItem.name}].`);
           }
@@ -322,25 +322,25 @@ export async function executeCombatTick(playerId: string, agentId: string): Prom
         totalExp = agent.experience * 50;
         messages.push('');
         messages.push('═══════════════════════════════════');
-        messages.push(`    🏆 BOSS DEFEATED! 🏆`);
+        messages.push(`    [!] BOSS DEFEATED! [!]`);
         messages.push('═══════════════════════════════════');
         
         // Award premium currency (Cổ Thạch)
         const premiumReward = Math.floor(agent.level * BOSS_PREMIUM_CURRENCY_MULTIPLIER);
         player.premiumCurrency = (player.premiumCurrency || 0) + premiumReward;
-        messages.push(`💎 Bạn nhận được ${premiumReward} Cổ Thạch!`);
+        messages.push(`[+] Bạn nhận được ${premiumReward} Cổ Thạch!`);
         
         // Award gold
         const goldReward = agent.level * BOSS_GOLD_MULTIPLIER;
         player.gold = (player.gold || 0) + goldReward;
-        messages.push(`💰 Bạn nhận được ${goldReward} Vàng!`);
+        messages.push(`[+] Bạn nhận được ${goldReward} Vàng!`);
         
         // Clear boss state
         clearBossState(agent._id.toString());
       } else if (agent.agentType === 'elite') {
         // Elite kills give 3x EXP
         totalExp = agent.experience * 3;
-        messages.push('⚔️ Elite defeated! Bonus rewards!');
+        messages.push('[!] Elite defeated! Bonus rewards!');
       }
       
       // Handle EXP distribution (with party support)

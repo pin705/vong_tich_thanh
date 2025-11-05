@@ -40,11 +40,11 @@ const getEffectIcon = (type: string): string => {
   const icons: Record<string, string> = {
     buff: '▲',
     debuff: '▼',
-    poison: '☠',
-    regeneration: '♥',
-    shield: '🛡',
-    speed: '⚡',
-    strength: '💪'
+    poison: 'X',
+    regeneration: '+',
+    shield: '[',
+    speed: '>',
+    strength: '*'
   };
   return icons[type] || '●';
 };

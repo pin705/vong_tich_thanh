@@ -38,7 +38,7 @@ export default defineEventHandler(async (event) => {
     if (player.premiumCurrency < item.premiumPrice) {
       return { 
         success: false, 
-        message: `Không đủ Cổ Thạch! Cần ${item.premiumPrice} 💎, bạn có ${player.premiumCurrency} 💎`
+        message: `Không đủ Cổ Thạch! Cần ${item.premiumPrice} Cổ Thạch, bạn có ${player.premiumCurrency} Cổ Thạch`
       };
     }
 
@@ -63,7 +63,7 @@ export default defineEventHandler(async (event) => {
 
     return {
       success: true,
-      message: `Đã mua [${item.name}] với ${item.premiumPrice} 💎 Cổ Thạch!`,
+      message: `Đã mua [${item.name}] với ${item.premiumPrice} Cổ Thạch!`,
       item: {
         _id: newItem._id,
         name: newItem.name,

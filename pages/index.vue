@@ -613,7 +613,7 @@ const getActionsForEntity = (type: 'player' | 'npc' | 'mob', name: string, entit
       // Add premium shop action for "Thương Gia Bí Ẩn"
       if (name === 'Thương Gia Bí Ẩn') {
         actions.splice(2, 0, { 
-          label: '💎 Cửa Hàng Cao Cấp', 
+          label: 'Cửa Hàng Cao Cấp', 
           command: `__premium_shop__:${entityId}:${name}`, 
           disabled: false 
         });

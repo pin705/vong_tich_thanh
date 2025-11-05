@@ -3,14 +3,14 @@
     <div v-if="isOpen" class="premium-shop-overlay" @click.self="close">
       <div class="premium-shop-popup">
         <div class="popup-header">
-          <span class="popup-title">💎 Cửa Hàng Cao Cấp 💎</span>
+          <span class="popup-title">Cửa Hàng Cao Cấp</span>
           <button class="popup-close" @click="close">[X]</button>
         </div>
         
         <div class="popup-body">
           <div class="currency-display">
             <span class="currency-label">Cổ Thạch của bạn:</span>
-            <span class="currency-value">{{ playerPremiumCurrency }} 💎</span>
+            <span class="currency-value">{{ playerPremiumCurrency }}</span>
           </div>
 
           <div v-if="loading" class="loading-message">
@@ -38,11 +38,11 @@
               <div class="item-description">{{ item.description }}</div>
               <div v-if="item.effects" class="item-effects">
                 <div v-if="item.effects.buff === 'EXP_BOOST'">
-                  ⚡ {{ item.effects.multiplier }}x EXP trong {{ item.effects.duration_minutes }} phút
+                  {{ item.effects.multiplier }}x EXP trong {{ item.effects.duration_minutes }} phút
                 </div>
               </div>
               <div class="item-footer">
-                <span class="item-price">💎 {{ item.premiumPrice }}</span>
+                <span class="item-price">{{ item.premiumPrice }} Cổ Thạch</span>
                 <button
                   class="buy-button"
                   :disabled="!canAfford(item) || purchasing"
