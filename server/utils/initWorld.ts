@@ -3,6 +3,7 @@ import { PlayerSchema } from '../../models/Player';
 import { RoomSchema } from '../../models/Room';
 import { ItemSchema } from '../../models/Item';
 import { AgentSchema } from '../../models/Agent';
+import { QuestSchema } from '../../models/Quest';
 
 export async function initializeWorld() {
   try {
@@ -105,7 +106,8 @@ export async function initializeWorld() {
       }
     });
 
-    // Phase 21: Crafting Materials
+    // Phase 21 & 22: Crafting Materials
+    // Zone 1 Materials (Level 1-10)
     const daChuot = await ItemSchema.create({
       name: 'Da Chuột',
       description: 'Da của chuột biến dị, có thể dùng để chế tạo trang bị nhẹ.',
@@ -122,6 +124,23 @@ export async function initializeWorld() {
       quality: 'Thường'
     });
 
+    // Zone 2 Materials (Level 10-20)
+    const voNhenCung = await ItemSchema.create({
+      name: 'Vỏ Nhện Cứng',
+      description: 'Vỏ cứng của nhện đột biến, có thể dùng làm giáp nhẹ.',
+      type: 'Material',
+      value: 5,
+      quality: 'Thường'
+    });
+
+    const loiNangLuongYeu = await ItemSchema.create({
+      name: 'Lõi Năng Lượng Yếu',
+      description: 'Lõi năng lượng nhỏ từ các thiết bị cổ, còn một chút năng lượng.',
+      type: 'Material',
+      value: 8,
+      quality: 'Tốt'
+    });
+
     const loiCoNguHong = await ItemSchema.create({
       name: 'Lõi Cổ Ngữ Hỏng',
       description: 'Lõi năng lượng cổ đại đã hư hỏng, vẫn phát ra ánh sáng yếu ớt.',
@@ -129,6 +148,79 @@ export async function initializeWorld() {
       value: 50,
       quality: 'Hiếm',
       rarity: 'rare'
+    });
+
+    // Zone 3 Materials (Level 20-30)
+    const banhRangRiSet = await ItemSchema.create({
+      name: 'Bánh Răng Rỉ Sét',
+      description: 'Bánh răng kim loại bị rỉ sét, vẫn có thể tái sử dụng.',
+      type: 'Material',
+      value: 12,
+      quality: 'Tốt'
+    });
+
+    const moDotBienNho = await ItemSchema.create({
+      name: 'Mô Đột Biến Nhỏ',
+      description: 'Mô sinh học bị đột biến, có thể dùng cho nghiên cứu hoặc chế tạo.',
+      type: 'Material',
+      value: 15,
+      quality: 'Tốt'
+    });
+
+    const chipViMachCo = await ItemSchema.create({
+      name: 'Chip Vi Mạch Cổ',
+      description: 'Vi mạch điện tử cổ đại, còn hoạt động được.',
+      type: 'Material',
+      value: 80,
+      quality: 'Hiếm',
+      rarity: 'rare'
+    });
+
+    // Zone 4 Materials (Level 30-40)
+    const moDotBienLon = await ItemSchema.create({
+      name: 'Mô Đột Biến Lớn',
+      description: 'Mô sinh học đột biến cỡ lớn, phát ra năng lượng kỳ lạ.',
+      type: 'Material',
+      value: 25,
+      quality: 'Hiếm',
+      rarity: 'uncommon'
+    });
+
+    const tinhTheNangLuong = await ItemSchema.create({
+      name: 'Tinh Thể Năng Lượng',
+      description: 'Tinh thể trong suốt chứa năng lượng tinh khiết.',
+      type: 'Material',
+      value: 35,
+      quality: 'Hiếm',
+      rarity: 'rare'
+    });
+
+    const traiTimDotBienOnDinh = await ItemSchema.create({
+      name: 'Trái Tim Đột Biến Ổn Định',
+      description: 'Trái tim của sinh vật đột biến mạnh mẽ, vẫn đập đều.',
+      type: 'Material',
+      value: 150,
+      quality: 'Hiếm',
+      rarity: 'rare'
+    });
+
+    // Zone 5 Materials (Level 40-50)
+    const nangLuongTinhKhiet = await ItemSchema.create({
+      name: 'Năng Lượng Tinh Khiết',
+      description: 'Năng lượng nguyên chất từ vệ binh cổ ngữ.',
+      type: 'Material',
+      value: 50,
+      quality: 'Sử Thi',
+      rarity: 'epic'
+    });
+
+    const nuocMatCuaThanhCu = await ItemSchema.create({
+      name: 'Nước Mắt Của Thành Cũ',
+      description: 'Tinh thể lỏng huyền bí, chỉ rơi từ kẻ cai quản mạnh nhất.',
+      type: 'Material',
+      value: 500,
+      quality: 'Sử Thi',
+      rarity: 'legendary'
     });
 
     const loiHoVeCoDai = await ItemSchema.create({
@@ -235,6 +327,438 @@ export async function initializeWorld() {
       ]
     });
 
+    // Phase 22: Zone 2 Equipment Set - "Set Phế Liệu" (Level 20)
+    const muPheLieu = await ItemSchema.create({
+      name: 'Mũ Phế Liệu',
+      description: 'Mũ giáp được hàn từ các mảnh kim loại phế thải.',
+      type: 'Equipment',
+      slot: 'helmet',
+      value: 80,
+      quality: 'Tốt',
+      requiredLevel: 18,
+      setKey: 'set_phe_lieu_cap_20',
+      stats: { defense: 8, hp: 40 }
+    });
+
+    const aoPheLieu = await ItemSchema.create({
+      name: 'Áo Giáp Phế Liệu',
+      description: 'Giáp ngực được lắp ráp từ vỏ nhện và kim loại cũ.',
+      type: 'Equipment',
+      slot: 'chest',
+      value: 120,
+      quality: 'Tốt',
+      requiredLevel: 20,
+      setKey: 'set_phe_lieu_cap_20',
+      stats: { defense: 12, hp: 60 },
+      setBonus: [
+        { requiredPieces: 2, stats: new Map([['defense', 15], ['hp', 100]]) },
+        { requiredPieces: 4, stats: new Map([['defense', 30], ['hp', 200], ['strength', 5]]) }
+      ]
+    });
+
+    const quanPheLieu = await ItemSchema.create({
+      name: 'Quần Giáp Phế Liệu',
+      description: 'Quần giáp chắc chắn từ kim loại tái chế.',
+      type: 'Equipment',
+      slot: 'legs',
+      value: 100,
+      quality: 'Tốt',
+      requiredLevel: 19,
+      setKey: 'set_phe_lieu_cap_20',
+      stats: { defense: 10, hp: 50 }
+    });
+
+    const giayPheLieu = await ItemSchema.create({
+      name: 'Ủng Phế Liệu',
+      description: 'Ủng kim loại nặng nề nhưng bền chắc.',
+      type: 'Equipment',
+      slot: 'boots',
+      value: 90,
+      quality: 'Tốt',
+      requiredLevel: 18,
+      setKey: 'set_phe_lieu_cap_20',
+      stats: { defense: 8, hp: 40 }
+    });
+
+    const vukhi20Hiem = await ItemSchema.create({
+      name: 'Kiếm Năng Lượng Cổ',
+      description: 'Vũ khí hiếm được tạo từ Lõi Cổ Ngữ Hỏng, phát sáng yếu ớt.',
+      type: 'Equipment',
+      slot: 'weapon',
+      value: 200,
+      quality: 'Hiếm',
+      rarity: 'rare',
+      requiredLevel: 20,
+      stats: { damage: 25, strength: 8 }
+    });
+
+    // Phase 22: Zone 3 Equipment Sets - Class-specific (Level 30)
+    // Scrap Engineer Set
+    const muKySu30 = await ItemSchema.create({
+      name: 'Mũ Kỹ Sư Cao Cấp',
+      description: 'Mũ kỹ thuật với màn hình HUD tích hợp.',
+      type: 'Equipment',
+      slot: 'helmet',
+      value: 150,
+      quality: 'Hiếm',
+      rarity: 'uncommon',
+      requiredLevel: 28,
+      setKey: 'set_ky_su_cap_30',
+      stats: { defense: 12, hp: 60, agility: 5 }
+    });
+
+    const aoKySu30 = await ItemSchema.create({
+      name: 'Áo Giáp Kỹ Sư Cao Cấp',
+      description: 'Giáp nhẹ với nhiều túi đựng linh kiện và công cụ.',
+      type: 'Equipment',
+      slot: 'chest',
+      value: 200,
+      quality: 'Hiếm',
+      rarity: 'uncommon',
+      requiredLevel: 30,
+      setKey: 'set_ky_su_cap_30',
+      stats: { defense: 18, hp: 90, agility: 8 },
+      setBonus: [
+        { requiredPieces: 2, stats: new Map([['agility', 15], ['hp', 150]]) },
+        { requiredPieces: 4, stats: new Map([['agility', 30], ['damage', 20], ['hp', 300]]) }
+      ]
+    });
+
+    // Mutant Warrior Set
+    const muChienBinh30 = await ItemSchema.create({
+      name: 'Mũ Chiến Binh Đột Biến',
+      description: 'Mũ giáp nặng từ mô đột biến, tăng sức mạnh.',
+      type: 'Equipment',
+      slot: 'helmet',
+      value: 150,
+      quality: 'Hiếm',
+      rarity: 'uncommon',
+      requiredLevel: 28,
+      setKey: 'set_chien_binh_cap_30',
+      stats: { defense: 15, hp: 80, strength: 5 }
+    });
+
+    const aoChienBinh30 = await ItemSchema.create({
+      name: 'Giáp Chiến Binh Đột Biến',
+      description: 'Giáp dày từ mô sinh học, cung cấp phòng thủ vượt trội.',
+      type: 'Equipment',
+      slot: 'chest',
+      value: 200,
+      quality: 'Hiếm',
+      rarity: 'uncommon',
+      requiredLevel: 30,
+      setKey: 'set_chien_binh_cap_30',
+      stats: { defense: 22, hp: 120, strength: 8 },
+      setBonus: [
+        { requiredPieces: 2, stats: new Map([['strength', 15], ['hp', 200]]) },
+        { requiredPieces: 4, stats: new Map([['strength', 30], ['defense', 25], ['hp', 400]]) }
+      ]
+    });
+
+    // Rune Historian Set
+    const muSuGia30 = await ItemSchema.create({
+      name: 'Mũ Sử Gia Cổ Ngữ',
+      description: 'Mũ uyên bác khắc các ký tự cổ đại.',
+      type: 'Equipment',
+      slot: 'helmet',
+      value: 150,
+      quality: 'Hiếm',
+      rarity: 'uncommon',
+      requiredLevel: 28,
+      setKey: 'set_su_gia_cap_30',
+      stats: { defense: 10, hp: 70 }
+    });
+
+    const aoSuGia30 = await ItemSchema.create({
+      name: 'Áo Choàng Sử Gia',
+      description: 'Áo choàng phép thuật tăng cường khả năng hỗ trợ.',
+      type: 'Equipment',
+      slot: 'chest',
+      value: 200,
+      quality: 'Hiếm',
+      rarity: 'uncommon',
+      requiredLevel: 30,
+      setKey: 'set_su_gia_cap_30',
+      stats: { defense: 15, hp: 100 },
+      setBonus: [
+        { requiredPieces: 2, stats: new Map([['hp', 150]]) },
+        { requiredPieces: 4, stats: new Map([['hp', 300], ['defense', 20]]) }
+      ]
+    });
+
+    // Stalker Set
+    const muLungSuc30 = await ItemSchema.create({
+      name: 'Mũ Kẻ Lùng Sục',
+      description: 'Mũ da mềm giúp di chuyển êm ái.',
+      type: 'Equipment',
+      slot: 'helmet',
+      value: 150,
+      quality: 'Hiếm',
+      rarity: 'uncommon',
+      requiredLevel: 28,
+      setKey: 'set_lung_suc_cap_30',
+      stats: { defense: 10, hp: 60, agility: 8 }
+    });
+
+    const aoLungSuc30 = await ItemSchema.create({
+      name: 'Áo Giáp Lùng Sục',
+      description: 'Giáp da nhẹ tối ưu cho tấn công nhanh.',
+      type: 'Equipment',
+      slot: 'chest',
+      value: 200,
+      quality: 'Hiếm',
+      rarity: 'uncommon',
+      requiredLevel: 30,
+      setKey: 'set_lung_suc_cap_30',
+      stats: { defense: 16, hp: 90, agility: 12 },
+      setBonus: [
+        { requiredPieces: 2, stats: new Map([['agility', 20], ['hp', 150]]) },
+        { requiredPieces: 4, stats: new Map([['agility', 40], ['damage', 25], ['hp', 300]]) }
+      ]
+    });
+
+    // Phase 22: Zone 4 Equipment Sets - Upgraded Class-specific (Level 40)
+    const muKySu40 = await ItemSchema.create({
+      name: 'Mũ Kỹ Sư Tinh Anh',
+      description: 'Mũ kỹ thuật tiên tiến với AI hỗ trợ.',
+      type: 'Equipment',
+      slot: 'helmet',
+      value: 300,
+      quality: 'Hiếm',
+      rarity: 'rare',
+      requiredLevel: 38,
+      setKey: 'set_ky_su_cap_40',
+      stats: { defense: 18, hp: 100, agility: 10 }
+    });
+
+    const aoKySu40 = await ItemSchema.create({
+      name: 'Áo Giáp Kỹ Sư Tinh Anh',
+      description: 'Giáp công nghệ cao với lớp năng lượng bảo vệ.',
+      type: 'Equipment',
+      slot: 'chest',
+      value: 400,
+      quality: 'Hiếm',
+      rarity: 'rare',
+      requiredLevel: 40,
+      setKey: 'set_ky_su_cap_40',
+      stats: { defense: 28, hp: 150, agility: 15 },
+      setBonus: [
+        { requiredPieces: 2, stats: new Map([['agility', 25], ['hp', 250]]) },
+        { requiredPieces: 4, stats: new Map([['agility', 50], ['damage', 35], ['hp', 500]]) }
+      ]
+    });
+
+    const muChienBinh40 = await ItemSchema.create({
+      name: 'Mũ Chiến Binh Tinh Anh',
+      description: 'Mũ giáp sinh học tinh chỉnh, tăng sức mạnh vượt bậc.',
+      type: 'Equipment',
+      slot: 'helmet',
+      value: 300,
+      quality: 'Hiếm',
+      rarity: 'rare',
+      requiredLevel: 38,
+      setKey: 'set_chien_binh_cap_40',
+      stats: { defense: 22, hp: 130, strength: 10 }
+    });
+
+    const aoChienBinh40 = await ItemSchema.create({
+      name: 'Giáp Chiến Binh Tinh Anh',
+      description: 'Giáp sinh học hoàn thiện, phòng thủ tuyệt đối.',
+      type: 'Equipment',
+      slot: 'chest',
+      value: 400,
+      quality: 'Hiếm',
+      rarity: 'rare',
+      requiredLevel: 40,
+      setKey: 'set_chien_binh_cap_40',
+      stats: { defense: 35, hp: 200, strength: 15 },
+      setBonus: [
+        { requiredPieces: 2, stats: new Map([['strength', 25], ['hp', 350]]) },
+        { requiredPieces: 4, stats: new Map([['strength', 50], ['defense', 40], ['hp', 700]]) }
+      ]
+    });
+
+    const muSuGia40 = await ItemSchema.create({
+      name: 'Mũ Sử Gia Tinh Anh',
+      description: 'Mũ cổ ngữ tỏa ra hào quang huyền bí.',
+      type: 'Equipment',
+      slot: 'helmet',
+      value: 300,
+      quality: 'Hiếm',
+      rarity: 'rare',
+      requiredLevel: 38,
+      setKey: 'set_su_gia_cap_40',
+      stats: { defense: 16, hp: 120 }
+    });
+
+    const aoSuGia40 = await ItemSchema.create({
+      name: 'Áo Choàng Sử Gia Tinh Anh',
+      description: 'Áo choàng phép thuật tinh khiết, tăng cường hỗ trợ mạnh mẽ.',
+      type: 'Equipment',
+      slot: 'chest',
+      value: 400,
+      quality: 'Hiếm',
+      rarity: 'rare',
+      requiredLevel: 40,
+      setKey: 'set_su_gia_cap_40',
+      stats: { defense: 24, hp: 170 },
+      setBonus: [
+        { requiredPieces: 2, stats: new Map([['hp', 250]]) },
+        { requiredPieces: 4, stats: new Map([['hp', 500], ['defense', 35]]) }
+      ]
+    });
+
+    const muLungSuc40 = await ItemSchema.create({
+      name: 'Mũ Lùng Sục Tinh Anh',
+      description: 'Mũ ám sát tinh vi, gần như vô hình.',
+      type: 'Equipment',
+      slot: 'helmet',
+      value: 300,
+      quality: 'Hiếm',
+      rarity: 'rare',
+      requiredLevel: 38,
+      setKey: 'set_lung_suc_cap_40',
+      stats: { defense: 16, hp: 100, agility: 15 }
+    });
+
+    const aoLungSuc40 = await ItemSchema.create({
+      name: 'Áo Giáp Lùng Sục Tinh Anh',
+      description: 'Giáp da cao cấp, tối ưu cho ám sát.',
+      type: 'Equipment',
+      slot: 'chest',
+      value: 400,
+      quality: 'Hiếm',
+      rarity: 'rare',
+      requiredLevel: 40,
+      setKey: 'set_lung_suc_cap_40',
+      stats: { defense: 25, hp: 150, agility: 22 },
+      setBonus: [
+        { requiredPieces: 2, stats: new Map([['agility', 35], ['hp', 250]]) },
+        { requiredPieces: 4, stats: new Map([['agility', 70], ['damage', 45], ['hp', 500]]) }
+      ]
+    });
+
+    // Phase 22: Zone 5 Epic Equipment Sets (Level 50)
+    const muKySu50 = await ItemSchema.create({
+      name: 'Mũ Kỹ Sư Sử Thi',
+      description: 'Mũ công nghệ cổ ngữ tuyệt đỉnh.',
+      type: 'Equipment',
+      slot: 'helmet',
+      value: 600,
+      quality: 'Sử Thi',
+      rarity: 'epic',
+      requiredLevel: 48,
+      setKey: 'set_ky_su_cap_50',
+      stats: { defense: 28, hp: 180, agility: 20 }
+    });
+
+    const aoKySu50 = await ItemSchema.create({
+      name: 'Áo Giáp Kỹ Sư Sử Thi',
+      description: 'Giáp năng lượng tuyệt đỉnh với lá chắn tự động.',
+      type: 'Equipment',
+      slot: 'chest',
+      value: 800,
+      quality: 'Sử Thi',
+      rarity: 'epic',
+      requiredLevel: 50,
+      setKey: 'set_ky_su_cap_50',
+      stats: { defense: 42, hp: 280, agility: 30 },
+      setBonus: [
+        { requiredPieces: 2, stats: new Map([['agility', 50], ['hp', 500]]) },
+        { requiredPieces: 4, stats: new Map([['agility', 100], ['damage', 70], ['hp', 1000]]) }
+      ]
+    });
+
+    const muChienBinh50 = await ItemSchema.create({
+      name: 'Mũ Chiến Binh Sử Thi',
+      description: 'Mũ sinh học cổ ngữ, phát ra hào quang đỏ rực.',
+      type: 'Equipment',
+      slot: 'helmet',
+      value: 600,
+      quality: 'Sử Thi',
+      rarity: 'epic',
+      requiredLevel: 48,
+      setKey: 'set_chien_binh_cap_50',
+      stats: { defense: 35, hp: 250, strength: 20 }
+    });
+
+    const aoChienBinh50 = await ItemSchema.create({
+      name: 'Giáp Chiến Binh Sử Thi',
+      description: 'Giáp hữu cơ tối thượng, gần như bất khả xâm phạm.',
+      type: 'Equipment',
+      slot: 'chest',
+      value: 800,
+      quality: 'Sử Thi',
+      rarity: 'epic',
+      requiredLevel: 50,
+      setKey: 'set_chien_binh_cap_50',
+      stats: { defense: 55, hp: 400, strength: 30 },
+      setBonus: [
+        { requiredPieces: 2, stats: new Map([['strength', 50], ['hp', 700]]) },
+        { requiredPieces: 4, stats: new Map([['strength', 100], ['defense', 70], ['hp', 1400]]) }
+      ]
+    });
+
+    const muSuGia50 = await ItemSchema.create({
+      name: 'Mũ Sử Gia Sử Thi',
+      description: 'Vương miện cổ ngữ của bậc thầy phép thuật.',
+      type: 'Equipment',
+      slot: 'helmet',
+      value: 600,
+      quality: 'Sử Thi',
+      rarity: 'epic',
+      requiredLevel: 48,
+      setKey: 'set_su_gia_cap_50',
+      stats: { defense: 25, hp: 220 }
+    });
+
+    const aoSuGia50 = await ItemSchema.create({
+      name: 'Áo Choàng Sử Gia Sử Thi',
+      description: 'Áo choàng huyền thoại dệt từ năng lượng tinh khiết.',
+      type: 'Equipment',
+      slot: 'chest',
+      value: 800,
+      quality: 'Sử Thi',
+      rarity: 'epic',
+      requiredLevel: 50,
+      setKey: 'set_su_gia_cap_50',
+      stats: { defense: 38, hp: 350 },
+      setBonus: [
+        { requiredPieces: 2, stats: new Map([['hp', 500]]) },
+        { requiredPieces: 4, stats: new Map([['hp', 1000], ['defense', 60]]) }
+      ]
+    });
+
+    const muLungSuc50 = await ItemSchema.create({
+      name: 'Mũ Lùng Sục Sử Thi',
+      description: 'Mũ bóng tối tối thượng, người đeo gần như vô hình.',
+      type: 'Equipment',
+      slot: 'helmet',
+      value: 600,
+      quality: 'Sử Thi',
+      rarity: 'epic',
+      requiredLevel: 48,
+      setKey: 'set_lung_suc_cap_50',
+      stats: { defense: 25, hp: 180, agility: 30 }
+    });
+
+    const aoLungSuc50 = await ItemSchema.create({
+      name: 'Áo Giáp Lùng Sục Sử Thi',
+      description: 'Giáp ám sát huyền thoại, bất khả xâm phạm bởi ánh sáng.',
+      type: 'Equipment',
+      slot: 'chest',
+      value: 800,
+      quality: 'Sử Thi',
+      rarity: 'epic',
+      requiredLevel: 50,
+      setKey: 'set_lung_suc_cap_50',
+      stats: { defense: 40, hp: 280, agility: 45 },
+      setBonus: [
+        { requiredPieces: 2, stats: new Map([['agility', 70], ['hp', 500]]) },
+        { requiredPieces: 4, stats: new Map([['agility', 140], ['damage', 90], ['hp', 1000]]) }
+      ]
+    });
+
     // Create rooms
     const cổngThành = await RoomSchema.create({
       name: 'Cổng Thành Cũ',
@@ -316,7 +840,216 @@ export async function initializeWorld() {
       agents: []
     });
 
+    // Phase 22: Zone 2 - Hầm Ngầm Bỏ Hoang (Abandoned Sewers) - 25 rooms
+    const loiVaoHamNgam = await RoomSchema.create({
+      name: 'Lối Vào Hầm Ngầm',
+      description: 'Lối xuống tối tăm với các bậc đá ẩm ướt. Mùi hôi thối nồng nặc thoát lên từ bên dưới.',
+      exits: {},
+      items: [],
+      agents: []
+    });
+
+    const hamNgam1 = await RoomSchema.create({
+      name: 'Hầm Ngầm Ẩm Ướt',
+      description: 'Hầm ngầm tối tăm với nước bẩn chảy dọc hai bên. Tường phủ đầy rêu xanh độc.',
+      exits: {},
+      items: [],
+      agents: []
+    });
+
+    const hamNgam2 = await RoomSchema.create({
+      name: 'Đường Hầm Cong',
+      description: 'Đường hầm uốn cong với ánh sáng yếu ớt từ rêu phát quang. Tiếng nước nhỏ giọt vang vọng.',
+      exits: {},
+      items: [],
+      agents: []
+    });
+
+    const hamNgam3 = await RoomSchema.create({
+      name: 'Phòng Lọc Cũ',
+      description: 'Phòng lọc nước đã bị bỏ hoang. Các máy móc rỉ sét nằm la liệt.',
+      exits: {},
+      items: [],
+      agents: []
+    });
+
+    const hamNgam4 = await RoomSchema.create({
+      name: 'Ổ Nhện Khổng Lồ',
+      description: 'Căn phòng phủ đầy mạng nhện dày đặc. Xương cốt nạn nhân nằm rải rác.',
+      exits: {},
+      items: [],
+      agents: []
+    });
+
+    const hamNgamBoss = await RoomSchema.create({
+      name: 'Phòng Điều Khiển Cống',
+      description: 'Phòng điều khiển trung tâm với màn hình và bảng điều khiển hỏng hóc. Một robot khổng lồ đứng ở giữa.',
+      exits: {},
+      items: [],
+      agents: []
+    });
+
+    // Simplified: Create 19 more sewer rooms with variation (bulk insert)
+    const sewerRoomDocs = [];
+    for (let i = 5; i <= 23; i++) {
+      sewerRoomDocs.push({
+        name: `Hầm Ngầm Khu ${i}`,
+        description: `Khu vực hầm ngầm tối tăm, nước bẩn chảy ào ạt. ${i % 3 === 0 ? 'Có tiếng động lạ phía trước.' : i % 3 === 1 ? 'Mùi hôi thối nồng nặc.' : 'Tường phủ đầy rêu độc.'}`,
+        exits: {},
+        items: [],
+        agents: []
+      });
+    }
+    const sewerRooms = await RoomSchema.insertMany(sewerRoomDocs);
+
+    // Phase 22: Zone 3 - Nhà Máy Lắp Ráp Cũ (Old Assembly Plant) - 30 rooms
+    const loiVaoNhaMay = await RoomSchema.create({
+      name: 'Cổng Nhà Máy',
+      description: 'Cổng sắt khổng lồ đã rỉ sét nửa mở. Biển báo "Nguy Hiểm - Cấm Vào" đã phai màu.',
+      exits: {},
+      items: [],
+      agents: []
+    });
+
+    const nhaMay1 = await RoomSchema.create({
+      name: 'Sảnh Nhà Máy',
+      description: 'Sảnh rộng với trần nhà cao. Các băng chuyền đã ngừng hoạt động từ lâu.',
+      exits: {},
+      items: [],
+      agents: []
+    });
+
+    const nhaMay2 = await RoomSchema.create({
+      name: 'Phân Xưởng A',
+      description: 'Phân xưởng lắp ráp với robot bảo vệ rỉ sét đang tuần tra.',
+      exits: {},
+      items: [],
+      agents: []
+    });
+
+    const nhaMay3 = await RoomSchema.create({
+      name: 'Phòng Thí Nghiệm Nhỏ',
+      description: 'Phòng lab nhỏ với các bình chứa vỡ. Chất lỏng xanh rò rỉ ra sàn.',
+      exits: {},
+      items: [],
+      agents: []
+    });
+
+    const nhaMayBoss = await RoomSchema.create({
+      name: 'Phòng Thử Nghiệm Chính',
+      description: 'Phòng thử nghiệm rộng lớn. Robot Sát Thủ Mẫu 01 đứng ở trung tâm, đèn LED đỏ nhấp nháy.',
+      exits: {},
+      items: [],
+      agents: []
+    });
+
+    // Simplified: Create 25 more factory rooms (bulk insert)
+    const factoryRoomDocs = [];
+    for (let i = 4; i <= 28; i++) {
+      factoryRoomDocs.push({
+        name: `Khu Vực Nhà Máy ${i}`,
+        description: `${i % 4 === 0 ? 'Phân xưởng' : i % 4 === 1 ? 'Kho chứa' : i % 4 === 2 ? 'Hành lang' : 'Phòng kỹ thuật'} số ${i}. ${i % 2 === 0 ? 'Máy móc rỉ sét nằm la liệt.' : 'Có dấu hiệu hoạt động gần đây.'}`,
+        exits: {},
+        items: [],
+        agents: []
+      });
+    }
+    const factoryRooms = await RoomSchema.insertMany(factoryRoomDocs);
+
+    // Phase 22: Zone 4 - Phòng Thí Nghiệm Bị Chôn Vùi (Sunken Laboratory) - 35 rooms
+    const loiVaoPhongLab = await RoomSchema.create({
+      name: 'Lối Vào Phòng Lab',
+      description: 'Lối vào bị ngập nước. Cửa kim loại dày bị cong vênh. Cảnh báo sinh học phát sáng đỏ.',
+      exits: {},
+      items: [],
+      agents: []
+    });
+
+    const phongLab1 = await RoomSchema.create({
+      name: 'Tiền Sảnh Lab',
+      description: 'Tiền sảnh ngập nửa mét nước. Bàn tiếp tân đổ ngã. Máu khô dính trên tường.',
+      exits: {},
+      items: [],
+      agents: []
+    });
+
+    const phongLab2 = await RoomSchema.create({
+      name: 'Phòng Nuôi Cấy',
+      description: 'Phòng đầy bể nuôi cấy vỡ. Sinh vật thí nghiệm lỗi lang thang trong đống mảnh vỡ.',
+      exits: {},
+      items: [],
+      agents: []
+    });
+
+    const phongLabBoss = await RoomSchema.create({
+      name: 'Phòng Thí Nghiệm Chính',
+      description: 'Phòng lab trung tâm khổng lồ. Bể nuôi lớn nhất đã vỡ. "Quái Vật Mẹ" nằm ở trung tâm, bao quanh bởi các đệ tử.',
+      exits: {},
+      items: [],
+      agents: []
+    });
+
+    // Simplified: Create 31 more lab rooms (bulk insert)
+    const labRoomDocs = [];
+    for (let i = 3; i <= 33; i++) {
+      labRoomDocs.push({
+        name: `Phòng Lab Khu ${i}`,
+        description: `${i % 5 === 0 ? 'Phòng thí nghiệm' : i % 5 === 1 ? 'Kho mẫu vật' : i % 5 === 2 ? 'Phòng quan sát' : i % 5 === 3 ? 'Phòng khử trùng' : 'Hành lang lab'} số ${i}. Ngập nước và tối tăm.`,
+        exits: {},
+        items: [],
+        agents: []
+      });
+    }
+    const labRooms = await RoomSchema.insertMany(labRoomDocs);
+
+    // Phase 22: Zone 5 - Trung Tâm Vong Tích Thành (Citadel Core) - 30 elite rooms
+    const loiVaoTrungTam = await RoomSchema.create({
+      name: 'Cổng Vào Trung Tâm',
+      description: 'Cổng khổng lồ bằng kim loại cổ đại. Các ký tự phát sáng xanh lam. Năng lượng dày đặc trong không khí.',
+      exits: {},
+      items: [],
+      agents: []
+    });
+
+    const trungTam1 = await RoomSchema.create({
+      name: 'Đại Sảnh Cổ Ngữ',
+      description: 'Đại sảnh tráng lệ với trần vòm cao. Vệ binh cổ ngữ đứng canh gác.',
+      exits: {},
+      items: [],
+      agents: []
+    });
+
+    const trungTam2 = await RoomSchema.create({
+      name: 'Thư Viện Cổ',
+      description: 'Thư viện đầy sách cổ và cuộn giấy da. Pháp sư vong tích đang nghiên cứu.',
+      exits: {},
+      items: [],
+      agents: []
+    });
+
+    const trungTamBoss = await RoomSchema.create({
+      name: 'Ngai Vàng Kẻ Cai Quản',
+      description: 'Phòng ngai vàng rộng lớn. Kẻ Cai Quản Cổ Ngữ ngồi trên ngai, tỏa ra hào quang uy nghi.',
+      exits: {},
+      items: [],
+      agents: []
+    });
+
+    // Simplified: Create 26 more citadel rooms (bulk insert)
+    const citadelRoomDocs = [];
+    for (let i = 3; i <= 28; i++) {
+      citadelRoomDocs.push({
+        name: `Trung Tâm Khu ${i}`,
+        description: `${i % 4 === 0 ? 'Phòng nghi lễ' : i % 4 === 1 ? 'Hành lang cổ đại' : i % 4 === 2 ? 'Phòng bảo vật' : 'Đền thờ nhỏ'} trong Citadel Core. Năng lượng cổ ngữ bao trùm.`,
+        exits: {},
+        items: [],
+        agents: []
+      });
+    }
+    const citadelRooms = await RoomSchema.insertMany(citadelRoomDocs);
+
     // Link rooms with exits - create a connected world
+    // Zone 1 (Starting Zone)
     cổngThành.exits.north = khuCho._id;
     cổngThành.exits.east = rừngRậm._id;
     
@@ -324,6 +1057,7 @@ export async function initializeWorld() {
     khuCho.exits.east = hẻmTối._id;
     khuCho.exits.north = quảngTrường._id;
     khuCho.exits.west = sânLuyệnTập._id;
+    khuCho.exits.down = loiVaoHamNgam._id; // Link to Zone 2
     
     hẻmTối.exits.west = khuCho._id;
     
@@ -345,6 +1079,95 @@ export async function initializeWorld() {
     
     sânLuyệnTập.exits.east = khuCho._id;
 
+    // Zone 2 (Sewers) - Simplified linear connection
+    loiVaoHamNgam.exits.up = khuCho._id;
+    loiVaoHamNgam.exits.south = hamNgam1._id;
+    
+    hamNgam1.exits.north = loiVaoHamNgam._id;
+    hamNgam1.exits.east = hamNgam2._id;
+    
+    hamNgam2.exits.west = hamNgam1._id;
+    hamNgam2.exits.south = hamNgam3._id;
+    
+    hamNgam3.exits.north = hamNgam2._id;
+    hamNgam3.exits.east = hamNgam4._id;
+    
+    hamNgam4.exits.west = hamNgam3._id;
+    hamNgam4.exits.south = sewerRooms[0]._id;
+    
+    // Link sewer rooms in a winding path
+    for (let i = 0; i < sewerRooms.length - 1; i++) {
+      sewerRooms[i].exits.south = sewerRooms[i + 1]._id;
+      sewerRooms[i + 1].exits.north = sewerRooms[i]._id;
+    }
+    
+    sewerRooms[sewerRooms.length - 1].exits.east = hamNgamBoss._id;
+    hamNgamBoss.exits.west = sewerRooms[sewerRooms.length - 1]._id;
+    hamNgamBoss.exits.north = loiVaoNhaMay._id; // Link to Zone 3
+
+    // Zone 3 (Factory)
+    loiVaoNhaMay.exits.south = hamNgamBoss._id;
+    loiVaoNhaMay.exits.north = nhaMay1._id;
+    
+    nhaMay1.exits.south = loiVaoNhaMay._id;
+    nhaMay1.exits.east = nhaMay2._id;
+    
+    nhaMay2.exits.west = nhaMay1._id;
+    nhaMay2.exits.north = nhaMay3._id;
+    
+    nhaMay3.exits.south = nhaMay2._id;
+    nhaMay3.exits.east = factoryRooms[0]._id;
+    
+    // Link factory rooms
+    for (let i = 0; i < factoryRooms.length - 1; i++) {
+      factoryRooms[i].exits.east = factoryRooms[i + 1]._id;
+      factoryRooms[i + 1].exits.west = factoryRooms[i]._id;
+    }
+    
+    factoryRooms[factoryRooms.length - 1].exits.north = nhaMayBoss._id;
+    nhaMayBoss.exits.south = factoryRooms[factoryRooms.length - 1]._id;
+    nhaMayBoss.exits.down = loiVaoPhongLab._id; // Link to Zone 4
+
+    // Zone 4 (Lab)
+    loiVaoPhongLab.exits.up = nhaMayBoss._id;
+    loiVaoPhongLab.exits.north = phongLab1._id;
+    
+    phongLab1.exits.south = loiVaoPhongLab._id;
+    phongLab1.exits.east = phongLab2._id;
+    
+    phongLab2.exits.west = phongLab1._id;
+    phongLab2.exits.north = labRooms[0]._id;
+    
+    // Link lab rooms
+    for (let i = 0; i < labRooms.length - 1; i++) {
+      labRooms[i].exits.north = labRooms[i + 1]._id;
+      labRooms[i + 1].exits.south = labRooms[i]._id;
+    }
+    
+    labRooms[labRooms.length - 1].exits.east = phongLabBoss._id;
+    phongLabBoss.exits.west = labRooms[labRooms.length - 1]._id;
+    phongLabBoss.exits.up = loiVaoTrungTam._id; // Link to Zone 5
+
+    // Zone 5 (Citadel Core)
+    loiVaoTrungTam.exits.down = phongLabBoss._id;
+    loiVaoTrungTam.exits.north = trungTam1._id;
+    
+    trungTam1.exits.south = loiVaoTrungTam._id;
+    trungTam1.exits.east = trungTam2._id;
+    
+    trungTam2.exits.west = trungTam1._id;
+    trungTam2.exits.north = citadelRooms[0]._id;
+    
+    // Link citadel rooms
+    for (let i = 0; i < citadelRooms.length - 1; i++) {
+      citadelRooms[i].exits.north = citadelRooms[i + 1]._id;
+      citadelRooms[i + 1].exits.south = citadelRooms[i]._id;
+    }
+    
+    citadelRooms[citadelRooms.length - 1].exits.north = trungTamBoss._id;
+    trungTamBoss.exits.south = citadelRooms[citadelRooms.length - 1]._id;
+
+    // Save all rooms
     await cổngThành.save();
     await khuCho.save();
     await hẻmTối.save();
@@ -355,6 +1178,37 @@ export async function initializeWorld() {
     await hànhLang.save();
     await phòngKhóTreasure.save();
     await sânLuyệnTập.save();
+    
+    // Save Zone 2 rooms
+    await loiVaoHamNgam.save();
+    await hamNgam1.save();
+    await hamNgam2.save();
+    await hamNgam3.save();
+    await hamNgam4.save();
+    await hamNgamBoss.save();
+    for (const room of sewerRooms) await room.save();
+    
+    // Save Zone 3 rooms
+    await loiVaoNhaMay.save();
+    await nhaMay1.save();
+    await nhaMay2.save();
+    await nhaMay3.save();
+    await nhaMayBoss.save();
+    for (const room of factoryRooms) await room.save();
+    
+    // Save Zone 4 rooms
+    await loiVaoPhongLab.save();
+    await phongLab1.save();
+    await phongLab2.save();
+    await phongLabBoss.save();
+    for (const room of labRooms) await room.save();
+    
+    // Save Zone 5 rooms
+    await loiVaoTrungTam.save();
+    await trungTam1.save();
+    await trungTam2.save();
+    await trungTamBoss.save();
+    for (const room of citadelRooms) await room.save();
 
     // Create NPCs
     const linhGac = await AgentSchema.create({
@@ -522,17 +1376,430 @@ export async function initializeWorld() {
       experience: 0
     });
 
+    // Phase 22: Zone 1 New NPCs and Mobs (Level 1-10)
+    const giaLang = await AgentSchema.create({
+      name: 'Già Làng',
+      description: 'Một ông già hiền lành với bộ râu bạc. Ông ta là người hướng dẫn người mới.',
+      type: 'npc',
+      currentRoomId: cổngThành._id,
+      hp: 150,
+      maxHp: 150,
+      level: 10,
+      damage: 15,
+      behavior: 'passive',
+      dialogue: [
+        'Chào mừng con đến với Vong Tích Thành. Ta sẽ hướng dẫn con.',
+        'Hãy tiêu diệt 10 Chuột Cống và thu thập Vải Rách để bắt đầu.',
+        'Nói chuyện với Thợ Rèn ở Khu Chợ khi con đã sẵn sàng.'
+      ],
+      experience: 0
+    });
+
+    const chuotCong = await AgentSchema.create({
+      name: 'Chuột Cống',
+      description: 'Chuột nhỏ sinh sống trong cống, yếu ớt nhưng hung hãn khi đói.',
+      type: 'mob',
+      currentRoomId: hẻmTối._id,
+      hp: 20,
+      maxHp: 20,
+      level: 1,
+      damage: 3,
+      behavior: 'aggressive',
+      loot: [],
+      experience: 10,
+      lootTable: [
+        { itemId: daChuot._id, dropChance: 0.4 },
+        { itemId: vaiRach._id, dropChance: 0.3 }
+      ]
+    });
+
+    const thayMaYeu = await AgentSchema.create({
+      name: 'Thây Ma Yếu',
+      description: 'Xác sống yếu ớt, di chuyển chậm chạp. Toát ra mùi tử khí.',
+      type: 'mob',
+      currentRoomId: rừngRậm._id,
+      hp: 40,
+      maxHp: 40,
+      level: 4,
+      damage: 6,
+      behavior: 'wander',
+      loot: [],
+      experience: 25,
+      lootTable: [
+        { itemId: vaiRach._id, dropChance: 0.6 },
+        { itemId: daChuot._id, dropChance: 0.3 }
+      ]
+    });
+
+    const keCuopDuong = await AgentSchema.create({
+      name: 'Kẻ Cướp Đường',
+      description: 'Tên cướp hung hãn với dao găm rỉ sét. Mắt đỏ ngầu tham lam.',
+      type: 'mob',
+      currentRoomId: rừngRậm._id,
+      hp: 70,
+      maxHp: 70,
+      level: 7,
+      damage: 10,
+      behavior: 'aggressive',
+      loot: [],
+      experience: 45,
+      lootTable: [
+        { itemId: daChuot._id, dropChance: 0.5 },
+        { itemId: vaiRach._id, dropChance: 0.5 },
+        { itemId: congThucMuLangKhach._id, dropChance: 0.15 }
+      ]
+    });
+
+    // Phase 22: Zone 2 NPCs and Mobs (Level 10-20)
+    const thoSanPheLieu = await AgentSchema.create({
+      name: 'Thợ Săn Phế Liệu',
+      description: 'Người săn lùng đồ phế thải trong hầm ngầm. Mặc áo giáp kim loại tái chế.',
+      type: 'npc',
+      currentRoomId: loiVaoHamNgam._id,
+      hp: 200,
+      maxHp: 200,
+      level: 15,
+      damage: 20,
+      behavior: 'passive',
+      dialogue: [
+        'Hầm ngầm này đầy những thứ giá trị... và nguy hiểm.',
+        'Thu thập 20 Vỏ Nhện Cứng cho ta, ta sẽ trả công xứng đáng.',
+        'Robot Quản Lý Cống ở sâu trong hầm rất nguy hiểm.'
+      ],
+      experience: 0
+    });
+
+    const nhenDotBien = await AgentSchema.create({
+      name: 'Nhện Đột Biến',
+      description: 'Nhện khổng lồ với nhiều mắt đỏ rực. Nọc độc nhỏ giọt từ nanh.',
+      type: 'mob',
+      currentRoomId: hamNgam2._id,
+      hp: 120,
+      maxHp: 120,
+      level: 12,
+      damage: 15,
+      behavior: 'aggressive',
+      loot: [],
+      experience: 80,
+      agentType: 'mob',
+      lootTable: [
+        { itemId: voNhenCung._id, dropChance: 0.6 },
+        { itemId: loiNangLuongYeu._id, dropChance: 0.3 }
+      ]
+    });
+
+    const nguoiCongNgam = await AgentSchema.create({
+      name: 'Người Cống Ngầm',
+      description: 'Sinh vật nhân hình biến dạng sống trong hầm ngầm. Da xanh nhợt nhạt.',
+      type: 'mob',
+      currentRoomId: hamNgam4._id,
+      hp: 150,
+      maxHp: 150,
+      level: 16,
+      damage: 20,
+      behavior: 'aggressive',
+      loot: [],
+      experience: 120,
+      agentType: 'mob',
+      lootTable: [
+        { itemId: voNhenCung._id, dropChance: 0.5 },
+        { itemId: loiNangLuongYeu._id, dropChance: 0.4 }
+      ]
+    });
+
+    const robotQuanLyCong = await AgentSchema.create({
+      name: 'Robot Quản Lý Cống',
+      description: 'Robot cổ đại khổng lồ vẫn đang vận hành. Đèn LED đỏ nhấp nháy cảnh báo.',
+      type: 'mob',
+      currentRoomId: hamNgamBoss._id,
+      hp: 500,
+      maxHp: 500,
+      level: 20,
+      damage: 35,
+      behavior: 'aggressive',
+      loot: [],
+      experience: 300,
+      agentType: 'elite',
+      mechanics: ['shield_regeneration'],
+      lootTable: [
+        { itemId: loiCoNguHong._id, dropChance: 1.0 }, // 100% boss drop
+        { itemId: voNhenCung._id, dropChance: 0.8 },
+        { itemId: loiNangLuongYeu._id, dropChance: 0.8 }
+      ]
+    });
+
+    // Phase 22: Zone 3 NPCs and Mobs (Level 20-30)
+    const kySuTruongCu = await AgentSchema.create({
+      name: 'Kỹ Sư Trưởng Cũ',
+      description: 'Kỹ sư già từng làm việc tại nhà máy. Mang theo nhiều công cụ cổ.',
+      type: 'npc',
+      currentRoomId: loiVaoNhaMay._id,
+      hp: 300,
+      maxHp: 300,
+      level: 25,
+      damage: 30,
+      behavior: 'passive',
+      dialogue: [
+        'Nhà máy này từng là niềm tự hào của tôi...',
+        'Thu thập Bánh Răng và Mô Đột Biến, tôi sẽ chế tạo đồ tốt cho ngươi.',
+        'Robot Sát Thủ Mẫu 01 rất nguy hiểm, hãy cẩn thận.'
+      ],
+      experience: 0
+    });
+
+    const robotBaoVeRiSet = await AgentSchema.create({
+      name: 'Robot Bảo Vệ Rỉ Sét',
+      description: 'Robot bảo vệ cũ kỹ, rỉ sét nhưng vẫn hoạt động. Vũ khí đã lỗi thời.',
+      type: 'mob',
+      currentRoomId: nhaMay2._id,
+      hp: 180,
+      maxHp: 180,
+      level: 22,
+      damage: 25,
+      behavior: 'patrol',
+      patrolRoute: [nhaMay2._id, nhaMay3._id],
+      loot: [],
+      experience: 150,
+      agentType: 'mob',
+      lootTable: [
+        { itemId: banhRangRiSet._id, dropChance: 0.7 },
+        { itemId: loiNangLuongYeu._id, dropChance: 0.4 }
+      ]
+    });
+
+    const congNhanBienDi = await AgentSchema.create({
+      name: 'Công Nhân Biến Dị',
+      description: 'Công nhân bị đột biến bởi hóa chất. Thân hình biến dạng, mắt trống rỗng.',
+      type: 'mob',
+      currentRoomId: nhaMay3._id,
+      hp: 220,
+      maxHp: 220,
+      level: 26,
+      damage: 30,
+      behavior: 'wander',
+      loot: [],
+      experience: 180,
+      agentType: 'mob',
+      lootTable: [
+        { itemId: moDotBienNho._id, dropChance: 0.7 },
+        { itemId: banhRangRiSet._id, dropChance: 0.3 }
+      ]
+    });
+
+    const robotSatThuMau01 = await AgentSchema.create({
+      name: 'Robot Sát Thủ Mẫu 01',
+      description: 'Robot chiến đấu nguyên mẫu. Vũ khí tích hợp, AI thông minh, di chuyển nhanh.',
+      type: 'mob',
+      currentRoomId: nhaMayBoss._id,
+      hp: 800,
+      maxHp: 800,
+      level: 30,
+      damage: 50,
+      behavior: 'aggressive',
+      loot: [],
+      experience: 500,
+      agentType: 'boss',
+      mechanics: ['rapid_fire', 'dash_attack'],
+      lootTable: [
+        { itemId: chipViMachCo._id, dropChance: 1.0 }, // 100% boss drop
+        { itemId: banhRangRiSet._id, dropChance: 0.9 },
+        { itemId: moDotBienNho._id, dropChance: 0.9 }
+      ]
+    });
+
+    // Phase 22: Zone 4 NPCs and Mobs (Level 30-40)
+    const giaoSuBiAn = await AgentSchema.create({
+      name: 'Giáo Sư Bí Ẩn',
+      description: 'Nhà khoa học bị mắc kẹt trong phòng lab. Áo choàng trắng dính đầy máu khô.',
+      type: 'npc',
+      currentRoomId: loiVaoPhongLab._id,
+      hp: 400,
+      maxHp: 400,
+      level: 35,
+      damage: 40,
+      behavior: 'passive',
+      dialogue: [
+        'Thí nghiệm của tôi đã thất bại thảm hại...',
+        'Quái Vật "Mẹ" là kết quả của sai lầm kinh hoàng nhất.',
+        'Ngươi phải có nhóm mạnh mẽ để đối đầu nó.'
+      ],
+      experience: 0
+    });
+
+    const sinhVatThiNghiemLoi = await AgentSchema.create({
+      name: 'Sinh Vật Thí Nghiệm Lỗi',
+      description: 'Sinh vật lai tạo thất bại. Nhiều chi, nhiều đầu, di chuyển kỳ dị.',
+      type: 'mob',
+      currentRoomId: phongLab2._id,
+      hp: 280,
+      maxHp: 280,
+      level: 32,
+      damage: 38,
+      behavior: 'aggressive',
+      loot: [],
+      experience: 240,
+      agentType: 'mob',
+      lootTable: [
+        { itemId: moDotBienLon._id, dropChance: 0.7 },
+        { itemId: tinhTheNangLuong._id, dropChance: 0.3 }
+      ]
+    });
+
+    const bongMaKhoaHocGia = await AgentSchema.create({
+      name: 'Bóng Ma Khoa Học Gia',
+      description: 'Linh hồn khoa học gia chết trong thảm họa. Phát sáng xanh lạnh, xuyên qua vật thể.',
+      type: 'mob',
+      currentRoomId: phongLab1._id,
+      hp: 250,
+      maxHp: 250,
+      level: 37,
+      damage: 42,
+      behavior: 'wander',
+      loot: [],
+      experience: 280,
+      agentType: 'mob',
+      lootTable: [
+        { itemId: tinhTheNangLuong._id, dropChance: 0.6 },
+        { itemId: moDotBienLon._id, dropChance: 0.4 }
+      ]
+    });
+
+    const quaiVatMe = await AgentSchema.create({
+      name: 'Quái Vật "Mẹ"',
+      description: 'Sinh vật đột biến khổng lồ, là mẹ của tất cả thí nghiệm lỗi. Cơ thể khổng lồ, nhiều xúc tu.',
+      type: 'mob',
+      currentRoomId: phongLabBoss._id,
+      hp: 1200,
+      maxHp: 1200,
+      level: 40,
+      damage: 65,
+      behavior: 'aggressive',
+      loot: [],
+      experience: 800,
+      agentType: 'boss',
+      mechanics: ['summon_minions', 'acid_spit', 'regeneration'],
+      lootTable: [
+        { itemId: traiTimDotBienOnDinh._id, dropChance: 1.0 }, // 100% boss drop
+        { itemId: moDotBienLon._id, dropChance: 0.95 },
+        { itemId: tinhTheNangLuong._id, dropChance: 0.95 }
+      ]
+    });
+
+    // Phase 22: Zone 5 NPCs and Mobs (Level 40-50)
+    const thaySuCoNgu = await AgentSchema.create({
+      name: 'Thầy Tu Cổ Ngữ',
+      description: 'Thầy tu già canh giữ Citadel. Áo choàng xanh lam, tỏa hào quang thánh thiện.',
+      type: 'npc',
+      currentRoomId: loiVaoTrungTam._id,
+      hp: 600,
+      maxHp: 600,
+      level: 45,
+      damage: 60,
+      behavior: 'passive',
+      dialogue: [
+        'Trung Tâm này là nơi thiêng liêng cuối cùng.',
+        'Vệ Binh Cổ Ngữ chỉ để yên những ai xứng đáng.',
+        'Kẻ Cai Quản là thử thách cuối cùng của ngươi.'
+      ],
+      experience: 0
+    });
+
+    const veBinhCoNgu = await AgentSchema.create({
+      name: 'Vệ Binh Cổ Ngữ',
+      description: 'Chiến binh cổ đại bằng năng lượng tinh khiết. Giáp phát sáng, kiếm năng lượng sắc bén.',
+      type: 'mob',
+      currentRoomId: trungTam1._id,
+      hp: 400,
+      maxHp: 400,
+      level: 43,
+      damage: 55,
+      behavior: 'patrol',
+      patrolRoute: [trungTam1._id, trungTam2._id],
+      loot: [],
+      experience: 380,
+      agentType: 'elite',
+      lootTable: [
+        { itemId: nangLuongTinhKhiet._id, dropChance: 0.7 },
+        { itemId: loiHoVeCoDai._id, dropChance: 0.1 }
+      ]
+    });
+
+    const phapSuVongTich = await AgentSchema.create({
+      name: 'Pháp Sư Vong Tích',
+      description: 'Pháp sư cổ đại với sức mạnh phép thuật khủng khiếp. Tay cầm quyển sách cổ phát sáng.',
+      type: 'mob',
+      currentRoomId: trungTam2._id,
+      hp: 350,
+      maxHp: 350,
+      level: 47,
+      damage: 70,
+      behavior: 'aggressive',
+      loot: [],
+      experience: 420,
+      agentType: 'elite',
+      lootTable: [
+        { itemId: nangLuongTinhKhiet._id, dropChance: 0.8 },
+        { itemId: loiHoVeCoDai._id, dropChance: 0.15 }
+      ]
+    });
+
+    const keCaiQuanCoNgu = await AgentSchema.create({
+      name: 'Kẻ Cai Quản Cổ Ngữ',
+      description: 'Người cai quản tối thượng của Citadel. Hào quang vàng bao trùm, sức mạnh áp đảo.',
+      type: 'mob',
+      currentRoomId: trungTamBoss._id,
+      hp: 2000,
+      maxHp: 2000,
+      level: 50,
+      damage: 90,
+      behavior: 'aggressive',
+      loot: [],
+      experience: 1500,
+      agentType: 'boss',
+      mechanics: ['ancient_magic', 'time_slow', 'summon_guardians', 'ultimate_blast'],
+      lootTable: [
+        { itemId: nuocMatCuaThanhCu._id, dropChance: 1.0 }, // 100% boss drop
+        { itemId: nangLuongTinhKhiet._id, dropChance: 0.99 },
+        { itemId: loiHoVeCoDai._id, dropChance: 0.5 }
+      ]
+    });
+
     // Add agents to rooms
-    cổngThành.agents.push(linhGac._id);
-    khuCho.agents.push(thuongGia._id);
-    khuCho.agents.push(thuongGiaBiAn._id);
-    hẻmTối.agents.push(chuotBienDi._id);
-    rừngRậm.agents.push(sóiRừng._id);
+    // Zone 1
+    cổngThành.agents.push(linhGac._id, giaLang._id);
+    khuCho.agents.push(thuongGia._id, thuongGiaBiAn._id);
+    hẻmTối.agents.push(chuotBienDi._id, chuotCong._id);
+    rừngRậm.agents.push(sóiRừng._id, thayMaYeu._id, keCuopDuong._id);
     hang.agents.push(goblin._id);
     quảngTrường.agents.push(linhTuần._id);
     sânLuyệnTập.agents.push(huấnLuyệnViên._id);
     phòngKhóTreasure.agents.push(phùThủy._id);
 
+    // Zone 2
+    loiVaoHamNgam.agents.push(thoSanPheLieu._id);
+    hamNgam2.agents.push(nhenDotBien._id);
+    hamNgam4.agents.push(nguoiCongNgam._id);
+    hamNgamBoss.agents.push(robotQuanLyCong._id);
+
+    // Zone 3
+    loiVaoNhaMay.agents.push(kySuTruongCu._id);
+    nhaMay2.agents.push(robotBaoVeRiSet._id);
+    nhaMay3.agents.push(congNhanBienDi._id);
+    nhaMayBoss.agents.push(robotSatThuMau01._id);
+
+    // Zone 4
+    loiVaoPhongLab.agents.push(giaoSuBiAn._id);
+    phongLab1.agents.push(bongMaKhoaHocGia._id);
+    phongLab2.agents.push(sinhVatThiNghiemLoi._id);
+    phongLabBoss.agents.push(quaiVatMe._id);
+
+    // Zone 5
+    loiVaoTrungTam.agents.push(thaySuCoNgu._id);
+    trungTam1.agents.push(veBinhCoNgu._id);
+    trungTam2.agents.push(phapSuVongTich._id);
+    trungTamBoss.agents.push(keCaiQuanCoNgu._id);
+
+    // Save all rooms with agents
     await cổngThành.save();
     await khuCho.save();
     await hẻmTối.save();
@@ -541,11 +1808,233 @@ export async function initializeWorld() {
     await quảngTrường.save();
     await sânLuyệnTập.save();
     await phòngKhóTreasure.save();
+    
+    await loiVaoHamNgam.save();
+    await hamNgam2.save();
+    await hamNgam4.save();
+    await hamNgamBoss.save();
+    
+    await loiVaoNhaMay.save();
+    await nhaMay2.save();
+    await nhaMay3.save();
+    await nhaMayBoss.save();
+    
+    await loiVaoPhongLab.save();
+    await phongLab1.save();
+    await phongLab2.save();
+    await phongLabBoss.save();
+    
+    await loiVaoTrungTam.save();
+    await trungTam1.save();
+    await trungTam2.save();
+    await trungTamBoss.save();
+
+    // Phase 22: Create Quests for all zones
+    // Zone 1 Quests (Level 1-10) - Tutorial quests from Già Làng
+    await QuestSchema.create({
+      name: 'Tiêu diệt 10 Chuột Cống',
+      description: 'Già Làng muốn bạn tiêu diệt 10 con Chuột Cống trong Hẻm Tối.',
+      type: 'main',
+      questGiver: 'Già Làng',
+      questGiverRoomId: cổngThành._id,
+      objectives: [{ type: 'kill', target: 'Chuột Cống', count: 10, progress: 0 }],
+      rewards: { exp: 100, gold: 20 },
+      levelRequirement: 1,
+      isRepeatable: false,
+      active: true
+    });
+
+    await QuestSchema.create({
+      name: 'Nói chuyện với Thợ Rèn',
+      description: 'Già Làng muốn bạn đi nói chuyện với Thương Gia ở Khu Chợ.',
+      type: 'main',
+      questGiver: 'Già Làng',
+      questGiverRoomId: cổngThành._id,
+      objectives: [{ type: 'talk', target: 'Thương Gia', count: 1, progress: 0 }],
+      rewards: { exp: 50, gold: 10 },
+      levelRequirement: 1,
+      isRepeatable: false,
+      active: true
+    });
+
+    await QuestSchema.create({
+      name: 'Thu thập 5 Vải Rách',
+      description: 'Thu thập 5 Vải Rách từ Thây Ma Yếu.',
+      type: 'side',
+      questGiver: 'Già Làng',
+      questGiverRoomId: cổngThành._id,
+      objectives: [{ type: 'collect', target: 'Vải Rách', count: 5, progress: 0 }],
+      rewards: { exp: 80, gold: 15 },
+      levelRequirement: 3,
+      isRepeatable: false,
+      active: true
+    });
+
+    await QuestSchema.create({
+      name: 'Tiêu diệt Kẻ Cướp Đường',
+      description: 'Tiêu diệt 5 Kẻ Cướp Đường để bảo vệ người dân.',
+      type: 'side',
+      questGiver: 'Lính Gác',
+      questGiverRoomId: cổngThành._id,
+      objectives: [{ type: 'kill', target: 'Kẻ Cướp Đường', count: 5, progress: 0 }],
+      rewards: { exp: 200, gold: 50 },
+      levelRequirement: 6,
+      isRepeatable: false,
+      active: true
+    });
+
+    // Zone 2 Quests (Level 10-20) - Grinding quests from Thợ Săn Phế Liệu
+    await QuestSchema.create({
+      name: 'Thu thập 20 Vỏ Nhện Cứng',
+      description: 'Thợ Săn Phế Liệu cần 20 Vỏ Nhện Cứng để chế tạo giáp.',
+      type: 'side',
+      questGiver: 'Thợ Săn Phế Liệu',
+      questGiverRoomId: loiVaoHamNgam._id,
+      objectives: [{ type: 'collect', target: 'Vỏ Nhện Cứng', count: 20, progress: 0 }],
+      rewards: { exp: 400, gold: 100 },
+      levelRequirement: 11,
+      isRepeatable: true,
+      active: true
+    });
+
+    await QuestSchema.create({
+      name: 'Tiêu diệt 30 Người Cống Ngầm',
+      description: 'Làm sạch hầm ngầm bằng cách tiêu diệt 30 Người Cống Ngầm.',
+      type: 'side',
+      questGiver: 'Thợ Săn Phế Liệu',
+      questGiverRoomId: loiVaoHamNgam._id,
+      objectives: [{ type: 'kill', target: 'Người Cống Ngầm', count: 30, progress: 0 }],
+      rewards: { exp: 600, gold: 150 },
+      levelRequirement: 15,
+      isRepeatable: true,
+      active: true
+    });
+
+    await QuestSchema.create({
+      name: 'Đánh bại Robot Quản Lý Cống',
+      description: 'Tiêu diệt Robot Quản Lý Cống để kiếm Lõi Cổ Ngữ Hỏng.',
+      type: 'main',
+      questGiver: 'Thợ Săn Phế Liệu',
+      questGiverRoomId: loiVaoHamNgam._id,
+      objectives: [{ type: 'kill', target: 'Robot Quản Lý Cống', count: 1, progress: 0 }],
+      rewards: { exp: 1000, gold: 300 },
+      levelRequirement: 18,
+      isRepeatable: false,
+      active: true
+    });
+
+    // Zone 3 Quests (Level 20-30) - From Kỹ Sư Trưởng Cũ
+    await QuestSchema.create({
+      name: 'Thu thập 30 Bánh Răng Rỉ Sét',
+      description: 'Kỹ Sư Trưởng Cũ cần 30 Bánh Răng để sửa chữa thiết bị.',
+      type: 'side',
+      questGiver: 'Kỹ Sư Trưởng Cũ',
+      questGiverRoomId: loiVaoNhaMay._id,
+      objectives: [{ type: 'collect', target: 'Bánh Răng Rỉ Sét', count: 30, progress: 0 }],
+      rewards: { exp: 800, gold: 200 },
+      levelRequirement: 21,
+      isRepeatable: true,
+      active: true
+    });
+
+    await QuestSchema.create({
+      name: 'Thu thập 15 Mô Đột Biến Nhỏ',
+      description: 'Thu thập 15 Mô Đột Biến Nhỏ từ Công Nhân Biến Dị.',
+      type: 'side',
+      questGiver: 'Kỹ Sư Trưởng Cũ',
+      questGiverRoomId: loiVaoNhaMay._id,
+      objectives: [{ type: 'collect', target: 'Mô Đột Biến Nhỏ', count: 15, progress: 0 }],
+      rewards: { exp: 1000, gold: 250 },
+      levelRequirement: 25,
+      isRepeatable: true,
+      active: true
+    });
+
+    await QuestSchema.create({
+      name: 'Đánh bại Robot Sát Thủ Mẫu 01',
+      description: 'Tiêu diệt Robot Sát Thủ Mẫu 01 để lấy Chip Vi Mạch Cổ.',
+      type: 'main',
+      questGiver: 'Kỹ Sư Trưởng Cũ',
+      questGiverRoomId: loiVaoNhaMay._id,
+      objectives: [{ type: 'kill', target: 'Robot Sát Thủ Mẫu 01', count: 1, progress: 0 }],
+      rewards: { exp: 2000, gold: 500 },
+      levelRequirement: 28,
+      isRepeatable: false,
+      active: true
+    });
+
+    // Zone 4 Quests (Level 30-40) - From Giáo Sư Bí Ẩn
+    await QuestSchema.create({
+      name: 'Tìm 3 Mảnh Dữ Liệu',
+      description: 'Thu thập 3 Tinh Thể Năng Lượng chứa dữ liệu thí nghiệm.',
+      type: 'side',
+      questGiver: 'Giáo Sư Bí Ẩn',
+      questGiverRoomId: loiVaoPhongLab._id,
+      objectives: [{ type: 'collect', target: 'Tinh Thể Năng Lượng', count: 3, progress: 0 }],
+      rewards: { exp: 1500, gold: 400 },
+      levelRequirement: 31,
+      isRepeatable: true,
+      active: true
+    });
+
+    await QuestSchema.create({
+      name: '[Nhóm] Tiêu diệt Quái Vật "Mẹ"',
+      description: 'Tập hợp nhóm để tiêu diệt Quái Vật "Mẹ". Nhiệm vụ rất nguy hiểm!',
+      type: 'main',
+      questGiver: 'Giáo Sư Bí Ẩn',
+      questGiverRoomId: loiVaoPhongLab._id,
+      objectives: [{ type: 'kill', target: 'Quái Vật "Mẹ"', count: 1, progress: 0 }],
+      rewards: { exp: 3500, gold: 800 },
+      levelRequirement: 38,
+      isRepeatable: false,
+      active: true
+    });
+
+    // Zone 5 Quests (Level 40-50) - Daily quests from Thầy Tu Cổ Ngữ
+    await QuestSchema.create({
+      name: '[Hàng ngày] Tiêu diệt 10 Vệ Binh Cổ Ngữ',
+      description: 'Nhiệm vụ hàng ngày: Tiêu diệt 10 Vệ Binh Cổ Ngữ.',
+      type: 'daily',
+      questGiver: 'Thầy Tu Cổ Ngữ',
+      questGiverRoomId: loiVaoTrungTam._id,
+      objectives: [{ type: 'kill', target: 'Vệ Binh Cổ Ngữ', count: 10, progress: 0 }],
+      rewards: { exp: 2500, gold: 600 },
+      levelRequirement: 41,
+      isRepeatable: true,
+      active: true
+    });
+
+    await QuestSchema.create({
+      name: '[Hàng ngày] Thu thập 5 Năng Lượng Tinh Khiết',
+      description: 'Nhiệm vụ hàng ngày: Thu thập 5 Năng Lượng Tinh Khiết.',
+      type: 'daily',
+      questGiver: 'Thầy Tu Cổ Ngữ',
+      questGiverRoomId: loiVaoTrungTam._id,
+      objectives: [{ type: 'collect', target: 'Năng Lượng Tinh Khiết', count: 5, progress: 0 }],
+      rewards: { exp: 2000, gold: 500 },
+      levelRequirement: 40,
+      isRepeatable: true,
+      active: true
+    });
+
+    await QuestSchema.create({
+      name: '[Nhóm] Đánh bại Kẻ Cai Quản Cổ Ngữ',
+      description: 'Thử thách cuối cùng: Tập hợp nhóm mạnh nhất để đánh bại Kẻ Cai Quản Cổ Ngữ.',
+      type: 'main',
+      questGiver: 'Thầy Tu Cổ Ngữ',
+      questGiverRoomId: loiVaoTrungTam._id,
+      objectives: [{ type: 'kill', target: 'Kẻ Cai Quản Cổ Ngữ', count: 1, progress: 0 }],
+      rewards: { exp: 5000, gold: 1500 },
+      levelRequirement: 48,
+      isRepeatable: false,
+      active: true
+    });
 
     console.log('World initialized successfully!');
     console.log(`- Created ${await RoomSchema.countDocuments()} rooms`);
     console.log(`- Created ${await ItemSchema.countDocuments()} items`);
     console.log(`- Created ${await AgentSchema.countDocuments()} agents`);
+    console.log(`- Created ${await QuestSchema.countDocuments()} quests`);
     
     return {
       startingRoomId: cổngThành._id
