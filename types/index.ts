@@ -29,6 +29,7 @@ export interface PlayerState {
   exp: number;
   nextLevelExp: number;
   gold: number;
+  premiumCurrency: number;
   inCombat: boolean;
   class?: string;
   resource?: number;
@@ -112,6 +113,7 @@ export interface Player {
   level: number;
   experience: number;
   gold: number;
+  premiumCurrency: number;
   inventory: Item[];
   inCombat: boolean;
   combatTarget?: string;

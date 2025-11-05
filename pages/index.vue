@@ -348,6 +348,7 @@ const playerState = ref<PlayerState>({
   exp: 0,
   nextLevelExp: 100,
   gold: 0,
+  premiumCurrency: 0,
   inCombat: false,
   stats: {
     damage: 5,
@@ -983,6 +984,7 @@ const connectWebSocket = () => {
               exp: payload.exp ?? playerState.value.exp,
               nextLevelExp: payload.nextLevelExp ?? playerState.value.nextLevelExp,
               gold: payload.gold ?? playerState.value.gold,
+              premiumCurrency: payload.premiumCurrency ?? playerState.value.premiumCurrency,
               inCombat: payload.inCombat ?? playerState.value.inCombat,
               stats: payload.stats ? {
                 damage: payload.stats.damage ?? playerState.value.stats.damage,
