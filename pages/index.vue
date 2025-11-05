@@ -14,7 +14,8 @@
     <div class="main-output-pane">
       <div ref="outputArea" class="output-area">
         <div v-for="message in mainMessages" :key="message.id" :class="getMessageClass(message)">
-          {{ message.text }}
+          <span v-if="message.type === 'loot'" v-html="renderClickableItems(message.text)"></span>
+          <template v-else>{{ message.text }}</template>
         </div>
       </div>
     </div>
@@ -447,6 +448,51 @@ const addMessage = (text: string, type: Message['type'] = 'normal', user?: strin
 const getMessageClass = (message: Message) => {
   return `message message-${message.type}`;
 };
+
+// Render clickable items in loot messages
+const renderClickableItems = (text: string): string => {
+  // Match item names in brackets like [Cỏ Chữa Lành] or [Đuôi Chuột]
+  const itemRegex = /\[([^\]]+)\]/g;
+  return text.replace(itemRegex, (match, itemName) => {
+    // Create a clickable span with data attribute for the item name
+    return `<span class="clickable-item" data-item-name="${itemName}" onclick="window.handleItemClick('${itemName}')">${match}</span>`;
+  });
+};
+
+// Handle item click from loot messages
+const handleItemClick = async (itemName: string) => {
+  // Check if item is in player's inventory
+  const item = playerState.value.inventoryItems.find(i => i && i.name === itemName);
+  
+  if (!item) {
+    addMessage(`Vật phẩm [${itemName}] không có trong túi đồ.`, 'system');
+    return;
+  }
+  
+  // Open contextual popup for the item
+  const actions = [
+    { label: 'Xem Xét (Look)', command: `look ${itemName}`, disabled: false },
+    { label: 'Sử Dụng (Use)', command: `use ${itemName}`, disabled: item.type !== 'consumable' },
+    { label: 'Vứt Bỏ (Drop)', command: `drop ${itemName}`, disabled: false }
+  ];
+  
+  contextualPopupData.value = {
+    title: `${itemName} (${item.type})`,
+    entityType: null,
+    entityData: {
+      description: item.description,
+      stats: item.stats
+    },
+    actions
+  };
+  
+  contextualPopupOpen.value = true;
+};
+
+// Expose handleItemClick to window for onclick handler
+if (typeof window !== 'undefined') {
+  (window as any).handleItemClick = handleItemClick;
+}
 
 // Focus input field
 const focusInput = () => {
@@ -1355,6 +1401,19 @@ watch(messages, () => {
 
 .message-chat_guild {
   color: var(--theme-text-chat-guild);
+}
+
+/* Clickable items in loot messages */
+.clickable-item {
+  cursor: pointer;
+  text-decoration: underline;
+  color: var(--text-accent);
+  transition: color 0.2s;
+}
+
+.clickable-item:hover {
+  color: var(--text-bright);
+  text-shadow: 0 0 3px currentColor;
 }
 
 .input-area {
