@@ -2,9 +2,6 @@
   <div class="terminal-container">
     <div class="auth-content">
       <div class="auth-header">
-        <div class="message message-system">═══════════════════════════════════════════════════</div>
-        <div class="message message-accent">    VONG TÍCH THÀNH - MUD</div>
-        <div class="message message-system">═══════════════════════════════════════════════════</div>
         <div class="message message-normal"></div>
         <div class="message message-accent">[ ĐĂNG NHẬP ]</div>
         <div class="message message-normal"></div>

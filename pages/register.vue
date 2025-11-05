@@ -2,9 +2,6 @@
   <div class="terminal-container">
     <div class="auth-content">
       <div class="auth-header">
-        <div class="message message-system">═══════════════════════════════════════════════════</div>
-        <div class="message message-accent">    VONG TÍCH THÀNH - MUD</div>
-        <div class="message message-system">═══════════════════════════════════════════════════</div>
         <div class="message message-normal"></div>
         <div class="message message-accent">[ ĐĂNG KÝ TÀI KHOẢN ]</div>
         <div class="message message-normal"></div>
@@ -90,6 +87,7 @@ const errorMessage = ref('');
 const loading = ref(false);
 
 const { register } = useAuth();
+const { fetch } = useUserSession()
 const router = useRouter();
 
 const handleRegister = async () => {
@@ -119,7 +117,8 @@ const handleRegister = async () => {
     const result = await register(username.value, password.value);
     
     if (result.success) {
-      await router.push('/');
+      await fetch()
+      await navigateTo('/');
     } else {
       errorMessage.value = result.message || 'Đăng ký thất bại. Vui lòng thử lại.';
     }
