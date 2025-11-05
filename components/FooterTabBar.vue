@@ -26,7 +26,8 @@ const tabs: Tab[] = [
   { id: 'inventory', label: '[Túi Đồ]' },
   { id: 'party', label: '[Nhóm]' },
   { id: 'skills', label: '[Kỹ Năng]' },
-  { id: 'talents', label: '[Thiên Phú]' }
+  { id: 'talents', label: '[Thiên Phú]' },
+  { id: 'settings', label: '[Cài Đặt]' }
 ];
 
 const emit = defineEmits<{

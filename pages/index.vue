@@ -102,6 +102,14 @@
       @close="talentsOpen = false"
       @allocateTalent="handleAllocateTalent"
     />
+    
+    <!-- Settings Overlay -->
+    <SettingsOverlay
+      :isOpen="settingsOpen"
+      @close="settingsOpen = false"
+      @themeChange="handleThemeChange"
+      @fontSizeChange="handleFontSizeChange"
+    />
   </div>
 </template>
 
@@ -113,6 +121,7 @@ import InventoryPane from '~/components/InventoryPane.vue';
 import HelpOverlay from '~/components/HelpOverlay.vue';
 import SkillbookOverlay from '~/components/SkillbookOverlay.vue';
 import TalentTreeOverlay from '~/components/TalentTreeOverlay.vue';
+import SettingsOverlay from '~/components/SettingsOverlay.vue';
 import FooterTabBar from '~/components/FooterTabBar.vue';
 import Popover from '~/components/Popover.vue';
 import OccupantsListPopup from '~/components/OccupantsListPopup.vue';
@@ -138,6 +147,7 @@ const isConnected = ref(false);
 const helpOpen = ref(false);
 const skillsOpen = ref(false);
 const talentsOpen = ref(false);
+const settingsOpen = ref(false);
 
 // Popup states
 const inventoryPopupOpen = ref(false);
@@ -282,6 +292,9 @@ const handleTabClick = async (tabId: string) => {
     case 'talents':
       await loadTalents();
       talentsOpen.value = true;
+      break;
+    case 'settings':
+      settingsOpen.value = true;
       break;
   }
 };
@@ -692,10 +705,50 @@ const connectWebSocket = () => {
   };
 };
 
+// Theme and font size constants
+const THEME_IDS = ['vong-tich', 'ho-phach', 'co-ngu'] as const;
+const FONT_SIZE_IDS = ['small', 'medium', 'large'] as const;
+const DEFAULT_THEME = 'vong-tich';
+const DEFAULT_FONT_SIZE = 'medium';
+
+// Handle theme change
+const handleThemeChange = (themeId: string) => {
+  // Remove all theme classes
+  THEME_IDS.forEach(id => document.body.classList.remove(`theme-${id}`));
+  // Add new theme class
+  document.body.classList.add(`theme-${themeId}`);
+};
+
+// Handle font size change
+const handleFontSizeChange = (sizeId: string) => {
+  // Remove all font size classes
+  FONT_SIZE_IDS.forEach(id => document.body.classList.remove(`font-size-${id}`));
+  // Add new font size class
+  document.body.classList.add(`font-size-${sizeId}`);
+};
+
 // Lifecycle hooks
 onMounted(() => {
   focusInput();
   connectWebSocket();
+  
+  // Load saved theme and font size
+  if (typeof window !== 'undefined') {
+    try {
+      const savedTheme = localStorage.getItem('game-theme');
+      const savedFontSize = localStorage.getItem('game-font-size');
+      
+      // Apply saved theme or default
+      handleThemeChange(savedTheme || DEFAULT_THEME);
+      
+      // Apply saved font size or default
+      handleFontSizeChange(savedFontSize || DEFAULT_FONT_SIZE);
+    } catch (error) {
+      console.warn('Failed to load preferences, using defaults:', error);
+      handleThemeChange(DEFAULT_THEME);
+      handleFontSizeChange(DEFAULT_FONT_SIZE);
+    }
+  }
   
   // Always keep focus on input
   document.addEventListener('click', focusInput);
