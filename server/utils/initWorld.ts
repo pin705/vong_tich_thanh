@@ -22,6 +22,8 @@ export async function initializeWorld() {
       description: 'Một bình thuốc nhỏ chứa dịch màu đỏ. Có thể hồi phục 15 HP.',
       type: 'consumable',
       value: 10,
+      price: 50,
+      sellValue: 10,
       stats: { healing: 15 }
     });
 
@@ -53,6 +55,8 @@ export async function initializeWorld() {
       description: 'Một bình thuốc lớn chứa dịch màu đỏ tươi. Có thể hồi phục 30 HP.',
       type: 'consumable',
       value: 25,
+      price: 100,
+      sellValue: 25,
       stats: { healing: 30 }
     });
 
@@ -306,6 +310,8 @@ export async function initializeWorld() {
       description: 'Bản vẽ chi tiết cách chế tạo Mũ Lãng Khách.',
       type: 'Recipe',
       value: 20,
+      price: 500,
+      sellValue: 100,
       quality: 'Thường',
       resultItem: muLangKhach._id,
       recipe: [
@@ -1243,7 +1249,11 @@ export async function initializeWorld() {
         'Nếu bạn tìm được Đuôi Chuột, tôi sẽ mua với giá tốt!',
         'Cẩn thận ngoài kia. Nhiều quái vật nguy hiểm lắm.'
       ],
-      shopItems: [binhMau._id, kiemGi._id, aoDa._id]
+      shopItems: [binhMau._id, kiemGi._id, aoDa._id],
+      // Phase 25: Vendor System
+      isVendor: true,
+      shopInventory: [binhMau._id, congThucMuLangKhach._id],
+      shopType: 'gold'
     });
 
     const chuotBienDi = await AgentSchema.create({
@@ -1373,6 +1383,10 @@ export async function initializeWorld() {
         'Những vật phẩm của tôi có thể thay đổi vận mệnh của bạn.'
       ],
       shopItems: [theExpX2._id, theExpX3._id],
+      // Phase 25: Vendor System
+      isVendor: true,
+      shopInventory: [theExpX2._id],
+      shopType: 'premium',
       experience: 0
     });
 

@@ -21,6 +21,15 @@ export const ItemSchema = defineMongooseModel({
       type: Number,
       default: 0,
     },
+    // Phase 25: Vendor System - Prices
+    price: {
+      type: Number,
+      default: 0,
+    },
+    sellValue: {
+      type: Number,
+      default: 0,
+    },
     premiumPrice: {
       type: Number,
       default: 0,
