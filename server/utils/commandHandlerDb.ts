@@ -132,6 +132,10 @@ export async function handleCommandDb(command: Command, playerId: string): Promi
         responses.push('  guild demote [tên]       - Giáng chức thành viên');
         responses.push('  g [tin nhắn]             - Chat với bang');
         responses.push('');
+        responses.push('PvP:');
+        responses.push('  pvp [on/off]             - Bật/tắt chế độ PvP');
+        responses.push('  attack [tên người chơi]  - Tấn công người chơi (cần PvP)');
+        responses.push('');
         responses.push('KHÁC:');
         responses.push('  help                     - Hiển thị trợ giúp');
         responses.push('  quit                     - Thoát game');
@@ -625,7 +629,27 @@ export async function handleCommandDb(command: Command, playerId: string): Promi
         }
         
         const attackRoom = await RoomSchema.findById(player.currentRoomId);
-        if (!attackRoom || !attackRoom.agents || attackRoom.agents.length === 0) {
+        if (!attackRoom) {
+          responses.push('Lỗi: Không tìm thấy phòng hiện tại.');
+          break;
+        }
+
+        // First, try to find a player with matching name
+        const playersInRoom = gameState.getPlayersInRoom(attackRoom._id.toString());
+        const targetPlayer = playersInRoom.find(p => 
+          p.username.toLowerCase().includes(target.toLowerCase()) && p.id !== playerId
+        );
+
+        if (targetPlayer) {
+          // Attack player (PvP)
+          const { startPvPCombat } = await import('./combatSystem');
+          const pvpMessages = await startPvPCombat(player._id.toString(), targetPlayer.id);
+          responses.push(...pvpMessages);
+          break;
+        }
+
+        // If no player found, try to find an agent
+        if (!attackRoom.agents || attackRoom.agents.length === 0) {
           responses.push(`Bạn không thể tấn công "${target}" ở đây.`);
           break;
         }
@@ -640,7 +664,7 @@ export async function handleCommandDb(command: Command, playerId: string): Promi
           break;
         }
 
-        // Start combat
+        // Start combat with agent
         const combatMessages = await startCombat(player._id.toString(), attackAgent._id.toString());
         responses.push(...combatMessages);
         break;
@@ -1259,6 +1283,39 @@ export async function handleCommandDb(command: Command, playerId: string): Promi
         });
         
         // Don't add to responses - it will be shown via chat system
+        break;
+      }
+
+      case 'pvp': {
+        // Toggle PvP flag
+        const mode = target?.toLowerCase();
+        
+        if (!mode || (mode !== 'on' && mode !== 'off')) {
+          responses.push('Cú pháp: pvp [on/off]');
+          responses.push(`Trạng thái PvP hiện tại: ${player.pvpEnabled ? 'BẬT' : 'TẮT'}`);
+          break;
+        }
+        
+        const newPvpState = mode === 'on';
+        
+        if (player.pvpEnabled === newPvpState) {
+          responses.push(`PvP đã ${newPvpState ? 'bật' : 'tắt'} rồi.`);
+          break;
+        }
+        
+        // Can't toggle PvP while in combat
+        if (player.inCombat) {
+          responses.push('Không thể thay đổi trạng thái PvP khi đang chiến đấu.');
+          break;
+        }
+        
+        player.pvpEnabled = newPvpState;
+        await player.save();
+        
+        responses.push(`Đã ${newPvpState ? 'BẬT' : 'TẮT'} chế độ PvP.`);
+        if (newPvpState) {
+          responses.push('Cảnh báo: Bạn có thể bị tấn công bởi người chơi khác ở khu vực không an toàn!');
+        }
         break;
       }
 
