@@ -88,5 +88,13 @@ export const AgentSchema = defineMongooseModel({
       type: Array,
       default: [],
     },
+    // Phase 21: Loot Table System
+    lootTable: [{
+      itemId: {
+        type: Schema.Types.ObjectId,
+        ref: 'Item',
+      },
+      dropChance: Number, // 0-1, e.g., 0.5 = 50% chance
+    }],
   },
 });
