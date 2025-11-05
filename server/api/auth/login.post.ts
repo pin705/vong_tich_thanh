@@ -23,7 +23,7 @@ export default defineEventHandler(async (event) => {
     }
 
     // Verify password using bcrypt
-    const isPasswordValid = await bcrypt.compare(password, player.password);
+    const isPasswordValid = await verifyPassword(player.password, password);
     
     if (!isPasswordValid) {
       throw createError({

@@ -1,6 +1,5 @@
 import { PlayerSchema } from '../../../models/Player';
-import bcrypt from 'bcrypt';
-import { BCRYPT_SALT_ROUNDS, MIN_PASSWORD_LENGTH, STARTING_HP, STARTING_GOLD, STARTING_LEVEL } from '../../utils/constants';
+import { MIN_PASSWORD_LENGTH, STARTING_HP, STARTING_GOLD, STARTING_LEVEL } from '../../utils/constants';
 
 export default defineEventHandler(async (event) => {
   try {
@@ -42,7 +41,7 @@ export default defineEventHandler(async (event) => {
     }
 
     // Hash password before storing
-    const hashedPassword = await bcrypt.hash(password, BCRYPT_SALT_ROUNDS);
+    const hashedPassword = await hashPassword(password);
 
     // Create new player
     const player = await PlayerSchema.create({
