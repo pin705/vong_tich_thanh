@@ -6,6 +6,18 @@ import { gameState } from './gameState';
 import { scheduleAgentRespawn } from './npcAI';
 import { COMBAT_TICK_INTERVAL, FLEE_SUCCESS_CHANCE, EXPERIENCE_PER_LEVEL, HP_GAIN_PER_LEVEL, MINIMUM_DAMAGE } from './constants';
 
+// Helper function to categorize combat messages for semantic highlighting
+function getCombatMessageType(message: string): string {
+  if (message === '') return 'normal';
+  if (message.includes('LEVEL UP') || message.includes('═')) return 'critical';
+  if (message.includes('điểm kinh nghiệm')) return 'xp';
+  if (message.includes('làm rơi')) return 'loot';
+  if (message.includes('tấn công bạn')) return 'damage_in';
+  if (message.includes('Bạn tấn công') || (message.includes('gây') && message.includes('sát thương'))) return 'damage_out';
+  if (message.includes('hạ gục')) return 'damage_out';
+  return 'action';
+}
+
 // Helper function to send combat state updates to player
 async function sendCombatStateUpdate(playerId: string) {
   const player = await PlayerSchema.findById(playerId);
@@ -247,21 +259,8 @@ export async function executeCombatTick(playerId: string, agentId: string): Prom
       const playerObj = gameState.getPlayer(playerId);
       if (playerObj && playerObj.ws) {
         messages.forEach(msg => {
-          if (msg === '') {
-            playerObj.ws.send(JSON.stringify({ type: 'normal', message: '' }));
-          } else if (msg.includes('LEVEL UP')) {
-            playerObj.ws.send(JSON.stringify({ type: 'critical', message: msg }));
-          } else if (msg.includes('điểm kinh nghiệm')) {
-            playerObj.ws.send(JSON.stringify({ type: 'xp', message: msg }));
-          } else if (msg.includes('làm rơi')) {
-            playerObj.ws.send(JSON.stringify({ type: 'loot', message: msg }));
-          } else if (msg.includes('═')) {
-            playerObj.ws.send(JSON.stringify({ type: 'critical', message: msg }));
-          } else if (msg.includes('hạ gục') || msg.includes('tấn công')) {
-            playerObj.ws.send(JSON.stringify({ type: 'damage_out', message: msg }));
-          } else {
-            playerObj.ws.send(JSON.stringify({ type: 'action', message: msg }));
-          }
+          const messageType = getCombatMessageType(msg);
+          playerObj.ws.send(JSON.stringify({ type: messageType, message: msg }));
         });
         
         // Show updated stats
@@ -372,15 +371,8 @@ export async function executeCombatTick(playerId: string, agentId: string): Prom
     const playerObj = gameState.getPlayer(playerId);
     if (playerObj && playerObj.ws) {
       messages.forEach(msg => {
-        if (msg.includes('Bạn tấn công') || msg.includes('gây') && msg.includes('sát thương') && !msg.includes('tấn công bạn')) {
-          playerObj.ws.send(JSON.stringify({ type: 'damage_out', message: msg }));
-        } else if (msg.includes('tấn công bạn')) {
-          playerObj.ws.send(JSON.stringify({ type: 'damage_in', message: msg }));
-        } else if (msg.includes('[') && msg.includes(']')) {
-          playerObj.ws.send(JSON.stringify({ type: 'accent', message: msg }));
-        } else {
-          playerObj.ws.send(JSON.stringify({ type: 'action', message: msg }));
-        }
+        const messageType = getCombatMessageType(msg);
+        playerObj.ws.send(JSON.stringify({ type: messageType, message: msg }));
       });
       
       // Show HP

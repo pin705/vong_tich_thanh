@@ -139,9 +139,15 @@ const itemActions = computed(() => [
   },
   {
     id: 'equip',
-    label: (item: InventoryItem) => item.equipped ? 'Tháo' : 'Trang bị',
+    label: 'Trang bị',
     number: 2,
     condition: (item: InventoryItem) => item.type === 'weapon' || item.type === 'armor'
+  },
+  {
+    id: 'unequip',
+    label: 'Tháo',
+    number: 2,
+    condition: (item: InventoryItem) => (item.type === 'weapon' || item.type === 'armor') && item.equipped
   },
   {
     id: 'drop',

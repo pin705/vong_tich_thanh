@@ -698,21 +698,21 @@ const handleChooseProfession = async (professionId: string) => {
 };
 
 // Load merchant shop data
+// TODO: Create dedicated API endpoint for merchant shop data
+// Current workaround uses WebSocket "list" command which has limitations:
+// - Side effects from command execution
+// - No direct return of shop item data
+// - Coupling with WebSocket protocol
 const loadMerchantShop = async (merchantId: string, merchantName: string) => {
-  // For now, use the "list" command to get merchant items
-  // In the future, this could be a dedicated API endpoint
   tradingData.value = {
     merchantName,
     merchantId,
     merchantItems: [] // Will be populated via WebSocket response
   };
   
-  // Send list command to get merchant items via WebSocket
-  // The response will populate the trading data
+  // Temporary: Send list command via WebSocket
+  // Future: Replace with: const items = await $fetch(`/api/merchant/${merchantId}/shop`)
   currentInput.value = 'list';
-  
-  // Note: This is a workaround. Ideally, we'd have a dedicated API endpoint
-  // that returns merchant shop items directly without going through WebSocket
 };
 
 // Handle buy item

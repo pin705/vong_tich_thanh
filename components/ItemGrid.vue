@@ -198,8 +198,15 @@ const executeAction = (actionId: string) => {
 
 .inventory-grid {
   display: grid;
-  grid-template-columns: repeat(v-bind(columns), 1fr);
+  grid-template-columns: repeat(4, 1fr);
   gap: 0.5rem;
+}
+
+/* Support different column counts */
+@media (min-width: 1024px) {
+  .inventory-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
 }
 
 .inventory-slot {
