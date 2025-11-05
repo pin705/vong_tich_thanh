@@ -180,10 +180,11 @@ async function distributeExperience(killer: any, totalExp: number, roomId: strin
     // Send notification to member
     if (member.ws) {
       const buffMessage = multiplier > 1 ? ` (${multiplier}x boost!)` : '';
+      const prefix = multiplier > 1 ? '⚡ ' : '';
       member.ws.send(JSON.stringify({
         type: 'system',
         category: 'xp',
-        message: `⚡ Bạn nhận được ${modifiedExp} EXP (Nhóm)${buffMessage}`
+        message: `${prefix}Bạn nhận được ${modifiedExp} EXP (Nhóm)${buffMessage}`
       }));
     }
   }

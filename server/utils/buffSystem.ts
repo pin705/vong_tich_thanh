@@ -56,19 +56,27 @@ export async function cleanupExpiredBuffs(playerId: string): Promise<void> {
   }
 }
 
+export interface ActiveBuff {
+  _id: string;
+  playerId: string;
+  type: 'EXP_BOOST' | 'DAMAGE_BOOST' | 'DEFENSE_BOOST' | 'HEALING_BOOST';
+  multiplier: number;
+  expiresAt: Date;
+}
+
 /**
  * Get all active buffs for a player
  * @param playerId - The player's ID
  * @returns Array of active buffs
  */
-export async function getActiveBuffs(playerId: string): Promise<any[]> {
+export async function getActiveBuffs(playerId: string): Promise<ActiveBuff[]> {
   try {
     const buffs = await BuffSchema.find({
       playerId,
       expiresAt: { $gt: new Date() }
-    });
+    }).lean();
     
-    return buffs;
+    return buffs as ActiveBuff[];
   } catch (error) {
     console.error('Error getting active buffs:', error);
     return [];

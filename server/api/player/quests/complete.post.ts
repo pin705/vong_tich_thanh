@@ -49,15 +49,21 @@ export default defineEventHandler(async (event) => {
       return { success: false, message: 'Player not found' };
     }
 
+    // Prepare response rewards object
+    const actualRewards: any = {
+      exp: 0,
+      gold: quest.rewards.gold || 0,
+      items: quest.rewards.items || []
+    };
+
     // Add experience (with buff)
     if (quest.rewards.exp) {
       const { exp: modifiedExp, multiplier } = await applyExpBuff(playerId, quest.rewards.exp);
       player.experience += modifiedExp;
       
-      // Update rewards to show actual exp gained
-      quest.rewards.exp = modifiedExp;
+      actualRewards.exp = modifiedExp;
       if (multiplier > 1) {
-        quest.rewards.expBonus = `(${multiplier}x boost!)`;
+        actualRewards.expBonus = `(${multiplier}x boost!)`;
       }
     }
 
@@ -100,7 +106,7 @@ export default defineEventHandler(async (event) => {
     return {
       success: true,
       message: 'Đã hoàn thành nhiệm vụ!',
-      rewards: quest.rewards
+      rewards: actualRewards
     };
   } catch (error) {
     console.error('Error completing quest:', error);
