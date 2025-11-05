@@ -2,8 +2,66 @@
 export interface Message {
   id: string;
   text: string;
-  type: 'normal' | 'action' | 'accent' | 'error' | 'system';
+  type: 'normal' | 'action' | 'accent' | 'error' | 'system' | 'combat_log' | 'chat_log';
   timestamp: Date;
+  user?: string; // For chat messages
+}
+
+// Chat message type
+export interface ChatMessage {
+  id: string;
+  user?: string;
+  text: string;
+  timestamp: Date;
+}
+
+// Player state for UI
+export interface PlayerState {
+  name: string;
+  hp: number;
+  maxHp: number;
+  mp: number;
+  maxMp: number;
+  level: number;
+  gold: number;
+  inCombat: boolean;
+}
+
+// Target state for UI
+export interface TargetState {
+  name: string;
+  hp: number;
+  maxHp: number;
+}
+
+// Exits state for map
+export interface ExitsState {
+  north?: boolean;
+  south?: boolean;
+  east?: boolean;
+  west?: boolean;
+  up?: boolean;
+  down?: boolean;
+}
+
+// Room occupant
+export interface RoomOccupant {
+  id: string;
+  name: string;
+}
+
+// Room occupants state
+export interface RoomOccupantsState {
+  players: RoomOccupant[];
+  npcs: RoomOccupant[];
+  mobs: RoomOccupant[];
+}
+
+// Selected target
+export interface SelectedTarget {
+  type: 'player' | 'npc' | 'mob';
+  id: string;
+  name: string;
 }
 
 // Player/User types

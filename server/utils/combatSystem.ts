@@ -6,6 +6,51 @@ import { gameState } from './gameState';
 import { scheduleAgentRespawn } from './npcAI';
 import { COMBAT_TICK_INTERVAL, FLEE_SUCCESS_CHANCE, EXPERIENCE_PER_LEVEL, HP_GAIN_PER_LEVEL, MINIMUM_DAMAGE } from './constants';
 
+// Helper function to send combat state updates to player
+async function sendCombatStateUpdate(playerId: string) {
+  const player = await PlayerSchema.findById(playerId);
+  if (!player) return;
+  
+  const playerObj = gameState.getPlayer(playerId);
+  if (!playerObj || !playerObj.ws) return;
+  
+  // Send player state
+  playerObj.ws.send(JSON.stringify({
+    type: 'player_state',
+    payload: {
+      name: player.username,
+      hp: player.hp,
+      maxHp: player.maxHp,
+      mp: 50, // TODO: Add MP system to Player schema
+      maxMp: 50, // TODO: Add MP system to Player schema
+      level: player.level,
+      gold: player.gold,
+      inCombat: player.inCombat
+    }
+  }));
+  
+  // Send target state
+  if (player.inCombat && player.combatTarget) {
+    const target = await AgentSchema.findById(player.combatTarget);
+    if (target) {
+      playerObj.ws.send(JSON.stringify({
+        type: 'target_state',
+        payload: {
+          name: target.name,
+          hp: target.hp,
+          maxHp: target.maxHp
+        }
+      }));
+    }
+  } else {
+    // Clear target
+    playerObj.ws.send(JSON.stringify({
+      type: 'target_state',
+      payload: null
+    }));
+  }
+}
+
 // Calculate damage with some randomness
 function calculateDamage(baseDamage: number): number {
   const variance = 0.2; // 20% variance
@@ -207,6 +252,9 @@ export async function executeCombatTick(playerId: string, agentId: string): Prom
         }));
       }
       
+      // Send state update (combat ended)
+      await sendCombatStateUpdate(playerId);
+      
       // Broadcast to room
       if (room) {
         gameState.broadcastToRoom(
@@ -278,6 +326,9 @@ export async function executeCombatTick(playerId: string, agentId: string): Prom
         }));
       }
       
+      // Send state update (player died, combat ended)
+      await sendCombatStateUpdate(playerId);
+      
       // Broadcast to room
       if (room) {
         gameState.broadcastToRoom(
@@ -315,6 +366,9 @@ export async function executeCombatTick(playerId: string, agentId: string): Prom
         message: `HP: ${player.hp}/${player.maxHp} | [${agent.name}] HP: ${agent.hp}/${agent.maxHp}` 
       }));
     }
+    
+    // Send state update (combat continuing)
+    await sendCombatStateUpdate(playerId);
     
     // Broadcast to room spectators
     if (room) {

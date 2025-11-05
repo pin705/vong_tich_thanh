@@ -5,9 +5,114 @@ import { handleCommandDb } from '../utils/commandHandlerDb';
 import { gameState } from '../utils/gameState';
 import { PlayerSchema } from '../../models/Player';
 import { RoomSchema } from '../../models/Room';
+import { AgentSchema } from '../../models/Agent';
 
 // Store peer to player mapping
 const peerToPlayer = new Map<string, string>();
+
+// Helper function to send player state
+async function sendPlayerState(peer: Peer, playerId: string) {
+  const player = await PlayerSchema.findById(playerId);
+  if (!player) return;
+
+  peer.send(JSON.stringify({
+    type: 'player_state',
+    payload: {
+      name: player.username,
+      hp: player.hp,
+      maxHp: player.maxHp,
+      mp: 50, // TODO: Add MP system to Player schema
+      maxMp: 50, // TODO: Add MP system to Player schema
+      level: player.level,
+      gold: player.gold,
+      inCombat: player.inCombat
+    }
+  }));
+
+  // Send target state if in combat
+  if (player.inCombat && player.combatTarget) {
+    const target = await AgentSchema.findById(player.combatTarget);
+    if (target) {
+      peer.send(JSON.stringify({
+        type: 'target_state',
+        payload: {
+          name: target.name,
+          hp: target.hp,
+          maxHp: target.maxHp
+        }
+      }));
+    }
+  } else {
+    // Clear target
+    peer.send(JSON.stringify({
+      type: 'target_state',
+      payload: null
+    }));
+  }
+}
+
+// Helper function to send exits
+async function sendExits(peer: Peer, roomId: string) {
+  const room = await RoomSchema.findById(roomId);
+  if (!room) return;
+
+  peer.send(JSON.stringify({
+    type: 'exits',
+    payload: {
+      north: !!room.exits.north,
+      south: !!room.exits.south,
+      east: !!room.exits.east,
+      west: !!room.exits.west,
+      up: !!room.exits.up,
+      down: !!room.exits.down
+    }
+  }));
+}
+
+// Helper function to send room occupants
+async function sendRoomOccupants(peer: Peer, roomId: string, currentPlayerId: string) {
+  const room = await RoomSchema.findById(roomId);
+  if (!room) return;
+
+  // Get players in room
+  const playersInRoom = gameState.getPlayersInRoom(roomId);
+  const players = playersInRoom
+    .filter(p => p.id !== currentPlayerId)
+    .map(p => ({ id: p.id, name: p.username }));
+
+  // Get NPCs and mobs in room
+  const agents = await AgentSchema.find({ _id: { $in: room.agents } });
+  const npcs = agents
+    .filter((a: any) => a.type === 'npc')
+    .map((a: any) => ({ id: a._id.toString(), name: a.name }));
+  const mobs = agents
+    .filter((a: any) => a.type === 'mob')
+    .map((a: any) => ({ id: a._id.toString(), name: a.name }));
+
+  peer.send(JSON.stringify({
+    type: 'room_occupants',
+    payload: {
+      players,
+      npcs,
+      mobs
+    }
+  }));
+}
+
+// Helper function to broadcast room occupants to all players in a room
+async function broadcastRoomOccupants(roomId: string) {
+  const room = await RoomSchema.findById(roomId);
+  if (!room) return;
+
+  const playersInRoom = gameState.getPlayersInRoom(roomId);
+  
+  // Send updated occupants to each player
+  for (const player of playersInRoom) {
+    if (player.ws) {
+      await sendRoomOccupants(player.ws, roomId, player.id);
+    }
+  }
+}
 
 export default defineWebSocketHandler({
   async open(peer: Peer) {
@@ -73,6 +178,9 @@ export default defineWebSocketHandler({
             playerId
           );
           
+          // Broadcast updated occupants to all players in the room
+          await broadcastRoomOccupants(authRoom._id.toString());
+          
           // Send initial room description using the look command
           const lookCommand = parseCommand('look');
           const initialResponses = await handleCommandDb(lookCommand, playerId);
@@ -86,6 +194,11 @@ export default defineWebSocketHandler({
             type: 'normal',
             message: ''
           }));
+          
+          // Send player state, exits, room occupants, and initial room info
+          await sendPlayerState(peer, playerId);
+          await sendExits(peer, authRoom._id.toString());
+          await sendRoomOccupants(peer, authRoom._id.toString(), playerId);
           
           // Send room description
           for (const response of initialResponses) {
@@ -163,6 +276,14 @@ export default defineWebSocketHandler({
               }));
             }
           }
+          
+          // Send updated player state, exits, and room occupants after command
+          const playerAfterCmd = await PlayerSchema.findById(playerIdForCmd);
+          if (playerAfterCmd) {
+            await sendPlayerState(peer, playerIdForCmd);
+            await sendExits(peer, playerAfterCmd.currentRoomId.toString());
+            await sendRoomOccupants(peer, playerAfterCmd.currentRoomId.toString(), playerIdForCmd);
+          }
           break;
 
         default:
@@ -184,19 +305,28 @@ export default defineWebSocketHandler({
     if (playerId) {
       const player = gameState.getPlayer(playerId);
       if (player) {
+        const roomId = player.roomId;
+        
         // Broadcast to room that player left
         gameState.broadcastToRoom(
-          player.roomId,
+          roomId,
           {
             type: 'system',
             message: `[${player.username}] đã ngắt kết nối.`
           },
           playerId
         );
+        
+        // Remove player first
+        gameState.removePlayer(playerId);
+        peerToPlayer.delete(peer.id);
+        
+        // Broadcast updated occupants to remaining players
+        await broadcastRoomOccupants(roomId);
+      } else {
+        gameState.removePlayer(playerId);
+        peerToPlayer.delete(peer.id);
       }
-      
-      gameState.removePlayer(playerId);
-      peerToPlayer.delete(peer.id);
     }
   },
 

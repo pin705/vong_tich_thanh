@@ -309,14 +309,17 @@ export async function handleCommandDb(command: Command, playerId: string): Promi
         const message = [target, ...(args || [])].filter(Boolean).join(' ');
         responses.push(`Bạn nói: "${message}"`);
         
-        // Broadcast to room
+        // Broadcast to room as chat_log
         const sayRoom = await RoomSchema.findById(player.currentRoomId);
         if (sayRoom) {
           gameState.broadcastToRoom(
             sayRoom._id.toString(),
             {
-              type: 'accent',
-              message: `[${player.username}] nói: "${message}"`
+              type: 'chat_log',
+              payload: {
+                user: player.username,
+                message: message
+              }
             },
             playerId
           );
