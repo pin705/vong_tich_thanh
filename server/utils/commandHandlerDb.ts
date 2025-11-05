@@ -541,7 +541,7 @@ export async function handleCommandDb(command: Command, playerId: string): Promi
         const currencySymbol = vendor.shopType === 'premium' ? '💎' : '💰';
         responses.push(`════════ HÀNG CỦA ${vendor.name.toUpperCase()} ════════`);
         shopInventory.forEach((item: any, index: number) => {
-          const itemPrice = vendor.shopType === 'premium' ? item.premiumPrice : item.price;
+          const itemPrice = vendor.shopType === 'premium' ? (item.premiumPrice ?? 0) : (item.price ?? 0);
           const spaces = ' '.repeat(Math.max(20 - item.name.length, 1));
           responses.push(`${index + 1}. [${item.name}]${spaces}- ${itemPrice} ${currencySymbol}`);
         });
@@ -585,8 +585,14 @@ export async function handleCommandDb(command: Command, playerId: string): Promi
 
         // Check price based on shop type
         const isPremiumShop = buyVendor.shopType === 'premium';
-        const itemPrice = isPremiumShop ? buyItem.premiumPrice : buyItem.price;
+        const itemPrice = isPremiumShop ? (buyItem.premiumPrice ?? 0) : (buyItem.price ?? 0);
         const buyCurrencySymbol = isPremiumShop ? '💎' : '💰';
+
+        // Validate that item has a valid price
+        if (itemPrice <= 0) {
+          responses.push(`[${buyItem.name}] không có giá bán.`);
+          break;
+        }
 
         if (isPremiumShop) {
           if (player.premiumCurrency < itemPrice) {
@@ -672,9 +678,9 @@ export async function handleCommandDb(command: Command, playerId: string): Promi
         }
 
         // Phase 25: Use sellValue field or fallback to 50% of value
-        const sellValue = sellItem.sellValue > 0 ? sellItem.sellValue : Math.floor(sellItem.value * 0.5);
+        const sellValue = (sellItem.sellValue ?? 0) > 0 ? sellItem.sellValue : Math.floor((sellItem.value ?? 0) * 0.5);
 
-        if (sellValue === 0) {
+        if (sellValue <= 0) {
           responses.push(`Không thể bán [${sellItem.name}]. Vật phẩm này không có giá trị bán.`);
           break;
         }
