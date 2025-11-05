@@ -88,10 +88,16 @@
         @keydown.enter="sendCommand"
         @keydown.up="navigateHistory(-1)"
         @keydown.down="navigateHistory(1)"
+        @keydown.ctrl.h.prevent="toggleHelp"
+        @keydown.meta.h.prevent="toggleHelp"
+        @keydown.f1.prevent="toggleHelp"
         autocomplete="off"
         spellcheck="false"
       />
     </div>
+
+    <!-- Help Overlay -->
+    <HelpOverlay :isOpen="helpOpen" @close="helpOpen = false" />
   </div>
 </template>
 
@@ -104,6 +110,7 @@ import ChatPane from '~/components/ChatPane.vue';
 import RoomOccupantsPane from '~/components/RoomOccupantsPane.vue';
 import ActionsPane from '~/components/ActionsPane.vue';
 import InventoryPane from '~/components/InventoryPane.vue';
+import HelpOverlay from '~/components/HelpOverlay.vue';
 
 definePageMeta({
   middleware: 'auth'
@@ -122,6 +129,7 @@ const outputArea = ref<HTMLElement | null>(null);
 const inputField = ref<HTMLInputElement | null>(null);
 const ws = ref<WebSocket | null>(null);
 const isConnected = ref(false);
+const helpOpen = ref(false);
 
 // Room occupants state
 const roomOccupants = ref<RoomOccupantsState>({
@@ -264,6 +272,11 @@ const handleMapNavigation = (direction: string) => {
   sendCommand();
 };
 
+// Toggle help overlay
+const toggleHelp = () => {
+  helpOpen.value = !helpOpen.value;
+};
+
 // Navigate command history
 const navigateHistory = (direction: number) => {
   if (commandHistory.value.length === 0) return;
@@ -299,6 +312,13 @@ const sendCommand = async () => {
     addMessage('Đang đăng xuất...', 'system');
     await clear();
     await router.push('/login');
+    return;
+  }
+
+  // Handle help command
+  if (input.toLowerCase() === 'help') {
+    helpOpen.value = true;
+    currentInput.value = '';
     return;
   }
 
