@@ -4,6 +4,7 @@ interface ActivePlayer {
   username: string;
   roomId: string;
   ws?: any;
+  partyId?: string | null;
 }
 
 class GameState {
@@ -33,6 +34,19 @@ class GameState {
     if (player) {
       player.roomId = newRoomId;
     }
+  }
+
+  updatePlayerParty(playerId: string, partyId: string | null) {
+    const player = this.activePlayers.get(playerId);
+    if (player) {
+      player.partyId = partyId;
+    }
+  }
+
+  getPlayersByIds(playerIds: string[]): ActivePlayer[] {
+    return playerIds
+      .map(id => this.activePlayers.get(id))
+      .filter((p): p is ActivePlayer => p !== undefined);
   }
 
   // Combat management

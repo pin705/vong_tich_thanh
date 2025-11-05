@@ -34,6 +34,11 @@ const COMMAND_ALIASES: Record<string, string> = {
   'buy': 'buy',
   'sell': 'sell',
   'list': 'list',
+  
+  // Party
+  'p': 'party',
+  'moi': 'party',
+  'roi': 'party',
 };
 
 // Parse command input into structured command
