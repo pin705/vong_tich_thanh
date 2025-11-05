@@ -6,7 +6,12 @@ import { gameState } from './gameState';
 import { partyService } from './partyService';
 import { scheduleAgentRespawn } from './npcAI';
 import { applyExpBuff } from './buffSystem';
+import { clearBossState } from './bossMechanics';
 import { COMBAT_TICK_INTERVAL, FLEE_SUCCESS_CHANCE, EXPERIENCE_PER_LEVEL, HP_GAIN_PER_LEVEL, MINIMUM_DAMAGE } from './constants';
+
+// Boss reward constants
+const BOSS_PREMIUM_CURRENCY_MULTIPLIER = 10;
+const BOSS_GOLD_MULTIPLIER = 100;
 
 // Helper function to categorize combat messages for semantic highlighting
 function getCombatMessageType(message: string): string {
@@ -246,11 +251,18 @@ async function dropLoot(agent: any, roomId: string): Promise<string[]> {
             description: originalItem.description,
             type: originalItem.type,
             value: originalItem.value,
-            stats: originalItem.stats
+            stats: originalItem.stats,
+            rarity: originalItem.rarity
           });
           
           room.items.push(newItem._id);
-          messages.push(`[${agent.name}] làm rơi ra một [${originalItem.name}].`);
+          
+          // Highlight rare items with color
+          if (originalItem.rarity === 'epic' || originalItem.rarity === 'legendary') {
+            messages.push(`✨ [${agent.name}] làm rơi ra [${originalItem.name}] (${originalItem.rarity})!`);
+          } else {
+            messages.push(`[${agent.name}] làm rơi ra một [${originalItem.name}].`);
+          }
         }
       }
       await room.save();
@@ -303,8 +315,36 @@ export async function executeCombatTick(playerId: string, agentId: string): Prom
         }
       }
       
+      // Phase 19: Boss rewards
+      let totalExp = agent.experience;
+      if (agent.agentType === 'boss') {
+        // Boss kills give 50x EXP
+        totalExp = agent.experience * 50;
+        messages.push('');
+        messages.push('═══════════════════════════════════');
+        messages.push(`    🏆 BOSS DEFEATED! 🏆`);
+        messages.push('═══════════════════════════════════');
+        
+        // Award premium currency (Cổ Thạch)
+        const premiumReward = Math.floor(agent.level * BOSS_PREMIUM_CURRENCY_MULTIPLIER);
+        player.premiumCurrency = (player.premiumCurrency || 0) + premiumReward;
+        messages.push(`💎 Bạn nhận được ${premiumReward} Cổ Thạch!`);
+        
+        // Award gold
+        const goldReward = agent.level * BOSS_GOLD_MULTIPLIER;
+        player.gold = (player.gold || 0) + goldReward;
+        messages.push(`💰 Bạn nhận được ${goldReward} Vàng!`);
+        
+        // Clear boss state
+        clearBossState(agent._id.toString());
+      } else if (agent.agentType === 'elite') {
+        // Elite kills give 3x EXP
+        totalExp = agent.experience * 3;
+        messages.push('⚔️ Elite defeated! Bonus rewards!');
+      }
+      
       // Handle EXP distribution (with party support)
-      const expMessages = await distributeExperience(player, agent.experience, room._id.toString());
+      const expMessages = await distributeExperience(player, totalExp, room._id.toString());
       messages.push(...expMessages);
       
       player.inCombat = false;
@@ -364,7 +404,10 @@ export async function executeCombatTick(playerId: string, agentId: string): Prom
         dialogue: agent.dialogue,
         shopItems: agent.shopItems,
         loot: agent.loot,
-        experience: agent.experience
+        experience: agent.experience,
+        agentType: agent.agentType,
+        mechanics: agent.mechanics,
+        faction: agent.faction
       };
       
       if (room) {
@@ -376,7 +419,7 @@ export async function executeCombatTick(playerId: string, agentId: string): Prom
         );
         
         // Schedule respawn
-        scheduleAgentRespawn(agentData, room._id.toString());
+        await scheduleAgentRespawn(agentData, room._id.toString());
       }
       
       // Delete the agent

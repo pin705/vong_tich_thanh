@@ -238,9 +238,12 @@ interface RespawnTimer {
 
 const respawnTimers: Map<string, RespawnTimer> = new Map();
 
-// Schedule agent respawn (5 minutes after death)
-export function scheduleAgentRespawn(agentData: any, roomId: string): void {
-  const RESPAWN_TIME = 5 * 60 * 1000; // 5 minutes
+// Schedule agent respawn - uses room's respawnTimeSeconds or defaults to 5 minutes
+export async function scheduleAgentRespawn(agentData: any, roomId: string): Promise<void> {
+  // Get room to check respawn time
+  const room = await RoomSchema.findById(roomId);
+  const respawnSeconds = room?.respawnTimeSeconds || 300; // Default 5 minutes
+  const RESPAWN_TIME = respawnSeconds * 1000;
   
   const timer = setTimeout(async () => {
     try {
@@ -260,6 +263,9 @@ export function scheduleAgentRespawn(agentData: any, roomId: string): void {
         shopItems: agentData.shopItems,
         loot: agentData.loot,
         experience: agentData.experience,
+        agentType: agentData.agentType,
+        mechanics: agentData.mechanics,
+        faction: agentData.faction,
         inCombat: false
       });
 

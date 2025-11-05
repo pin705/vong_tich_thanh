@@ -78,5 +78,15 @@ export const AgentSchema = defineMongooseModel({
       type: Number,
       default: 0,
     },
+    // Phase 19: Boss System
+    agentType: {
+      type: String,
+      enum: ['mob', 'elite', 'boss'],
+      default: 'mob',
+    },
+    mechanics: {
+      type: Array,
+      default: [],
+    },
   },
 });

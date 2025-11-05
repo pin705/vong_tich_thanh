@@ -50,5 +50,11 @@ export const ItemSchema = defineMongooseModel({
       enum: ['chair', 'table', 'bed', 'decoration', 'storage', null],
       default: null,
     },
+    // Phase 19: Boss System - Loot Rarity
+    rarity: {
+      type: String,
+      enum: ['common', 'uncommon', 'rare', 'epic', 'legendary'],
+      default: 'common',
+    },
   },
 });
