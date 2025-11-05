@@ -14,7 +14,7 @@ class PartyService {
 
   // Create a new party with the leader
   createParty(leaderId: string): string {
-    const partyId = `party-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    const partyId = `party-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
     
     this.parties.set(partyId, {
       leaderId,

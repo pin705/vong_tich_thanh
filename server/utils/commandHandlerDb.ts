@@ -866,16 +866,19 @@ export async function handleCommandDb(command: Command, playerId: string): Promi
         
         // Handle "roi" alias for "party leave"
         if (action === 'roi') {
+          // Get party info BEFORE leaving
+          const playerPartyBeforeLeave = partyService.getPlayerParty(playerId);
+          const partyIdBeforeLeave = playerPartyBeforeLeave?.partyId;
+          
           const leaveResult = partyService.leaveParty(playerId);
           responses.push(leaveResult.message);
           
           if (leaveResult.success) {
             gameState.updatePlayerParty(playerId, null);
             
-            // Notify party members
-            const playerParty = partyService.getPlayerParty(playerId);
-            if (playerParty) {
-              const memberIds = partyService.getPartyMemberIds(playerParty.partyId);
+            // Notify remaining party members (if party still exists)
+            if (partyIdBeforeLeave) {
+              const memberIds = partyService.getPartyMemberIds(partyIdBeforeLeave);
               const members = gameState.getPlayersByIds(memberIds);
               members.forEach(member => {
                 if (member.ws) {
@@ -1026,16 +1029,19 @@ export async function handleCommandDb(command: Command, playerId: string): Promi
           }
           
           case 'leave': {
+            // Get party info BEFORE leaving
+            const playerPartyBeforeLeave = partyService.getPlayerParty(playerId);
+            const partyIdBeforeLeave = playerPartyBeforeLeave?.partyId;
+            
             const leaveResult = partyService.leaveParty(playerId);
             responses.push(leaveResult.message);
             
             if (leaveResult.success) {
               gameState.updatePlayerParty(playerId, null);
               
-              // Notify party members if party still exists
-              const playerParty = partyService.getPlayerParty(playerId);
-              if (playerParty) {
-                const memberIds = partyService.getPartyMemberIds(playerParty.partyId);
+              // Notify remaining party members (if party still exists)
+              if (partyIdBeforeLeave) {
+                const memberIds = partyService.getPartyMemberIds(partyIdBeforeLeave);
                 const members = gameState.getPlayersByIds(memberIds);
                 members.forEach(member => {
                   if (member.ws) {
