@@ -24,7 +24,7 @@ Yêu cầu "không nhựa, không AI" có nghĩa là chúng ta phải làm một
           * `attack` -\> `a` (hoặc `kill`)
           * `get` -\> `g`
           * `inventory` -\> `i`
-
+Không dùng các icon nhựa
 -----
 
 ### 🎮 Lối Chơi Cốt Lõi (Core Gameplay Loop)
