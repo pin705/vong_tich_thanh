@@ -216,6 +216,16 @@ async function executeStomp(agent: any, roomId: string): Promise<void> {
       if (startingRoom) {
         player.currentRoomId = startingRoom._id;
         gameState.updatePlayerRoom(player._id.toString(), startingRoom._id.toString());
+      } else {
+        // Fallback: If starting room not found, find any room to respawn in
+        console.error(`Starting room '${STARTING_ROOM_NAME}' not found, using fallback`);
+        const fallbackRoom = await RoomSchema.findOne({});
+        if (fallbackRoom) {
+          player.currentRoomId = fallbackRoom._id;
+          gameState.updatePlayerRoom(player._id.toString(), fallbackRoom._id.toString());
+        } else {
+          console.error('No rooms found in database for player respawn!');
+        }
       }
       
       // Restore some HP
@@ -264,7 +274,7 @@ async function processCasting(agent: any, roomId: string): Promise<void> {
 function checkTrigger(agent: any, mechanic: BossMechanic, bossState: BossState): boolean {
   const trigger = mechanic.trigger;
   
-  // Health-based triggers
+  // Health-based triggers (one-time)
   if (trigger === 'health_below_50') {
     const hpPercent = agent.hp / agent.maxHp;
     return hpPercent < 0.5 && !bossState.mechanicsTriggered.has(trigger);
@@ -275,9 +285,17 @@ function checkTrigger(agent: any, mechanic: BossMechanic, bossState: BossState):
     return hpPercent < 0.25 && !bossState.mechanicsTriggered.has(trigger);
   }
   
-  // Timer-based triggers
+  // Timer-based triggers (repeating with cooldown)
   if (trigger.startsWith('timer_')) {
     const cooldown = mechanic.cooldown || 30; // Default 30s cooldown
+    const lastTime = bossState.lastMechanicTime.get(mechanic.action) || 0;
+    
+    // If never executed, execute immediately on first combat tick
+    if (lastTime === 0) {
+      return true;
+    }
+    
+    // Otherwise check if cooldown has elapsed
     return !isOnCooldown(bossState, mechanic.action, cooldown);
   }
   

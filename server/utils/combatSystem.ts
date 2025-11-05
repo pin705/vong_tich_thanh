@@ -6,7 +6,12 @@ import { gameState } from './gameState';
 import { partyService } from './partyService';
 import { scheduleAgentRespawn } from './npcAI';
 import { applyExpBuff } from './buffSystem';
+import { clearBossState } from './bossMechanics';
 import { COMBAT_TICK_INTERVAL, FLEE_SUCCESS_CHANCE, EXPERIENCE_PER_LEVEL, HP_GAIN_PER_LEVEL, MINIMUM_DAMAGE } from './constants';
+
+// Boss reward constants
+const BOSS_PREMIUM_CURRENCY_MULTIPLIER = 10;
+const BOSS_GOLD_MULTIPLIER = 100;
 
 // Helper function to categorize combat messages for semantic highlighting
 function getCombatMessageType(message: string): string {
@@ -321,17 +326,16 @@ export async function executeCombatTick(playerId: string, agentId: string): Prom
         messages.push('═══════════════════════════════════');
         
         // Award premium currency (Cổ Thạch)
-        const premiumReward = Math.floor(agent.level * 10);
+        const premiumReward = Math.floor(agent.level * BOSS_PREMIUM_CURRENCY_MULTIPLIER);
         player.premiumCurrency = (player.premiumCurrency || 0) + premiumReward;
         messages.push(`💎 Bạn nhận được ${premiumReward} Cổ Thạch!`);
         
         // Award gold
-        const goldReward = agent.level * 100;
+        const goldReward = agent.level * BOSS_GOLD_MULTIPLIER;
         player.gold = (player.gold || 0) + goldReward;
         messages.push(`💰 Bạn nhận được ${goldReward} Vàng!`);
         
         // Clear boss state
-        const { clearBossState } = await import('./bossMechanics');
         clearBossState(agent._id.toString());
       } else if (agent.agentType === 'elite') {
         // Elite kills give 3x EXP
