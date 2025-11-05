@@ -94,24 +94,26 @@
     <!-- Help Overlay -->
     <HelpOverlay :isOpen="helpOpen" @close="helpOpen = false" />
     
-    <!-- Skills Overlay -->
-    <SkillbookOverlay 
-      :isOpen="skillsOpen" 
+    <!-- Character Menu Overlay -->
+    <CharacterMenuOverlay
+      :isOpen="characterMenuOpen"
+      :playerName="playerState.name"
+      :level="playerState.level"
+      :exp="playerState.exp"
+      :nextLevelExp="playerState.nextLevelExp"
+      :hp="playerState.hp"
+      :maxHp="playerState.maxHp"
+      :resource="playerState.resource"
+      :maxResource="playerState.maxResource"
+      :gold="playerState.gold"
+      :premiumCurrency="playerState.premiumCurrency"
+      :stats="playerState.stats"
       :skills="playerSkills"
-      :playerClass="playerState.class"
-      @close="skillsOpen = false"
-      @assignSkill="handleAssignSkill"
-    />
-    
-    <!-- Talents Overlay -->
-    <TalentTreeOverlay
-      :isOpen="talentsOpen"
-      :playerClass="playerState.class || 'mutant_warrior'"
-      :playerLevel="playerState.level"
-      :talentPoints="playerState.talentPoints || 0"
       :branches="talentBranches"
       :allocatedTalents="allocatedTalents"
-      @close="talentsOpen = false"
+      :talentPoints="playerState.talentPoints || 0"
+      @close="characterMenuOpen = false"
+      @assignSkill="handleAssignSkill"
       @allocateTalent="handleAllocateTalent"
     />
     
@@ -231,8 +233,7 @@ import type { Message, ChatMessage, PlayerState, TargetState, ExitsState, RoomOc
 import PlayerStatusHeader from '~/components/PlayerStatusHeader.vue';
 import InventoryPane from '~/components/InventoryPane.vue';
 import HelpOverlay from '~/components/HelpOverlay.vue';
-import SkillbookOverlay from '~/components/SkillbookOverlay.vue';
-import TalentTreeOverlay from '~/components/TalentTreeOverlay.vue';
+import CharacterMenuOverlay from '~/components/CharacterMenuOverlay.vue';
 import SettingsOverlay from '~/components/SettingsOverlay.vue';
 import FooterTabBar from '~/components/FooterTabBar.vue';
 import Popover from '~/components/Popover.vue';
@@ -277,8 +278,7 @@ const inputField = ref<HTMLInputElement | null>(null);
 const ws = ref<WebSocket | null>(null);
 const isConnected = ref(false);
 const helpOpen = ref(false);
-const skillsOpen = ref(false);
-const talentsOpen = ref(false);
+const characterMenuOpen = ref(false);
 const settingsOpen = ref(false);
 const worldMapOpen = ref(false);
 const questsOpen = ref(false);
@@ -540,13 +540,11 @@ const handleTabClick = async (tabId: string) => {
     case 'auction':
       auctionHousePopupOpen.value = true;
       break;
-    case 'skills':
+    case 'character':
+      // Load skills and talents data before opening
       await loadSkills();
-      skillsOpen.value = true;
-      break;
-    case 'talents':
       await loadTalents();
-      talentsOpen.value = true;
+      characterMenuOpen.value = true;
       break;
     case 'settings':
       settingsOpen.value = true;

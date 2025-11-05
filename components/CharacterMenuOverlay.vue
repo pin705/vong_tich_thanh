@@ -1,0 +1,481 @@
+<template>
+  <FullscreenOverlay :isOpen="isOpen" @close="$emit('close')" size="large" title="Nhân Vật">
+    <div class="character-menu-container">
+      <!-- Tab Navigation -->
+      <div class="tab-navigation">
+        <button
+          class="tab-button"
+          :class="{ active: activeTab === 'info' }"
+          @click="activeTab = 'info'"
+        >
+          [1] Thông Tin
+        </button>
+        <button
+          class="tab-button"
+          :class="{ active: activeTab === 'skills' }"
+          @click="activeTab = 'skills'"
+        >
+          [2] Kỹ Năng
+        </button>
+        <button
+          class="tab-button"
+          :class="{ active: activeTab === 'talents' }"
+          @click="activeTab = 'talents'"
+        >
+          [3] Thiên Phú
+        </button>
+      </div>
+
+      <!-- Info Tab -->
+      <div v-if="activeTab === 'info'" class="tab-content info-content">
+        <div class="info-section">
+          <div class="section-title">[ Thông Tin Cơ Bản ]</div>
+          <div class="info-row">
+            <span class="info-label">Tên:</span>
+            <span class="info-value">{{ playerName }}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Cấp:</span>
+            <span class="info-value">{{ level }}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Kinh nghiệm:</span>
+            <span class="info-value">{{ exp }}/{{ nextLevelExp }}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">HP:</span>
+            <span class="info-value">{{ hp }}/{{ maxHp }}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">MP/Tài nguyên:</span>
+            <span class="info-value">{{ resource }}/{{ maxResource }}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Vàng:</span>
+            <span class="info-value">{{ gold }}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Cổ Thạch:</span>
+            <span class="info-value">{{ premiumCurrency }}</span>
+          </div>
+        </div>
+
+        <!-- Player Stats -->
+        <div class="stats-section">
+          <div class="section-title">[ Chỉ Số Chiến Đấu ]</div>
+          <div class="stat-row">
+            <span class="stat-label">Sát thương:</span>
+            <span class="stat-value">{{ stats.damage }}</span>
+          </div>
+          <div class="stat-row">
+            <span class="stat-label">Phòng thủ:</span>
+            <span class="stat-value">{{ stats.defense }}</span>
+          </div>
+          <div class="stat-row">
+            <span class="stat-label">Bạo kích:</span>
+            <span class="stat-value">{{ stats.critChance }}%</span>
+          </div>
+          <div class="stat-row">
+            <span class="stat-label">ST Bạo kích:</span>
+            <span class="stat-value">{{ stats.critDamage }}%</span>
+          </div>
+          <div class="stat-row">
+            <span class="stat-label">Hút máu:</span>
+            <span class="stat-value">{{ stats.lifesteal }}%</span>
+          </div>
+          <div class="stat-row">
+            <span class="stat-label">Né tránh:</span>
+            <span class="stat-value">{{ stats.dodge }}%</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Skills Tab -->
+      <div v-if="activeTab === 'skills'" class="tab-content skills-content">
+        <div class="skills-container">
+          <div v-if="loading" class="loading-message">Đang tải...</div>
+          <div v-else-if="skills.length === 0" class="empty-message">
+            Chưa có kỹ năng nào.
+          </div>
+          <div v-else class="skills-grid">
+            <div
+              v-for="skill in skills"
+              :key="skill.id"
+              class="skill-card"
+              @click="$emit('assignSkill', skill)"
+            >
+              <div class="skill-name">{{ skill.name }}</div>
+              <div class="skill-description">{{ skill.description }}</div>
+              <div class="skill-details">
+                <div v-if="skill.damage" class="skill-stat">
+                  Sát thương: {{ skill.damage }}
+                </div>
+                <div v-if="skill.resourceCost" class="skill-stat">
+                  Chi phí: {{ skill.resourceCost }}
+                </div>
+                <div v-if="skill.cooldown" class="skill-stat">
+                  Hồi chiêu: {{ skill.cooldown }}s
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Talents Tab -->
+      <div v-if="activeTab === 'talents'" class="tab-content talents-content">
+        <div class="talents-container">
+          <div class="talents-header">
+            <div class="talent-points">
+              Điểm Thiên Phú: <span class="points-value">{{ talentPoints }}</span>
+            </div>
+          </div>
+          
+          <div v-if="loading" class="loading-message">Đang tải...</div>
+          <div v-else-if="branches.length === 0" class="empty-message">
+            Chưa có thiên phú nào.
+          </div>
+          <div v-else class="talents-grid">
+            <div
+              v-for="branch in branches"
+              :key="branch.id"
+              class="talent-branch"
+            >
+              <div class="branch-name">{{ branch.name }}</div>
+              <div class="branch-talents">
+                <div
+                  v-for="talent in branch.talents"
+                  :key="talent.id"
+                  class="talent-item"
+                  :class="{ allocated: allocatedTalents[talent.id] > 0, maxed: allocatedTalents[talent.id] >= talent.maxRank }"
+                  @click="$emit('allocateTalent', talent.id)"
+                >
+                  <div class="talent-name">{{ talent.name }}</div>
+                  <div class="talent-rank">{{ allocatedTalents[talent.id] || 0 }}/{{ talent.maxRank }}</div>
+                  <div class="talent-description">{{ talent.description }}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </FullscreenOverlay>
+</template>
+
+<script setup lang="ts">
+import { ref, watch } from 'vue';
+import FullscreenOverlay from './FullscreenOverlay.vue';
+
+interface Skill {
+  id: string;
+  name: string;
+  description: string;
+  damage?: number;
+  resourceCost?: number;
+  cooldown?: number;
+}
+
+interface Talent {
+  id: string;
+  name: string;
+  description: string;
+  maxRank: number;
+}
+
+interface TalentBranch {
+  id: string;
+  name: string;
+  talents: Talent[];
+}
+
+interface Props {
+  isOpen: boolean;
+  playerName: string;
+  level: number;
+  exp: number;
+  nextLevelExp: number;
+  hp: number;
+  maxHp: number;
+  resource: number;
+  maxResource: number;
+  gold: number;
+  premiumCurrency: number;
+  stats: {
+    damage: number;
+    defense: number;
+    critChance: number;
+    critDamage: number;
+    lifesteal: number;
+    dodge: number;
+  };
+  skills: Skill[];
+  branches: TalentBranch[];
+  allocatedTalents: Record<string, number>;
+  talentPoints: number;
+}
+
+const props = defineProps<Props>();
+const emit = defineEmits<{
+  close: [];
+  assignSkill: [skill: Skill];
+  allocateTalent: [talentId: string];
+}>();
+
+const activeTab = ref<'info' | 'skills' | 'talents'>('info');
+const loading = ref(false);
+</script>
+
+<style scoped>
+.character-menu-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  color: var(--text-bright);
+  font-family: 'VT323', 'Source Code Pro', monospace;
+}
+
+.tab-navigation {
+  display: flex;
+  gap: 0.5rem;
+  padding: 1rem;
+  border-bottom: 1px solid rgba(0, 136, 0, 0.5);
+  background-color: rgba(0, 136, 0, 0.05);
+}
+
+.tab-button {
+  flex: 1;
+  padding: 0.75rem 1rem;
+  background: transparent;
+  color: var(--text-bright);
+  border: 1px solid rgba(0, 136, 0, 0.3);
+  cursor: pointer;
+  font-family: 'VT323', 'Source Code Pro', monospace;
+  font-size: 18px;
+  transition: all 0.2s;
+}
+
+.tab-button:hover {
+  background-color: rgba(0, 255, 0, 0.1);
+  color: var(--text-accent);
+  border-color: var(--text-accent);
+}
+
+.tab-button.active {
+  background-color: rgba(0, 255, 0, 0.15);
+  color: var(--text-accent);
+  border-color: var(--text-accent);
+}
+
+.tab-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1.5rem;
+}
+
+/* Info Tab Styles */
+.info-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.info-section, .stats-section {
+  background-color: rgba(0, 136, 0, 0.03);
+  border: 1px solid rgba(0, 136, 0, 0.3);
+  padding: 1rem;
+}
+
+.section-title {
+  color: var(--text-accent);
+  font-size: 20px;
+  font-weight: bold;
+  margin-bottom: 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid rgba(0, 136, 0, 0.3);
+}
+
+.info-row, .stat-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid rgba(0, 136, 0, 0.1);
+}
+
+.info-row:last-child, .stat-row:last-child {
+  border-bottom: none;
+}
+
+.info-label, .stat-label {
+  color: var(--text-dim);
+  font-size: 16px;
+}
+
+.info-value, .stat-value {
+  color: var(--text-bright);
+  font-size: 16px;
+  font-weight: bold;
+}
+
+/* Skills Tab Styles */
+.skills-container {
+  width: 100%;
+}
+
+.skills-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 1rem;
+}
+
+.skill-card {
+  background-color: rgba(0, 136, 0, 0.03);
+  border: 1px solid rgba(0, 136, 0, 0.3);
+  padding: 1rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.skill-card:hover {
+  background-color: rgba(0, 255, 0, 0.1);
+  border-color: var(--text-accent);
+}
+
+.skill-name {
+  color: var(--text-accent);
+  font-size: 18px;
+  font-weight: bold;
+  margin-bottom: 0.5rem;
+}
+
+.skill-description {
+  color: var(--text-dim);
+  font-size: 14px;
+  margin-bottom: 0.5rem;
+}
+
+.skill-details {
+  margin-top: 0.5rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid rgba(0, 136, 0, 0.2);
+}
+
+.skill-stat {
+  color: var(--text-bright);
+  font-size: 14px;
+  margin-bottom: 0.25rem;
+}
+
+/* Talents Tab Styles */
+.talents-container {
+  width: 100%;
+}
+
+.talents-header {
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  background-color: rgba(0, 136, 0, 0.05);
+  border: 1px solid rgba(0, 136, 0, 0.3);
+}
+
+.talent-points {
+  color: var(--text-accent);
+  font-size: 20px;
+  font-weight: bold;
+}
+
+.points-value {
+  color: var(--text-bright);
+}
+
+.talents-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.talent-branch {
+  background-color: rgba(0, 136, 0, 0.03);
+  border: 1px solid rgba(0, 136, 0, 0.3);
+  padding: 1rem;
+}
+
+.branch-name {
+  color: var(--text-accent);
+  font-size: 20px;
+  font-weight: bold;
+  margin-bottom: 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid rgba(0, 136, 0, 0.3);
+}
+
+.branch-talents {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 1rem;
+}
+
+.talent-item {
+  background-color: rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(0, 136, 0, 0.3);
+  padding: 0.75rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.talent-item:hover {
+  background-color: rgba(0, 255, 0, 0.05);
+  border-color: var(--text-accent);
+}
+
+.talent-item.allocated {
+  background-color: rgba(0, 255, 0, 0.1);
+  border-color: var(--text-bright);
+}
+
+.talent-item.maxed {
+  background-color: rgba(0, 255, 0, 0.15);
+  border-color: var(--text-accent);
+}
+
+.talent-name {
+  color: var(--text-bright);
+  font-size: 16px;
+  font-weight: bold;
+  margin-bottom: 0.25rem;
+}
+
+.talent-rank {
+  color: var(--text-accent);
+  font-size: 14px;
+  margin-bottom: 0.5rem;
+}
+
+.talent-description {
+  color: var(--text-dim);
+  font-size: 14px;
+}
+
+.loading-message, .empty-message {
+  text-align: center;
+  color: var(--text-dim);
+  font-size: 18px;
+  padding: 2rem;
+}
+
+/* Mobile responsiveness */
+@media (max-width: 768px) {
+  .tab-navigation {
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+  
+  .tab-button {
+    font-size: 16px;
+  }
+  
+  .skills-grid, .branch-talents {
+    grid-template-columns: 1fr;
+  }
+}
+</style>
