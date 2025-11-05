@@ -1,83 +1,15 @@
 <template>
   <div class="terminal-container" @click="focusInput">
-    <!-- Main Grid Layout -->
-    <div class="game-layout">
-      <!-- Left Panel: Main Output -->
-      <div class="main-output-pane">
-        <div ref="outputArea" class="output-area">
-          <div v-for="message in mainMessages" :key="message.id" :class="getMessageClass(message)">
-            {{ message.text }}
-          </div>
-        </div>
-      </div>
-
-      <!-- Right Panel: Info Panes -->
-      <div class="side-panel">
-        <!-- Player/Target Info & Inventory -->
-        <div class="info-pane">
-          <InventoryPane
-            :playerName="playerState.name"
-            :level="playerState.level"
-            :exp="playerState.exp"
-            :nextLevelExp="playerState.nextLevelExp"
-            :gold="playerState.gold"
-            :stats="playerState.stats"
-            :inventoryItems="playerState.inventoryItems"
-            @executeAction="handleInventoryAction"
-          />
-        </div>
-
-        <!-- Combat Target Info (shown when in combat) -->
-        <div v-if="playerState.inCombat && (selectedTarget?.name || targetState.name)" class="target-pane">
-          <StatusPane
-            :playerName="playerState.name"
-            :hp="playerState.hp"
-            :maxHp="playerState.maxHp"
-            :mp="playerState.mp"
-            :maxMp="playerState.maxMp"
-            :level="playerState.level"
-            :gold="playerState.gold"
-            :inCombat="playerState.inCombat"
-            :targetName="selectedTarget?.name || targetState.name"
-            :targetHp="targetState.hp"
-            :targetMaxHp="targetState.maxHp"
-          />
-        </div>
-
-        <!-- Mini-Map -->
-        <div class="map-pane-container">
-          <MapPane :exits="exits" @navigate="handleMapNavigation" />
-        </div>
-
-        <!-- Room Occupants -->
-        <div class="occupants-pane-container">
-          <RoomOccupantsPane
-            :players="roomOccupants.players"
-            :npcs="roomOccupants.npcs"
-            :mobs="roomOccupants.mobs"
-            :selectedTarget="selectedTarget"
-            @selectTarget="handleSelectTarget"
-          />
-        </div>
-
-        <!-- Actions -->
-        <div class="actions-pane-container">
-          <ActionsPane
-            :targetType="selectedTarget?.type || null"
-            :targetName="selectedTarget?.name || ''"
-            :targetId="selectedTarget?.id || ''"
-            @executeAction="executeAction"
-          />
-        </div>
-
-        <!-- Chat Log -->
-        <div class="chat-pane-container">
-          <ChatPane :messages="chatMessages" />
+    <!-- Main Output Area (85-90%) -->
+    <div class="main-output-pane">
+      <div ref="outputArea" class="output-area">
+        <div v-for="message in mainMessages" :key="message.id" :class="getMessageClass(message)">
+          {{ message.text }}
         </div>
       </div>
     </div>
 
-    <!-- Input area (bottom) -->
+    <!-- Input area (5%) -->
     <div class="input-area">
       <span class="prompt">&gt;</span>
       <input
@@ -85,6 +17,7 @@
         v-model="currentInput"
         type="text"
         class="input-field"
+        placeholder="Gõ lệnh..."
         @keydown.enter="sendCommand"
         @keydown.up="navigateHistory(-1)"
         @keydown.down="navigateHistory(1)"
@@ -96,6 +29,56 @@
       />
     </div>
 
+    <!-- Footer Tab Bar (5-10%) -->
+    <FooterTabBar @tabClick="handleTabClick" />
+
+    <!-- Popups/Modals -->
+    <Popover
+      :isOpen="inventoryPopupOpen"
+      title="Túi Đồ & Thông Tin"
+      width="600px"
+      @close="inventoryPopupOpen = false"
+    >
+      <InventoryPane
+        :playerName="playerState.name"
+        :level="playerState.level"
+        :exp="playerState.exp"
+        :nextLevelExp="playerState.nextLevelExp"
+        :gold="playerState.gold"
+        :stats="playerState.stats"
+        :inventoryItems="playerState.inventoryItems"
+        @executeAction="handleInventoryAction"
+      />
+    </Popover>
+
+    <Popover
+      :isOpen="mapPopupOpen"
+      title="Bản Đồ"
+      width="400px"
+      @close="mapPopupOpen = false"
+    >
+      <MapPane :exits="exits" @navigate="handleMapNavigation" />
+    </Popover>
+
+    <OccupantsListPopup
+      :isOpen="occupantsPopupOpen"
+      :players="roomOccupants.players"
+      :npcs="roomOccupants.npcs"
+      :mobs="roomOccupants.mobs"
+      @close="occupantsPopupOpen = false"
+      @selectEntity="handleEntitySelect"
+    />
+
+    <ContextualPopup
+      :isOpen="contextualPopupOpen"
+      :title="contextualPopupData.title"
+      :entityType="contextualPopupData.entityType"
+      :entityData="contextualPopupData.entityData"
+      :actions="contextualPopupData.actions"
+      @close="contextualPopupOpen = false"
+      @executeAction="handleContextualAction"
+    />
+
     <!-- Help Overlay -->
     <HelpOverlay :isOpen="helpOpen" @close="helpOpen = false" />
   </div>
@@ -104,13 +87,13 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, nextTick, watch, computed } from 'vue';
 import type { Message, ChatMessage, PlayerState, TargetState, ExitsState, RoomOccupantsState, SelectedTarget } from '~/types';
-import StatusPane from '~/components/StatusPane.vue';
 import MapPane from '~/components/MapPane.vue';
-import ChatPane from '~/components/ChatPane.vue';
-import RoomOccupantsPane from '~/components/RoomOccupantsPane.vue';
-import ActionsPane from '~/components/ActionsPane.vue';
 import InventoryPane from '~/components/InventoryPane.vue';
 import HelpOverlay from '~/components/HelpOverlay.vue';
+import FooterTabBar from '~/components/FooterTabBar.vue';
+import Popover from '~/components/Popover.vue';
+import OccupantsListPopup from '~/components/OccupantsListPopup.vue';
+import ContextualPopup from '~/components/ContextualPopup.vue';
 
 definePageMeta({
   middleware: 'auth'
@@ -130,6 +113,23 @@ const inputField = ref<HTMLInputElement | null>(null);
 const ws = ref<WebSocket | null>(null);
 const isConnected = ref(false);
 const helpOpen = ref(false);
+
+// Popup states
+const inventoryPopupOpen = ref(false);
+const mapPopupOpen = ref(false);
+const occupantsPopupOpen = ref(false);
+const contextualPopupOpen = ref(false);
+const contextualPopupData = ref<{
+  title: string;
+  entityType: 'npc' | 'mob' | 'player' | null;
+  entityData?: any;
+  actions?: any[];
+}>({
+  title: '',
+  entityType: null,
+  entityData: {},
+  actions: []
+});
 
 // Room occupants state
 const roomOccupants = ref<RoomOccupantsState>({
@@ -230,9 +230,110 @@ const focusInput = () => {
   }
 };
 
-// Handle target selection
-const handleSelectTarget = (type: 'player' | 'npc' | 'mob', id: string, name: string) => {
-  selectedTarget.value = { type, id, name };
+// Handle tab bar clicks
+const handleTabClick = (tabId: string) => {
+  switch (tabId) {
+    case 'map':
+      mapPopupOpen.value = true;
+      break;
+    case 'occupants':
+      occupantsPopupOpen.value = true;
+      break;
+    case 'inventory':
+      inventoryPopupOpen.value = true;
+      break;
+    case 'party':
+      addMessage('Chức năng nhóm đang được phát triển...', 'system');
+      break;
+    case 'skills':
+      addMessage('Chức năng kỹ năng đang được phát triển...', 'system');
+      break;
+  }
+};
+
+// Handle entity selection from occupants list
+const handleEntitySelect = (type: 'player' | 'npc' | 'mob', entity: { id: string; name: string }) => {
+  selectedTarget.value = { type, id: entity.id, name: entity.name };
+  
+  // Prepare contextual popup data
+  const actions = getActionsForEntity(type, entity.name);
+  
+  contextualPopupData.value = {
+    title: `${entity.name} (${getEntityTypeLabel(type)})`,
+    entityType: type,
+    entityData: {
+      description: getEntityDescription(type, entity.name),
+      status: getEntityStatus(type)
+    },
+    actions
+  };
+  
+  contextualPopupOpen.value = true;
+};
+
+// Handle contextual action execution
+const handleContextualAction = (action: { command: string }) => {
+  currentInput.value = action.command;
+  sendCommand();
+};
+
+// Get actions for entity type
+const getActionsForEntity = (type: 'player' | 'npc' | 'mob', name: string) => {
+  switch (type) {
+    case 'npc':
+      return [
+        { label: 'Nói Chuyện (Talk)', command: `talk ${name}`, disabled: false },
+        { label: 'Xem Xét (Look)', command: `look ${name}`, disabled: false },
+        { label: 'Giao Dịch (Trade)', command: `list`, disabled: false },
+        { label: 'Tấn Công (Attack)', command: `attack ${name}`, disabled: false }
+      ];
+    case 'mob':
+      return [
+        { label: 'Tấn Công (Attack)', command: `attack ${name}`, disabled: false },
+        { label: 'Xem Xét (Look)', command: `look ${name}`, disabled: false }
+      ];
+    case 'player':
+      return [
+        { label: 'Nói Chuyện (Say)', command: `say Xin chào ${name}!`, disabled: false },
+        { label: 'Xem Xét (Look)', command: `look ${name}`, disabled: false },
+        { label: 'Giao Dịch (Trade)', command: `trade ${name}`, disabled: true },
+        { label: 'Mời Vào Nhóm (Party)', command: `party invite ${name}`, disabled: true }
+      ];
+    default:
+      return [];
+  }
+};
+
+// Get entity type label
+const getEntityTypeLabel = (type: 'player' | 'npc' | 'mob') => {
+  const labels = {
+    player: 'Người chơi',
+    npc: 'NPC',
+    mob: 'Quái vật'
+  };
+  return labels[type];
+};
+
+// Get entity description
+const getEntityDescription = (type: 'player' | 'npc' | 'mob', name: string) => {
+  // This would come from the server in a real implementation
+  if (type === 'npc') {
+    return `Một NPC tên ${name}. Có vẻ như họ có thể giao dịch hoặc trò chuyện.`;
+  } else if (type === 'mob') {
+    return `Một quái vật tên ${name}. Trông có vẻ nguy hiểm!`;
+  } else {
+    return `Một người chơi khác tên ${name}.`;
+  }
+};
+
+// Get entity status
+const getEntityStatus = (type: 'player' | 'npc' | 'mob') => {
+  if (type === 'npc') {
+    return '(Thân thiện)';
+  } else if (type === 'mob') {
+    return '(Thù địch)';
+  }
+  return '';
 };
 
 // Execute action from actions pane
@@ -528,21 +629,15 @@ watch(messages, () => {
   overflow: hidden;
 }
 
-.game-layout {
-  flex: 1;
-  display: grid;
-  grid-template-columns: 2fr 1fr;
-  gap: 0.5rem;
-  padding: 0.5rem;
-  overflow: hidden;
-}
-
 .main-output-pane {
+  flex: 1;
   display: flex;
   flex-direction: column;
   background-color: rgba(0, 136, 0, 0.03);
   border: 1px solid rgba(0, 136, 0, 0.3);
   overflow: hidden;
+  margin: 0.5rem;
+  margin-bottom: 0;
 }
 
 .output-area {
@@ -552,51 +647,6 @@ watch(messages, () => {
   padding-bottom: 0.5rem;
   white-space: pre-wrap;
   word-wrap: break-word;
-}
-
-.side-panel {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  overflow: hidden;
-}
-
-.info-pane {
-  flex: 0 0 auto;
-  min-height: 200px;
-  max-height: 300px;
-  overflow: hidden;
-}
-
-.target-pane {
-  flex: 0 0 auto;
-  min-height: 120px;
-  max-height: 150px;
-}
-
-.map-pane-container {
-  flex: 0 0 auto;
-  min-height: 150px;
-}
-
-.occupants-pane-container {
-  flex: 0 0 auto;
-  min-height: 120px;
-  max-height: 180px;
-  overflow: hidden;
-}
-
-.actions-pane-container {
-  flex: 0 0 auto;
-  min-height: 100px;
-  max-height: 150px;
-  overflow: hidden;
-}
-
-.chat-pane-container {
-  flex: 1;
-  min-height: 100px;
-  overflow: hidden;
 }
 
 .message {
@@ -633,9 +683,9 @@ watch(messages, () => {
 .input-area {
   display: flex;
   align-items: center;
-  padding: 0.75rem 1rem;
-  border-top: 1px solid rgba(0, 136, 0, 0.5);
+  padding: 0.5rem 1rem;
   background-color: var(--bg-black);
+  border-top: 1px solid rgba(0, 136, 0, 0.3);
 }
 
 .prompt {
@@ -660,5 +710,40 @@ watch(messages, () => {
 .input-field::selection {
   background-color: var(--text-dim);
   color: var(--bg-black);
+}
+
+.input-field::placeholder {
+  color: var(--text-dim);
+  opacity: 0.6;
+}
+
+/* Mobile responsiveness */
+@media (max-width: 768px) {
+  .main-output-pane {
+    margin: 0.25rem;
+  }
+
+  .output-area {
+    padding: 0.5rem;
+    font-size: 16px;
+  }
+
+  .message {
+    font-size: 16px;
+    line-height: 1.3;
+  }
+
+  .input-area {
+    padding: 0.4rem 0.75rem;
+  }
+
+  .prompt {
+    font-size: 18px;
+    margin-right: 0.4rem;
+  }
+
+  .input-field {
+    font-size: 16px;
+  }
 }
 </style>

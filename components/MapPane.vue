@@ -157,4 +157,21 @@ const goDirection = (direction: string) => {
   color: var(--text-accent);
   text-decoration: underline;
 }
+
+/* Mobile responsiveness */
+@media (max-width: 768px) {
+  .map-pane {
+    font-size: 12px;
+    padding: 0.5rem;
+  }
+
+  .map-cell {
+    min-width: 40px;
+    font-size: 12px;
+  }
+
+  .map-row {
+    height: 18px;
+  }
+}
 </style>

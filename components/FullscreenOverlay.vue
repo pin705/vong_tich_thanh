@@ -76,7 +76,7 @@ onUnmounted(() => {
   left: 0;
   width: 100vw;
   height: 100vh;
-  z-index: 9999;
+  z-index: 3000;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -89,7 +89,7 @@ onUnmounted(() => {
   left: 0;
   width: 100%;
   height: 100%;
-  background-color: rgba(0, 0, 0, 0.85);
+  background-color: rgba(0, 0, 0, 0.75);
   backdrop-filter: blur(2px);
 }
 
@@ -97,7 +97,7 @@ onUnmounted(() => {
   position: relative;
   background-color: var(--bg-black);
   border: 2px solid var(--text-bright);
-  box-shadow: 0 0 30px rgba(0, 255, 0, 0.4);
+  box-shadow: 0 0 25px rgba(0, 255, 0, 0.4);
   display: flex;
   flex-direction: column;
   max-height: 90vh;
@@ -105,17 +105,20 @@ onUnmounted(() => {
 }
 
 .overlay-content-small {
-  width: 400px;
+  width: 90%;
+  max-width: 400px;
   max-height: 300px;
 }
 
 .overlay-content-medium {
-  width: 600px;
+  width: 90%;
+  max-width: 600px;
   max-height: 500px;
 }
 
 .overlay-content-large {
-  width: 80vw;
+  width: 90%;
+  max-width: 80vw;
   max-height: 85vh;
 }
 
@@ -123,6 +126,16 @@ onUnmounted(() => {
   width: 95vw;
   height: 95vh;
   max-height: 95vh;
+}
+
+/* Mobile responsiveness */
+@media (max-width: 768px) {
+  .overlay-content-large,
+  .overlay-content-fullscreen {
+    width: 95vw;
+    height: 90vh;
+    max-height: 90vh;
+  }
 }
 
 .overlay-header {
