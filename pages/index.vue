@@ -170,6 +170,21 @@ definePageMeta({
 const { user, clear } = useUserSession();
 const router = useRouter();
 
+// Responsive layout detection (Phase 15.1)
+const isMobile = ref(false);
+const isTablet = ref(false);
+const isDesktop = ref(false);
+
+// Detect device type
+const updateDeviceType = () => {
+  if (typeof window !== 'undefined') {
+    const width = window.innerWidth;
+    isMobile.value = width < 768;
+    isTablet.value = width >= 768 && width < 1024;
+    isDesktop.value = width >= 1024;
+  }
+};
+
 // State
 const messages = ref<Message[]>([]);
 const chatMessages = ref<ChatMessage[]>([]);
@@ -968,6 +983,12 @@ onMounted(() => {
   focusInput();
   connectWebSocket();
   
+  // Initialize device type detection
+  updateDeviceType();
+  if (typeof window !== 'undefined') {
+    window.addEventListener('resize', updateDeviceType);
+  }
+  
   // Load saved theme and font size
   if (typeof window !== 'undefined') {
     try {
@@ -992,6 +1013,9 @@ onMounted(() => {
 
 onUnmounted(() => {
   document.removeEventListener('click', focusInput);
+  if (typeof window !== 'undefined') {
+    window.removeEventListener('resize', updateDeviceType);
+  }
   if (ws.value) {
     ws.value.close();
   }
@@ -1053,15 +1077,51 @@ watch(messages, () => {
 }
 
 .message-error {
-  color: var(--text-danger);
+  color: var(--theme-text-error);
 }
 
 .message-system {
-  color: var(--text-cyan);
+  color: var(--theme-text-system);
 }
 
 .message-combat_log {
   color: var(--text-bright);
+}
+
+/* Semantic Message Types (Phase 15) */
+.message-damage_in {
+  color: var(--theme-text-damage-in);
+  font-weight: bold;
+}
+
+.message-damage_out {
+  color: var(--theme-text-damage-out);
+}
+
+.message-heal {
+  color: var(--theme-text-heal);
+}
+
+.message-loot {
+  color: var(--theme-text-loot);
+}
+
+.message-xp {
+  color: var(--theme-text-xp);
+}
+
+.message-critical {
+  color: var(--theme-text-critical);
+  font-weight: bold;
+  text-shadow: 0 0 5px currentColor;
+}
+
+.message-chat_say {
+  color: var(--theme-text-chat-say);
+}
+
+.message-chat_guild {
+  color: var(--theme-text-chat-guild);
 }
 
 .input-area {

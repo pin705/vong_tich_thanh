@@ -11,6 +11,18 @@
   --text-accent: #ffb000;
   --text-cyan: #00ffff;
   --text-danger: #ff0000;
+  
+  /* Semantic Message Colors (Phase 15) */
+  --theme-text-damage-in: #ff0000;      /* Damage received - bright red */
+  --theme-text-damage-out: #ffb000;     /* Damage dealt - amber/gold */
+  --theme-text-heal: #00ff00;           /* Healing - bright green */
+  --theme-text-loot: #ff00ff;           /* Loot/Items - magenta */
+  --theme-text-xp: #00ffaa;             /* Experience gained - cyan-green */
+  --theme-text-critical: #ff8800;       /* Critical events (level up) - bright orange */
+  --theme-text-chat-say: #ffffff;       /* Normal chat - white */
+  --theme-text-chat-guild: #8080ff;     /* Guild chat - light blue */
+  --theme-text-error: #aa0000;          /* Errors - dark red */
+  --theme-text-system: #00ffff;         /* System messages - cyan */
 }
 
 /* Theme 2: Hổ Phách (Hoài Cổ) - Amber/Orange */
@@ -21,6 +33,18 @@
   --text-accent: #ffb000;
   --text-cyan: #ffffa0;
   --text-danger: #ff6600;
+  
+  /* Semantic Message Colors */
+  --theme-text-damage-in: #ff6600;
+  --theme-text-damage-out: #ffb000;
+  --theme-text-heal: #aaff00;
+  --theme-text-loot: #ff88ff;
+  --theme-text-xp: #ffffa0;
+  --theme-text-critical: #ffff00;
+  --theme-text-chat-say: #ffffa0;
+  --theme-text-chat-guild: #ffcc88;
+  --theme-text-error: #aa0000;
+  --theme-text-system: #ffffa0;
 }
 
 /* Theme 3: Cổ Ngữ (Lạnh Lẽo) - Cool Gray/Ice Blue */
@@ -31,6 +55,18 @@
   --text-accent: #a0ffff;
   --text-cyan: #a0ffff;
   --text-danger: #ff6666;
+  
+  /* Semantic Message Colors */
+  --theme-text-damage-in: #ff6666;
+  --theme-text-damage-out: #ffcc66;
+  --theme-text-heal: #88ff88;
+  --theme-text-loot: #ff88ff;
+  --theme-text-xp: #88ffff;
+  --theme-text-critical: #ffaa00;
+  --theme-text-chat-say: #e0e0e0;
+  --theme-text-chat-guild: #aaccff;
+  --theme-text-error: #aa0000;
+  --theme-text-system: #a0ffff;
 }
 
 /* Font Size Variants */

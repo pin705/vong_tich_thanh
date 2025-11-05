@@ -2,9 +2,12 @@
 export interface Message {
   id: string;
   text: string;
-  type: 'normal' | 'action' | 'accent' | 'error' | 'system' | 'combat_log' | 'chat_log';
+  type: 'normal' | 'action' | 'accent' | 'error' | 'system' | 'combat_log' | 'chat_log' | 
+        'damage_in' | 'damage_out' | 'heal' | 'loot' | 'xp' | 'critical' | 
+        'chat_say' | 'chat_guild';
   timestamp: Date;
   user?: string; // For chat messages
+  category?: 'combat' | 'chat' | 'system' | 'reward'; // Semantic category for styling
 }
 
 // Chat message type

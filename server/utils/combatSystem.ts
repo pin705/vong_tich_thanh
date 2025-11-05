@@ -243,16 +243,22 @@ export async function executeCombatTick(playerId: string, agentId: string): Prom
       
       gameState.stopCombat(playerId);
       
-      // Send messages to player
+      // Send messages to player with semantic types
       const playerObj = gameState.getPlayer(playerId);
       if (playerObj && playerObj.ws) {
         messages.forEach(msg => {
           if (msg === '') {
             playerObj.ws.send(JSON.stringify({ type: 'normal', message: '' }));
-          } else if (msg.includes('[') && msg.includes(']')) {
-            playerObj.ws.send(JSON.stringify({ type: 'accent', message: msg }));
+          } else if (msg.includes('LEVEL UP')) {
+            playerObj.ws.send(JSON.stringify({ type: 'critical', message: msg }));
+          } else if (msg.includes('điểm kinh nghiệm')) {
+            playerObj.ws.send(JSON.stringify({ type: 'xp', message: msg }));
+          } else if (msg.includes('làm rơi')) {
+            playerObj.ws.send(JSON.stringify({ type: 'loot', message: msg }));
           } else if (msg.includes('═')) {
-            playerObj.ws.send(JSON.stringify({ type: 'system', message: msg }));
+            playerObj.ws.send(JSON.stringify({ type: 'critical', message: msg }));
+          } else if (msg.includes('hạ gục') || msg.includes('tấn công')) {
+            playerObj.ws.send(JSON.stringify({ type: 'damage_out', message: msg }));
           } else {
             playerObj.ws.send(JSON.stringify({ type: 'action', message: msg }));
           }
@@ -362,11 +368,15 @@ export async function executeCombatTick(playerId: string, agentId: string): Prom
       return;
     }
     
-    // Send combat messages to player
+    // Send combat messages to player with semantic types
     const playerObj = gameState.getPlayer(playerId);
     if (playerObj && playerObj.ws) {
       messages.forEach(msg => {
-        if (msg.includes('[') && msg.includes(']')) {
+        if (msg.includes('Bạn tấn công') || msg.includes('gây') && msg.includes('sát thương') && !msg.includes('tấn công bạn')) {
+          playerObj.ws.send(JSON.stringify({ type: 'damage_out', message: msg }));
+        } else if (msg.includes('tấn công bạn')) {
+          playerObj.ws.send(JSON.stringify({ type: 'damage_in', message: msg }));
+        } else if (msg.includes('[') && msg.includes(']')) {
           playerObj.ws.send(JSON.stringify({ type: 'accent', message: msg }));
         } else {
           playerObj.ws.send(JSON.stringify({ type: 'action', message: msg }));
