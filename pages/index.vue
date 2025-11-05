@@ -177,6 +177,32 @@
         @decline="declinePartyInvitation"
       />
     </Popover>
+
+    <!-- Guild Popup -->
+    <Popover
+      :isOpen="guildPopupOpen"
+      title="Bang Hội"
+      width="700px"
+      @close="guildPopupOpen = false"
+    >
+      <GuildOverlay
+        @close="guildPopupOpen = false"
+        @refresh="loadGuildInfo"
+      />
+    </Popover>
+
+    <!-- Auction House Popup -->
+    <Popover
+      :isOpen="auctionHousePopupOpen"
+      title="Chợ Đấu Giá"
+      width="800px"
+      @close="auctionHousePopupOpen = false"
+    >
+      <AuctionHouseOverlay
+        :currentPlayerId="user?.id || ''"
+        @close="auctionHousePopupOpen = false"
+      />
+    </Popover>
   </div>
 </template>
 
@@ -245,6 +271,8 @@ const contextualPopupOpen = ref(false);
 const tradingPopupOpen = ref(false);
 const partyPopupOpen = ref(false);
 const partyInvitationPopupOpen = ref(false);
+const guildPopupOpen = ref(false);
+const auctionHousePopupOpen = ref(false);
 const contextualPopupData = ref<{
   title: string;
   entityType: 'npc' | 'mob' | 'player' | null;
@@ -422,6 +450,12 @@ const handleTabClick = async (tabId: string) => {
       break;
     case 'party':
       partyPopupOpen.value = true;
+      break;
+    case 'guild':
+      guildPopupOpen.value = true;
+      break;
+    case 'auction':
+      auctionHousePopupOpen.value = true;
       break;
     case 'skills':
       await loadSkills();
@@ -674,6 +708,12 @@ const loadQuests = async () => {
     addMessage('Không thể tải danh sách nhiệm vụ.', 'error');
     playerQuests.value = [];
   }
+};
+
+// Load guild information (placeholder for future functionality)
+const loadGuildInfo = async () => {
+  // This is called when guild overlay refreshes
+  // Could be used to update guild-related UI elements in the future
 };
 
 // Handle quest completion

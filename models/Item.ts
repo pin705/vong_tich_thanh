@@ -13,7 +13,7 @@ export const ItemSchema = defineMongooseModel({
     },
     type: {
       type: String,
-      enum: ['weapon', 'armor', 'consumable', 'misc'],
+      enum: ['weapon', 'armor', 'consumable', 'misc', 'craftingMaterial', 'recipe', 'furniture'],
       required: true,
     },
     value: {
@@ -24,6 +24,23 @@ export const ItemSchema = defineMongooseModel({
       damage: Number,
       defense: Number,
       healing: Number,
+    },
+    // Phase 20: Crafting System
+    craftingRecipe: {
+      materials: [{
+        itemName: String,
+        quantity: Number,
+      }],
+      result: {
+        itemName: String,
+        quantity: Number,
+      },
+    },
+    // For furniture items
+    furnitureType: {
+      type: String,
+      enum: ['chair', 'table', 'bed', 'decoration', 'storage', null],
+      default: null,
     },
   },
 });

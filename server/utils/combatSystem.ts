@@ -265,6 +265,15 @@ export async function executeCombatTick(playerId: string, agentId: string): Prom
       messages.push('');
       messages.push(`Bạn đã hạ gục [${agent.name}]!`);
       
+      // Handle faction reputation (Phase 18)
+      if (agent.faction) {
+        const { updateReputation } = await import('./factionService');
+        const reputationResult = await updateReputation(playerId, agent.faction, -10); // Lose 10 reputation for killing
+        if (reputationResult.success) {
+          messages.push(reputationResult.message);
+        }
+      }
+      
       // Handle EXP distribution (with party support)
       const expMessages = await distributeExperience(player, agent.experience, room._id.toString());
       messages.push(...expMessages);
@@ -638,6 +647,117 @@ export async function fleeCombat(playerId: string): Promise<string[]> {
   } catch (error) {
     console.error('Error fleeing combat:', error);
     messages.push('Lỗi khi bỏ chạy.');
+  }
+  
+  return messages;
+}
+
+// Start PvP combat between two players
+export async function startPvPCombat(attackerId: string, targetId: string): Promise<string[]> {
+  const messages: string[] = [];
+  
+  try {
+    const attacker = await PlayerSchema.findById(attackerId);
+    const target = await PlayerSchema.findById(targetId);
+    
+    if (!attacker || !target) {
+      messages.push('Lỗi: Không tìm thấy thông tin người chơi.');
+      return messages;
+    }
+    
+    // Check if attacker has PvP enabled
+    if (!attacker.pvpEnabled) {
+      messages.push('Bạn cần bật chế độ PvP trước. Gõ: pvp on');
+      return messages;
+    }
+    
+    // Check if target has PvP enabled
+    if (!target.pvpEnabled) {
+      messages.push(`[${target.username}] không bật chế độ PvP.`);
+      return messages;
+    }
+    
+    // Check if both players are in the same room
+    if (attacker.currentRoomId.toString() !== target.currentRoomId.toString()) {
+      messages.push('Người chơi không ở cùng phòng với bạn.');
+      return messages;
+    }
+    
+    // Check if room is a safe zone
+    const room = await RoomSchema.findById(attacker.currentRoomId);
+    if (room && room.isSafeZone) {
+      messages.push('Không thể tấn công trong khu vực an toàn.');
+      return messages;
+    }
+    
+    // Check if either player is already in combat
+    if (attacker.inCombat) {
+      messages.push('Bạn đang trong chiến đấu.');
+      return messages;
+    }
+    
+    if (target.inCombat) {
+      messages.push(`[${target.username}] đang trong chiến đấu.`);
+      return messages;
+    }
+    
+    // Check if players are in the same party
+    const attackerParty = partyService.getPlayerParty(attackerId);
+    const targetParty = partyService.getPlayerParty(targetId);
+    
+    if (attackerParty && targetParty && attackerParty.partyId === targetParty.partyId) {
+      messages.push('Không thể tấn công đồng đội trong nhóm!');
+      return messages;
+    }
+    
+    // Check if players are in the same guild
+    if (attacker.guild && target.guild && 
+        attacker.guild.toString() === target.guild.toString()) {
+      messages.push('Không thể tấn công thành viên cùng bang!');
+      return messages;
+    }
+    
+    // Mark both as in combat
+    attacker.inCombat = true;
+    attacker.combatTarget = target._id as any; // Store target as player, not agent
+    await attacker.save();
+    
+    target.inCombat = true;
+    target.combatTarget = attacker._id as any;
+    await target.save();
+    
+    messages.push(`Bạn lao vào tấn công [${target.username}]!`);
+    messages.push(`HP: ${attacker.hp}/${attacker.maxHp} | [${target.username}] HP: ${target.hp}/${target.maxHp}`);
+    
+    // Notify target player
+    const targetPlayer = gameState.getPlayer(targetId);
+    if (targetPlayer?.ws) {
+      targetPlayer.ws.send(JSON.stringify({
+        type: 'message',
+        category: 'pvp',
+        message: `[${attacker.username}] tấn công bạn!`
+      }));
+    }
+    
+    // Broadcast to room
+    if (room) {
+      gameState.broadcastToRoom(
+        room._id.toString(),
+        {
+          type: 'accent',
+          message: `[${attacker.username}] bắt đầu tấn công [${target.username}]!`
+        },
+        attackerId
+      );
+    }
+    
+    // Note: PvP combat tick system would need to be implemented separately
+    // For now, this marks both players as in combat
+    messages.push('Chức năng PvP đang được phát triển. Hệ thống chiến đấu tự động chưa được kích hoạt.');
+    
+  } catch (error) {
+    console.error('Error starting PvP combat:', error);
+    messages.push('Lỗi khi bắt đầu chiến đấu PvP.');
   }
   
   return messages;

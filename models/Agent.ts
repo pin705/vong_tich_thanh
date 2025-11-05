@@ -68,5 +68,15 @@ export const AgentSchema = defineMongooseModel({
       type: Schema.Types.ObjectId,
       ref: 'Player',
     },
+    // Phase 18: Faction System
+    faction: {
+      type: String,
+      default: null, // Faction name this agent belongs to
+    },
+    // Minimum reputation required to access this NPC's shop/quests
+    minReputation: {
+      type: Number,
+      default: 0,
+    },
   },
 });
