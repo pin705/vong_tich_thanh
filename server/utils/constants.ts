@@ -24,3 +24,6 @@ export const DEV_FEATURE_MESSAGE = '(Tính năng đang được phát triển)';
 // Password security
 export const MIN_PASSWORD_LENGTH = 6;
 export const BCRYPT_SALT_ROUNDS = 10;
+
+// Combat damage
+export const MINIMUM_DAMAGE = 1;
