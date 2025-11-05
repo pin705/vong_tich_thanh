@@ -67,7 +67,7 @@
           <div class="skill-detail-body">
             <p>{{ selectedSkill.description }}</p>
             <div class="skill-stats">
-              <div v-if="selectedSkill.resourceCost > 0">
+              <div v-if="selectedSkill.resourceCost && selectedSkill.resourceCost > 0">
                 <strong>Tài nguyên:</strong> {{ selectedSkill.resourceCost }} {{ getResourceName() }}
               </div>
               <div v-if="selectedSkill.cooldown && selectedSkill.cooldown > 0">

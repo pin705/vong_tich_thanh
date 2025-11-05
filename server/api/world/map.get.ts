@@ -1,5 +1,6 @@
 import { RoomSchema } from '~/models/Room';
 import { AgentSchema } from '~/models/Agent';
+import { PlayerSchema } from '~/models/Player';
 
 export default defineEventHandler(async (event) => {
   try {
@@ -62,7 +63,6 @@ export default defineEventHandler(async (event) => {
     });
 
     // Get current player to mark current room
-    const PlayerSchema = await import('~/models/Player').then(m => m.PlayerSchema);
     const player = await PlayerSchema.findById(session.user.id).lean();
     
     if (player?.currentRoomId) {

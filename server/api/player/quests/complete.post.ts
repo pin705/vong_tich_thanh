@@ -60,19 +60,25 @@ export default defineEventHandler(async (event) => {
 
     // Add items
     if (quest.rewards.items && quest.rewards.items.length > 0) {
-      for (const itemId of quest.rewards.items) {
-        const rewardItem = await ItemSchema.findById(itemId).lean();
-        if (rewardItem) {
-          // Create a copy of the item
-          const newItem = await ItemSchema.create({
-            name: rewardItem.name,
-            description: rewardItem.description,
-            type: rewardItem.type,
-            value: rewardItem.value,
-            stats: rewardItem.stats || {}
-          });
-          player.inventory.push(newItem._id);
-        }
+      // Fetch all reward items
+      const rewardItems = await ItemSchema.find({ _id: { $in: quest.rewards.items } }).lean();
+      
+      if (rewardItems.length > 0) {
+        // Create copies of all items in one operation
+        const newItemsData = rewardItems.map(item => ({
+          name: item.name,
+          description: item.description,
+          type: item.type,
+          value: item.value,
+          stats: item.stats || {}
+        }));
+        
+        const newItems = await ItemSchema.insertMany(newItemsData);
+        
+        // Add all new item IDs to inventory
+        newItems.forEach(item => {
+          player.inventory.push(item._id);
+        });
       }
     }
 
