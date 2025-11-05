@@ -44,6 +44,26 @@ export interface ExitsState {
   down?: boolean;
 }
 
+// Room occupant
+export interface RoomOccupant {
+  id: string;
+  name: string;
+}
+
+// Room occupants state
+export interface RoomOccupantsState {
+  players: RoomOccupant[];
+  npcs: RoomOccupant[];
+  mobs: RoomOccupant[];
+}
+
+// Selected target
+export interface SelectedTarget {
+  type: 'player' | 'npc' | 'mob';
+  id: string;
+  name: string;
+}
+
 // Player/User types
 export interface Player {
   _id: string;

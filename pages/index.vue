@@ -24,7 +24,7 @@
             :level="playerState.level"
             :gold="playerState.gold"
             :inCombat="playerState.inCombat"
-            :targetName="targetState.name"
+            :targetName="selectedTarget?.name || targetState.name"
             :targetHp="targetState.hp"
             :targetMaxHp="targetState.maxHp"
           />
@@ -33,6 +33,27 @@
         <!-- Mini-Map -->
         <div class="map-pane-container">
           <MapPane :exits="exits" />
+        </div>
+
+        <!-- Room Occupants -->
+        <div class="occupants-pane-container">
+          <RoomOccupantsPane
+            :players="roomOccupants.players"
+            :npcs="roomOccupants.npcs"
+            :mobs="roomOccupants.mobs"
+            :selectedTarget="selectedTarget"
+            @selectTarget="handleSelectTarget"
+          />
+        </div>
+
+        <!-- Actions -->
+        <div class="actions-pane-container">
+          <ActionsPane
+            :targetType="selectedTarget?.type || null"
+            :targetName="selectedTarget?.name || ''"
+            :targetId="selectedTarget?.id || ''"
+            @executeAction="executeAction"
+          />
         </div>
 
         <!-- Chat Log -->
@@ -62,10 +83,12 @@
 
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, nextTick, watch, computed } from 'vue';
-import type { Message, ChatMessage, PlayerState, TargetState, ExitsState } from '~/types';
+import type { Message, ChatMessage, PlayerState, TargetState, ExitsState, RoomOccupantsState, SelectedTarget } from '~/types';
 import StatusPane from '~/components/StatusPane.vue';
 import MapPane from '~/components/MapPane.vue';
 import ChatPane from '~/components/ChatPane.vue';
+import RoomOccupantsPane from '~/components/RoomOccupantsPane.vue';
+import ActionsPane from '~/components/ActionsPane.vue';
 
 definePageMeta({
   middleware: 'auth'
@@ -84,6 +107,16 @@ const outputArea = ref<HTMLElement | null>(null);
 const inputField = ref<HTMLInputElement | null>(null);
 const ws = ref<WebSocket | null>(null);
 const isConnected = ref(false);
+
+// Room occupants state
+const roomOccupants = ref<RoomOccupantsState>({
+  players: [],
+  npcs: [],
+  mobs: []
+});
+
+// Selected target for actions
+const selectedTarget = ref<SelectedTarget | null>(null);
 
 // Player state
 const playerState = ref<PlayerState>({
@@ -161,6 +194,18 @@ const focusInput = () => {
   if (inputField.value) {
     inputField.value.focus();
   }
+};
+
+// Handle target selection
+const handleSelectTarget = (type: 'player' | 'npc' | 'mob', id: string, name: string) => {
+  selectedTarget.value = { type, id, name };
+};
+
+// Execute action from actions pane
+const executeAction = (command: string) => {
+  // Set the command in input field and send it
+  currentInput.value = command;
+  sendCommand();
 };
 
 // Navigate command history
@@ -328,6 +373,16 @@ const connectWebSocket = () => {
             };
           }
           break;
+        case 'room_occupants':
+          // Update room occupants
+          if (payload) {
+            roomOccupants.value = {
+              players: payload.players || [],
+              npcs: payload.npcs || [],
+              mobs: payload.mobs || []
+            };
+          }
+          break;
         default:
           console.log('Unknown message type:', type);
       }
@@ -430,9 +485,23 @@ watch(messages, () => {
   min-height: 150px;
 }
 
+.occupants-pane-container {
+  flex: 0 0 auto;
+  min-height: 120px;
+  max-height: 180px;
+  overflow: hidden;
+}
+
+.actions-pane-container {
+  flex: 0 0 auto;
+  min-height: 100px;
+  max-height: 150px;
+  overflow: hidden;
+}
+
 .chat-pane-container {
   flex: 1;
-  min-height: 120px;
+  min-height: 100px;
   overflow: hidden;
 }
 
