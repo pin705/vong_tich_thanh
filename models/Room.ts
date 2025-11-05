@@ -46,5 +46,14 @@ export const RoomSchema = defineMongooseModel({
       },
       position: String, // e.g., "north-wall", "center", "east-corner"
     }],
+    // Phase 19: Boss System
+    isBossLair: {
+      type: Boolean,
+      default: false,
+    },
+    respawnTimeSeconds: {
+      type: Number,
+      default: 300, // 5 minutes default, bosses can have 3600 (1 hour)
+    },
   },
 });
