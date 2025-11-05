@@ -28,5 +28,23 @@ export const RoomSchema = defineMongooseModel({
       type: Schema.Types.ObjectId,
       ref: 'Agent',
     }],
+    // Phase 18: PvP System
+    isSafeZone: {
+      type: Boolean,
+      default: true, // Most areas are safe by default
+    },
+    // Phase 19: Housing System
+    owner: {
+      type: Schema.Types.ObjectId,
+      ref: 'Player',
+      default: null,
+    },
+    decorations: [{
+      itemId: {
+        type: Schema.Types.ObjectId,
+        ref: 'Item',
+      },
+      position: String, // e.g., "north-wall", "center", "east-corner"
+    }],
   },
 });

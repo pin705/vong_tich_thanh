@@ -123,6 +123,15 @@ export async function handleCommandDb(command: Command, playerId: string): Promi
         responses.push('  party loot [rule]        - Đặt quy tắc nhặt đồ');
         responses.push('  p [tin nhắn]             - Chat với nhóm');
         responses.push('');
+        responses.push('BANG HỘI (GUILD):');
+        responses.push('  guild info               - Xem thông tin bang');
+        responses.push('  guild invite [tên]       - Mời người chơi vào bang');
+        responses.push('  guild leave              - Rời bang');
+        responses.push('  guild kick [tên]         - Đuổi thành viên');
+        responses.push('  guild promote [tên]      - Thăng chức sĩ quan');
+        responses.push('  guild demote [tên]       - Giáng chức thành viên');
+        responses.push('  g [tin nhắn]             - Chat với bang');
+        responses.push('');
         responses.push('KHÁC:');
         responses.push('  help                     - Hiển thị trợ giúp');
         responses.push('  quit                     - Thoát game');
@@ -1207,6 +1216,49 @@ export async function handleCommandDb(command: Command, playerId: string): Promi
             responses.push('Các lệnh: party [invite/accept/decline/leave/kick/promote/loot]');
             break;
         }
+        break;
+      }
+
+      case 'g': {
+        // Guild chat
+        const chatMessage = [target, ...(args || [])].filter(Boolean).join(' ');
+        
+        if (!chatMessage) {
+          responses.push('Bạn muốn nói gì với bang?');
+          break;
+        }
+        
+        if (!player.guild) {
+          responses.push('Bạn không có bang hội.');
+          break;
+        }
+        
+        // Import GuildSchema at the top of file if not already imported
+        const { GuildSchema } = await import('../../models/Guild');
+        const guild = await GuildSchema.findById(player.guild).populate('members', '_id');
+        
+        if (!guild) {
+          responses.push('Không tìm thấy bang hội.');
+          break;
+        }
+        
+        // Broadcast to all online guild members
+        const memberIds = guild.members.map((m: any) => m._id.toString());
+        const members = gameState.getPlayersByIds(memberIds);
+        
+        members.forEach(member => {
+          if (member.ws) {
+            member.ws.send(JSON.stringify({
+              type: 'chat',
+              category: 'guild',
+              user: player.username,
+              guildTag: guild.tag,
+              message: chatMessage
+            }));
+          }
+        });
+        
+        // Don't add to responses - it will be shown via chat system
         break;
       }
 

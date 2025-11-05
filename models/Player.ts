@@ -93,5 +93,16 @@ export const PlayerSchema = defineMongooseModel({
       type: Number,
       default: 0,
     },
+    // Phase 17: Guild System
+    guild: {
+      type: Schema.Types.ObjectId,
+      ref: 'Guild',
+      default: null,
+    },
+    // Phase 18: PvP System
+    pvpEnabled: {
+      type: Boolean,
+      default: false,
+    },
   },
 });
