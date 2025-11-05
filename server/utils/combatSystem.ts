@@ -6,6 +6,18 @@ import { gameState } from './gameState';
 import { scheduleAgentRespawn } from './npcAI';
 import { COMBAT_TICK_INTERVAL, FLEE_SUCCESS_CHANCE, EXPERIENCE_PER_LEVEL, HP_GAIN_PER_LEVEL, MINIMUM_DAMAGE } from './constants';
 
+// Helper function to categorize combat messages for semantic highlighting
+function getCombatMessageType(message: string): string {
+  if (message === '') return 'normal';
+  if (message.includes('LEVEL UP') || message.includes('═')) return 'critical';
+  if (message.includes('điểm kinh nghiệm')) return 'xp';
+  if (message.includes('làm rơi')) return 'loot';
+  if (message.includes('tấn công bạn')) return 'damage_in';
+  if (message.includes('Bạn tấn công') || (message.includes('gây') && message.includes('sát thương'))) return 'damage_out';
+  if (message.includes('hạ gục')) return 'damage_out';
+  return 'action';
+}
+
 // Helper function to send combat state updates to player
 async function sendCombatStateUpdate(playerId: string) {
   const player = await PlayerSchema.findById(playerId);
@@ -227,8 +239,12 @@ export async function executeCombatTick(playerId: string, agentId: string): Prom
       };
       
       if (room) {
-        room.agents = room.agents.filter((id: any) => id.toString() !== agent._id.toString());
-        await room.save();
+        // Use findByIdAndUpdate to avoid version conflicts
+        await RoomSchema.findByIdAndUpdate(
+          room._id,
+          { $pull: { agents: agent._id } },
+          { new: true }
+        );
         
         // Schedule respawn
         scheduleAgentRespawn(agentData, room._id.toString());
@@ -239,19 +255,12 @@ export async function executeCombatTick(playerId: string, agentId: string): Prom
       
       gameState.stopCombat(playerId);
       
-      // Send messages to player
+      // Send messages to player with semantic types
       const playerObj = gameState.getPlayer(playerId);
       if (playerObj && playerObj.ws) {
         messages.forEach(msg => {
-          if (msg === '') {
-            playerObj.ws.send(JSON.stringify({ type: 'normal', message: '' }));
-          } else if (msg.includes('[') && msg.includes(']')) {
-            playerObj.ws.send(JSON.stringify({ type: 'accent', message: msg }));
-          } else if (msg.includes('═')) {
-            playerObj.ws.send(JSON.stringify({ type: 'system', message: msg }));
-          } else {
-            playerObj.ws.send(JSON.stringify({ type: 'action', message: msg }));
-          }
+          const messageType = getCombatMessageType(msg);
+          playerObj.ws.send(JSON.stringify({ type: messageType, message: msg }));
         });
         
         // Show updated stats
@@ -358,15 +367,12 @@ export async function executeCombatTick(playerId: string, agentId: string): Prom
       return;
     }
     
-    // Send combat messages to player
+    // Send combat messages to player with semantic types
     const playerObj = gameState.getPlayer(playerId);
     if (playerObj && playerObj.ws) {
       messages.forEach(msg => {
-        if (msg.includes('[') && msg.includes(']')) {
-          playerObj.ws.send(JSON.stringify({ type: 'accent', message: msg }));
-        } else {
-          playerObj.ws.send(JSON.stringify({ type: 'action', message: msg }));
-        }
+        const messageType = getCombatMessageType(msg);
+        playerObj.ws.send(JSON.stringify({ type: messageType, message: msg }));
       });
       
       // Show HP

@@ -51,14 +51,15 @@
       />
     </Popover>
 
-    <Popover
+    <MapWorldOverlay
       :isOpen="mapPopupOpen"
-      title="Bản Đồ"
-      width="400px"
+      :exits="exits"
+      :currentRoomName="currentRoomName"
+      :rooms="worldRooms"
       @close="mapPopupOpen = false"
-    >
-      <MapPane :exits="exits" @navigate="handleMapNavigation" />
-    </Popover>
+      @navigate="handleMapNavigation"
+      @navigateTo="handleWorldMapNavigation"
+    />
 
     <OccupantsListPopup
       :isOpen="occupantsPopupOpen"
@@ -111,14 +112,7 @@
       @fontSizeChange="handleFontSizeChange"
     />
 
-    <!-- World Map Overlay -->
-    <WorldMapOverlay
-      :isOpen="worldMapOpen"
-      :currentRoomName="currentRoomName"
-      :rooms="worldRooms"
-      @close="worldMapOpen = false"
-      @navigateTo="handleWorldMapNavigation"
-    />
+
 
     <!-- Quest Tracker Overlay -->
     <QuestTrackerOverlay
@@ -137,13 +131,24 @@
       @close="professionChoiceOpen = false"
       @chooseProfession="handleChooseProfession"
     />
+
+    <!-- Trading Popup -->
+    <TradingPopup
+      :isOpen="tradingPopupOpen"
+      :merchantName="tradingData.merchantName"
+      :merchantItems="tradingData.merchantItems"
+      :playerItems="playerState.inventoryItems"
+      :playerGold="playerState.gold"
+      @close="tradingPopupOpen = false"
+      @buy="handleBuyItem"
+      @sell="handleSellItem"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, nextTick, watch, computed } from 'vue';
 import type { Message, ChatMessage, PlayerState, TargetState, ExitsState, RoomOccupantsState, SelectedTarget, Skill } from '~/types';
-import MapPane from '~/components/MapPane.vue';
 import InventoryPane from '~/components/InventoryPane.vue';
 import HelpOverlay from '~/components/HelpOverlay.vue';
 import SkillbookOverlay from '~/components/SkillbookOverlay.vue';
@@ -153,9 +158,10 @@ import FooterTabBar from '~/components/FooterTabBar.vue';
 import Popover from '~/components/Popover.vue';
 import OccupantsListPopup from '~/components/OccupantsListPopup.vue';
 import ContextualPopup from '~/components/ContextualPopup.vue';
-import WorldMapOverlay from '~/components/WorldMapOverlay.vue';
+import MapWorldOverlay from '~/components/MapWorldOverlay.vue';
 import QuestTrackerOverlay from '~/components/QuestTrackerOverlay.vue';
 import ProfessionChoiceOverlay from '~/components/ProfessionChoiceOverlay.vue';
+import TradingPopup from '~/components/TradingPopup.vue';
 
 definePageMeta({
   middleware: 'auth'
@@ -163,6 +169,21 @@ definePageMeta({
 
 const { user, clear } = useUserSession();
 const router = useRouter();
+
+// Responsive layout detection (Phase 15.1)
+const isMobile = ref(false);
+const isTablet = ref(false);
+const isDesktop = ref(false);
+
+// Detect device type
+const updateDeviceType = () => {
+  if (typeof window !== 'undefined') {
+    const width = window.innerWidth;
+    isMobile.value = width < 768;
+    isTablet.value = width >= 768 && width < 1024;
+    isDesktop.value = width >= 1024;
+  }
+};
 
 // State
 const messages = ref<Message[]>([]);
@@ -187,6 +208,7 @@ const inventoryPopupOpen = ref(false);
 const mapPopupOpen = ref(false);
 const occupantsPopupOpen = ref(false);
 const contextualPopupOpen = ref(false);
+const tradingPopupOpen = ref(false);
 const contextualPopupData = ref<{
   title: string;
   entityType: 'npc' | 'mob' | 'player' | null;
@@ -197,6 +219,17 @@ const contextualPopupData = ref<{
   entityType: null,
   entityData: {},
   actions: []
+});
+
+// Trading popup state
+const tradingData = ref<{
+  merchantName: string;
+  merchantId: string;
+  merchantItems: any[];
+}>({
+  merchantName: '',
+  merchantId: '',
+  merchantItems: []
 });
 
 // Skills and talents state
@@ -314,6 +347,9 @@ const focusInput = () => {
 const handleTabClick = async (tabId: string) => {
   switch (tabId) {
     case 'map':
+    case 'worldmap':
+      // Load world map data before opening
+      await loadWorldMap();
       mapPopupOpen.value = true;
       break;
     case 'occupants':
@@ -336,10 +372,6 @@ const handleTabClick = async (tabId: string) => {
     case 'settings':
       settingsOpen.value = true;
       break;
-    case 'worldmap':
-      await loadWorldMap();
-      worldMapOpen.value = true;
-      break;
     case 'quests':
       await loadQuests();
       questsOpen.value = true;
@@ -352,7 +384,7 @@ const handleEntitySelect = (type: 'player' | 'npc' | 'mob', entity: { id: string
   selectedTarget.value = { type, id: entity.id, name: entity.name };
   
   // Prepare contextual popup data
-  const actions = getActionsForEntity(type, entity.name);
+  const actions = getActionsForEntity(type, entity.name, entity.id);
   
   contextualPopupData.value = {
     title: `${entity.name} (${getEntityTypeLabel(type)})`,
@@ -368,19 +400,31 @@ const handleEntitySelect = (type: 'player' | 'npc' | 'mob', entity: { id: string
 };
 
 // Handle contextual action execution
-const handleContextualAction = (action: { command: string }) => {
-  currentInput.value = action.command;
-  sendCommand();
+const handleContextualAction = async (action: { command: string }) => {
+  // Check if this is a trade action
+  if (action.command.startsWith('__trade__:')) {
+    const parts = action.command.split(':');
+    const merchantId = parts[1];
+    const merchantName = parts[2];
+    
+    // Load merchant shop data
+    await loadMerchantShop(merchantId, merchantName);
+    tradingPopupOpen.value = true;
+  } else {
+    // Execute normal command
+    currentInput.value = action.command;
+    sendCommand();
+  }
 };
 
 // Get actions for entity type
-const getActionsForEntity = (type: 'player' | 'npc' | 'mob', name: string) => {
+const getActionsForEntity = (type: 'player' | 'npc' | 'mob', name: string, entityId: string) => {
   switch (type) {
     case 'npc':
       return [
         { label: 'Nói Chuyện (Talk)', command: `talk ${name}`, disabled: false },
         { label: 'Xem Xét (Look)', command: `look ${name}`, disabled: false },
-        { label: 'Giao Dịch (Trade)', command: `list`, disabled: false },
+        { label: 'Giao Dịch (Trade)', command: `__trade__:${entityId}:${name}`, disabled: false },
         { label: 'Tấn Công (Attack)', command: `attack ${name}`, disabled: false }
       ];
     case 'mob':
@@ -653,6 +697,46 @@ const handleChooseProfession = async (professionId: string) => {
   }
 };
 
+// Load merchant shop data
+// TODO: Create dedicated API endpoint for merchant shop data
+// Current workaround uses WebSocket "list" command which has limitations:
+// - Side effects from command execution
+// - No direct return of shop item data
+// - Coupling with WebSocket protocol
+const loadMerchantShop = async (merchantId: string, merchantName: string) => {
+  tradingData.value = {
+    merchantName,
+    merchantId,
+    merchantItems: [] // Will be populated via WebSocket response
+  };
+  
+  // Temporary: Send list command via WebSocket
+  // Future: Replace with: const items = await $fetch(`/api/merchant/${merchantId}/shop`)
+  currentInput.value = 'list';
+};
+
+// Handle buy item
+const handleBuyItem = (itemId: string) => {
+  // Find the item name from merchant items
+  const item = tradingData.value.merchantItems.find(i => i.id === itemId);
+  if (item) {
+    currentInput.value = `buy ${item.name}`;
+    sendCommand();
+    tradingPopupOpen.value = false;
+  }
+};
+
+// Handle sell item
+const handleSellItem = (itemId: string) => {
+  // Find the item name from player inventory
+  const item = playerState.value.inventoryItems.find(i => i && i.id === itemId);
+  if (item) {
+    currentInput.value = `sell ${item.name}`;
+    sendCommand();
+    tradingPopupOpen.value = false;
+  }
+};
+
 // Navigate command history
 const navigateHistory = (direction: number) => {
   if (commandHistory.value.length === 0) return;
@@ -899,6 +983,12 @@ onMounted(() => {
   focusInput();
   connectWebSocket();
   
+  // Initialize device type detection
+  updateDeviceType();
+  if (typeof window !== 'undefined') {
+    window.addEventListener('resize', updateDeviceType);
+  }
+  
   // Load saved theme and font size
   if (typeof window !== 'undefined') {
     try {
@@ -923,6 +1013,9 @@ onMounted(() => {
 
 onUnmounted(() => {
   document.removeEventListener('click', focusInput);
+  if (typeof window !== 'undefined') {
+    window.removeEventListener('resize', updateDeviceType);
+  }
   if (ws.value) {
     ws.value.close();
   }
@@ -984,15 +1077,51 @@ watch(messages, () => {
 }
 
 .message-error {
-  color: var(--text-danger);
+  color: var(--theme-text-error);
 }
 
 .message-system {
-  color: var(--text-cyan);
+  color: var(--theme-text-system);
 }
 
 .message-combat_log {
   color: var(--text-bright);
+}
+
+/* Semantic Message Types (Phase 15) */
+.message-damage_in {
+  color: var(--theme-text-damage-in);
+  font-weight: bold;
+}
+
+.message-damage_out {
+  color: var(--theme-text-damage-out);
+}
+
+.message-heal {
+  color: var(--theme-text-heal);
+}
+
+.message-loot {
+  color: var(--theme-text-loot);
+}
+
+.message-xp {
+  color: var(--theme-text-xp);
+}
+
+.message-critical {
+  color: var(--theme-text-critical);
+  font-weight: bold;
+  text-shadow: 0 0 5px currentColor;
+}
+
+.message-chat_say {
+  color: var(--theme-text-chat-say);
+}
+
+.message-chat_guild {
+  color: var(--theme-text-chat-guild);
 }
 
 .input-area {
