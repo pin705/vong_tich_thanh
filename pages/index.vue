@@ -453,6 +453,7 @@ const getMessageClass = (message: Message) => {
 const renderClickableItems = (text: string): string => {
   // Match item names in brackets like [Cỏ Chữa Lành] or [Đuôi Chuột]
   const itemRegex = /\[([^\]]+)\]/g;
+  let counter = 0;
   return text.replace(itemRegex, (match, itemName) => {
     // Sanitize item name to prevent XSS
     const sanitizedName = itemName.replace(/[<>"'&]/g, (char) => {
@@ -465,8 +466,16 @@ const renderClickableItems = (text: string): string => {
       };
       return entities[char] || char;
     });
-    // Create a clickable span with data attribute for the item name
-    return `<span class="clickable-item" data-item-name="${sanitizedName}" onclick="window.handleItemClick('${sanitizedName}')">[${sanitizedName}]</span>`;
+    // Create a clickable span with unique ID for event handling
+    const itemId = `clickable-item-${Date.now()}-${counter++}`;
+    // Store the item name for event handling
+    setTimeout(() => {
+      const element = document.getElementById(itemId);
+      if (element) {
+        element.addEventListener('click', () => handleItemClick(sanitizedName));
+      }
+    }, 0);
+    return `<span id="${itemId}" class="clickable-item">[${sanitizedName}]</span>`;
   });
 };
 
@@ -499,11 +508,6 @@ const handleItemClick = async (itemName: string) => {
   
   contextualPopupOpen.value = true;
 };
-
-// Expose handleItemClick to window for onclick handler
-if (typeof window !== 'undefined') {
-  (window as any).handleItemClick = handleItemClick;
-}
 
 // Focus input field
 const focusInput = () => {

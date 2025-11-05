@@ -1652,6 +1652,7 @@ export async function handleCommandDb(command: Command, playerId: string): Promi
                 }
 
                 // Validate items still exist in inventories
+                let validationFailed = false;
                 for (const itemId of trade.initiatorItems) {
                   if (!initiator.inventory.some((id: any) => id.toString() === itemId)) {
                     responses.push('Lỗi: Một số vật phẩm của bạn không còn tồn tại.');
@@ -1662,9 +1663,12 @@ export async function handleCommandDb(command: Command, playerId: string): Promi
                         message: 'Giao dịch thất bại: Người kia không còn vật phẩm đã đưa ra.'
                       }));
                     }
+                    validationFailed = true;
                     break;
                   }
                 }
+                if (validationFailed) break;
+                
                 for (const itemId of trade.targetItems) {
                   if (!target.inventory.some((id: any) => id.toString() === itemId)) {
                     responses.push('Lỗi: Một số vật phẩm của đối tác không còn tồn tại.');
@@ -1675,9 +1679,11 @@ export async function handleCommandDb(command: Command, playerId: string): Promi
                         message: 'Giao dịch thất bại: Bạn không còn vật phẩm đã đưa ra.'
                       }));
                     }
+                    validationFailed = true;
                     break;
                   }
                 }
+                if (validationFailed) break;
 
                 // Exchange items
                 for (const itemId of trade.initiatorItems) {
