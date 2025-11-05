@@ -191,7 +191,7 @@ const getItemPrice = (item: ShopItem): number => {
 };
 
 const getSellValue = (item: ShopItem): number => {
-  return item.sellValue > 0 ? item.sellValue : Math.floor(item.value || 0 * 0.5);
+  return item.sellValue || 0;
 };
 
 const canAfford = (item: ShopItem): boolean => {
