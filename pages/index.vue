@@ -102,6 +102,14 @@
       @close="talentsOpen = false"
       @allocateTalent="handleAllocateTalent"
     />
+    
+    <!-- Settings Overlay -->
+    <SettingsOverlay
+      :isOpen="settingsOpen"
+      @close="settingsOpen = false"
+      @themeChange="handleThemeChange"
+      @fontSizeChange="handleFontSizeChange"
+    />
   </div>
 </template>
 
@@ -113,6 +121,7 @@ import InventoryPane from '~/components/InventoryPane.vue';
 import HelpOverlay from '~/components/HelpOverlay.vue';
 import SkillbookOverlay from '~/components/SkillbookOverlay.vue';
 import TalentTreeOverlay from '~/components/TalentTreeOverlay.vue';
+import SettingsOverlay from '~/components/SettingsOverlay.vue';
 import FooterTabBar from '~/components/FooterTabBar.vue';
 import Popover from '~/components/Popover.vue';
 import OccupantsListPopup from '~/components/OccupantsListPopup.vue';
@@ -138,6 +147,7 @@ const isConnected = ref(false);
 const helpOpen = ref(false);
 const skillsOpen = ref(false);
 const talentsOpen = ref(false);
+const settingsOpen = ref(false);
 
 // Popup states
 const inventoryPopupOpen = ref(false);
@@ -282,6 +292,9 @@ const handleTabClick = async (tabId: string) => {
     case 'talents':
       await loadTalents();
       talentsOpen.value = true;
+      break;
+    case 'settings':
+      settingsOpen.value = true;
       break;
   }
 };
@@ -692,10 +705,46 @@ const connectWebSocket = () => {
   };
 };
 
+// Handle theme change
+const handleThemeChange = (themeId: string) => {
+  // Remove all theme classes
+  document.body.classList.remove('theme-vong-tich', 'theme-ho-phach', 'theme-co-ngu');
+  // Add new theme class
+  document.body.classList.add(`theme-${themeId}`);
+};
+
+// Handle font size change
+const handleFontSizeChange = (sizeId: string) => {
+  // Remove all font size classes
+  document.body.classList.remove('font-size-small', 'font-size-medium', 'font-size-large');
+  // Add new font size class
+  document.body.classList.add(`font-size-${sizeId}`);
+};
+
 // Lifecycle hooks
 onMounted(() => {
   focusInput();
   connectWebSocket();
+  
+  // Load saved theme
+  if (typeof window !== 'undefined') {
+    const savedTheme = localStorage.getItem('game-theme');
+    const savedFontSize = localStorage.getItem('game-font-size');
+    
+    if (savedTheme) {
+      handleThemeChange(savedTheme);
+    } else {
+      // Default theme
+      handleThemeChange('vong-tich');
+    }
+    
+    if (savedFontSize) {
+      handleFontSizeChange(savedFontSize);
+    } else {
+      // Default font size
+      handleFontSizeChange('medium');
+    }
+  }
   
   // Always keep focus on input
   document.addEventListener('click', focusInput);

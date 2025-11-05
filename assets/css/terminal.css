@@ -2,14 +2,57 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Terminal Color Palette */
-:root {
+/* Terminal Color Palette - Default Theme: Vong Tích (Cổ Điển) */
+:root,
+.theme-vong-tich {
   --bg-black: #0a0a0a;
   --text-dim: #008800;
   --text-bright: #00ff00;
   --text-accent: #ffb000;
   --text-cyan: #00ffff;
   --text-danger: #ff0000;
+}
+
+/* Theme 2: Hổ Phách (Hoài Cổ) - Amber/Orange */
+.theme-ho-phach {
+  --bg-black: #0a0a0a;
+  --text-dim: #aa7000;
+  --text-bright: #ffb000;
+  --text-accent: #ffb000;
+  --text-cyan: #ffffa0;
+  --text-danger: #ff6600;
+}
+
+/* Theme 3: Cổ Ngữ (Lạnh Lẽo) - Cool Gray/Ice Blue */
+.theme-co-ngu {
+  --bg-black: #202025;
+  --text-dim: #888888;
+  --text-bright: #e0e0e0;
+  --text-accent: #a0ffff;
+  --text-cyan: #a0ffff;
+  --text-danger: #ff6666;
+}
+
+/* Font Size Variants */
+.font-size-small {
+  --base-font-size: 16px;
+  --line-height: 1.3;
+}
+
+.font-size-medium {
+  --base-font-size: 18px;
+  --line-height: 1.4;
+}
+
+.font-size-large {
+  --base-font-size: 20px;
+  --line-height: 1.5;
+}
+
+/* Default font size */
+:root {
+  --base-font-size: 18px;
+  --line-height: 1.4;
 }
 
 * {
@@ -25,8 +68,9 @@ html, body {
   background-color: var(--bg-black);
   color: var(--text-dim);
   font-family: 'VT323', 'Source Code Pro', monospace;
-  font-size: 18px;
-  line-height: 1.4;
+  font-size: var(--base-font-size);
+  line-height: var(--line-height);
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 /* Remove any default styling */
