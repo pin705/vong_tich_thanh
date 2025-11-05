@@ -5,20 +5,39 @@ A classic text-based MUD (Multi-User Dungeon) game with a retro terminal aesthet
 ## Features
 
 ### ✅ Implemented
+
+#### Core Gameplay
 - **Retro Terminal UI**: Pure black background with green monospace text
 - **Command System**: Full command parser with aliases (look/l, go/n/s/e/w, attack/a, etc.)
 - **Real-time WebSocket**: Instant command processing
-- **Basic Commands**: help, look, go, talk, list, inventory, and more
 - **Database Models**: Player, Room, Item, Agent/NPC schemas
 - **Game State Manager**: Handles active players and combat ticks
+- **Complete Room Navigation**: Database-integrated movement system
+- **Multiplayer**: See other players, chat in real-time
+- **NPC AI Behaviors**: Wander, aggressive, patrol, and passive behaviors
+- **Combat System**: Tick-based auto-battle with flee mechanics
+- **Shop/Trading System**: Buy and sell items from merchants
+
+#### Enhanced UI/UX (NEW!)
+- **Visual Inventory System**: Tabbed interface with character info and item grid
+  - Info tab: player stats (damage, defense, crit, lifesteal, dodge)
+  - Inventory tab: 20-slot grid with clickable items
+  - Item popovers with full details and one-click actions
+- **Clickable Map**: Click directions to move (no typing required!)
+- **Interactive Help System**: Wiki-style help with search and categories (press F1 or Ctrl+H)
+- **Status Effects Display**: Visual buffs/debuffs with timers
+- **Boss Cast Bar**: Warning system for boss abilities
+- **Subtle Borders**: Professional UI with reduced visual clutter
+- **Reusable Components**: Popover and FullscreenOverlay for consistent UX
 
 ### 🚧 In Progress
-- Complete room navigation with database
-- Multiplayer interactions (see other players, chat)
-- NPC AI behaviors (wander, aggressive, patrol)
-- Combat system (tick-based auto-battle)
-- Inventory management
-- Shop/trading system
+- Guild management system
+- Party/group system
+- Trade UI between players
+- Auction house
+- Housing system
+- Pet/companion system
+- Enhanced equipment system with requirements
 
 ## Tech Stack
 
@@ -96,8 +115,16 @@ All commands are typed in the input field at the bottom of the screen.
 - **Dim Green** (#008800): Normal descriptions
 - **Bright Green** (#00ff00): Your actions
 - **Amber** (#ffb000): Important names (NPCs, items)
-- **Cyan** (#00ffff): System messages
-- **Red** (#ff0000): Errors and danger
+- **Cyan** (#00ffff): System messages and buffs
+- **Red** (#ff0000): Errors, danger, and debuffs
+
+### Keyboard Shortcuts (NEW!)
+
+- **F1** or **Ctrl+H** (Cmd+H on Mac): Open help system
+- **ESC**: Close any overlay/popup
+- **↑/↓**: Navigate command history
+- **Enter**: Execute command
+- **Click Map Directions**: Move without typing
 
 ## Project Structure
 
@@ -129,14 +156,19 @@ npm run preview
 
 ## Design Philosophy
 
-**"Function > Form"** - This game intentionally avoids modern web design:
+**"Function > Form with Modern UX"** - This game balances retro aesthetics with usability:
 
-- ❌ No buttons, cards, or rounded corners
-- ❌ No colors beyond terminal palette
 - ✅ Pure monospace fonts (VT323, Source Code Pro)
-- ✅ Always-focused input field
+- ✅ Terminal color palette (greens, amber, cyan, red)
+- ✅ Always-focused input field for typing
 - ✅ Auto-scrolling output
 - ✅ Retro terminal aesthetic
+- ✅ **NEW**: Visual, clickable UI elements for common actions
+- ✅ **NEW**: Subtle borders and backgrounds (not jarring)
+- ✅ **NEW**: Keyboard shortcuts for power users
+- ✅ **NEW**: Popovers and overlays for detailed information
+
+The improvements maintain the terminal feel while making the game more accessible to new players.
 
 ## License
 
