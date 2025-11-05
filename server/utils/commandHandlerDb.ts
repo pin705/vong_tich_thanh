@@ -681,6 +681,61 @@ export async function handleCommandDb(command: Command, playerId: string): Promi
         responses.push('Sử dụng nút "Talents" ở thanh tab dưới để xem bảng thiên phú.');
         break;
 
+      case 'goto':
+        // Teleport to a specific room by ID (from world map)
+        if (!target) {
+          responses.push('Cần chỉ định phòng đích.');
+          break;
+        }
+
+        // Check if player is in combat
+        if (player.inCombat) {
+          responses.push('Bạn không thể di chuyển khi đang trong chiến đấu!');
+          break;
+        }
+
+        // Find target room
+        const gotoRoom = await RoomSchema.findById(target);
+        if (!gotoRoom) {
+          responses.push('Không tìm thấy phòng đích.');
+          break;
+        }
+
+        // Broadcast to old room
+        const gotoOldRoom = await RoomSchema.findById(player.currentRoomId);
+        if (gotoOldRoom) {
+          gameState.broadcastToRoom(
+            player.currentRoomId.toString(),
+            {
+              type: 'normal',
+              message: `[${player.username}] đã rời khỏi phòng.`
+            },
+            playerId
+          );
+        }
+
+        // Update player location
+        player.currentRoomId = gotoRoom._id;
+        await player.save();
+        gameState.updatePlayerRoom(playerId, gotoRoom._id.toString());
+
+        // Broadcast to new room
+        gameState.broadcastToRoom(
+          gotoRoom._id.toString(),
+          {
+            type: 'normal',
+            message: `[${player.username}] đã xuất hiện.`
+          },
+          playerId
+        );
+
+        // Show new room
+        responses.push('Bạn di chuyển đến vị trí mới...');
+        responses.push('');
+        const gotoRoomDesc = await formatRoomDescription(gotoRoom, player);
+        responses.push(...gotoRoomDesc);
+        break;
+
       case 'quit':
         responses.push('Tạm biệt! Hẹn gặp lại.');
         break;

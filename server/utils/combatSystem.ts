@@ -227,8 +227,12 @@ export async function executeCombatTick(playerId: string, agentId: string): Prom
       };
       
       if (room) {
-        room.agents = room.agents.filter((id: any) => id.toString() !== agent._id.toString());
-        await room.save();
+        // Use findByIdAndUpdate to avoid version conflicts
+        await RoomSchema.findByIdAndUpdate(
+          room._id,
+          { $pull: { agents: agent._id } },
+          { new: true }
+        );
         
         // Schedule respawn
         scheduleAgentRespawn(agentData, room._id.toString());
