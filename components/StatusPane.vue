@@ -15,9 +15,9 @@
         <span class="stat-value">{{ hp }}/{{ maxHp }}</span>
       </div>
       <div class="stat-row">
-        <span class="stat-label">MP:</span>
-        <span class="stat-bar">{{ renderBar(mp, maxMp) }}</span>
-        <span class="stat-value">{{ mp }}/{{ maxMp }}</span>
+        <span class="stat-label">{{ getResourceName }}:</span>
+        <span class="stat-bar">{{ renderBar(playerClass ? resource : mp, playerClass ? maxResource : maxMp) }}</span>
+        <span class="stat-value">{{ playerClass ? resource : mp }}/{{ playerClass ? maxResource : maxMp }}</span>
       </div>
       <div class="stat-row">
         <span class="stat-label">Cấp:</span>
@@ -119,7 +119,29 @@ const props = defineProps({
   targetCasting: {
     type: Object as () => TargetCasting | null,
     default: null
+  },
+  playerClass: {
+    type: String,
+    default: ''
+  },
+  resource: {
+    type: Number,
+    default: 0
+  },
+  maxResource: {
+    type: Number,
+    default: 100
   }
+});
+
+const getResourceName = computed(() => {
+  const resourceNames: Record<string, string> = {
+    mutant_warrior: 'Nộ',
+    rune_historian: 'Mana',
+    stalker: 'Năng Lượng',
+    scrap_engineer: 'Linh Kiện',
+  };
+  return resourceNames[props.playerClass] || 'MP';
 });
 
 const emit = defineEmits<{

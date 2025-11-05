@@ -108,6 +108,10 @@ export async function handleCommandDb(command: Command, playerId: string): Promi
         responses.push('  buy [vật]                - Mua vật phẩm');
         responses.push('  sell [vật]               - Bán vật phẩm');
         responses.push('');
+        responses.push('CLASS & THIÊN PHÚ:');
+        responses.push('  skills          (sk)     - Xem sổ kỹ năng');
+        responses.push('  talents    (thienphu)    - Xem bảng thiên phú');
+        responses.push('');
         responses.push('KHÁC:');
         responses.push('  help                     - Hiển thị trợ giúp');
         responses.push('  quit                     - Thoát game');

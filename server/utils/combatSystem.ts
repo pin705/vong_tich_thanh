@@ -111,11 +111,20 @@ async function checkLevelUp(player: any): Promise<string[]> {
     player.level += 1;
     player.maxHp += HP_GAIN_PER_LEVEL;
     player.hp = player.maxHp; // Full heal on level up
+    
+    // Grant talent point if level >= 10
+    if (player.level >= 10) {
+      player.talentPoints = (player.talentPoints || 0) + 1;
+    }
+    
     messages.push('');
     messages.push('═══════════════════════════════════');
     messages.push(`    LEVEL UP! Bạn đã lên cấp ${player.level}!`);
     messages.push(`    HP tối đa tăng thêm ${HP_GAIN_PER_LEVEL}!`);
     messages.push(`    HP đã được hồi phục đầy!`);
+    if (player.level >= 10) {
+      messages.push(`    🌟 Bạn nhận được 1 điểm thiên phú!`);
+    }
     messages.push('═══════════════════════════════════');
   }
   
