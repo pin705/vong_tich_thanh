@@ -187,6 +187,12 @@ export async function handleCommandDb(command: Command, playerId: string): Promi
                 responses.push('');
               }
               
+              // Phase 25: Show vendor info
+              if (agent.isVendor) {
+                responses.push('💰 CỬA HÀNG AVAILABLE - Gõ \'list\' để xem hàng hóa.');
+                responses.push('');
+              }
+              
               break;
             }
           }
@@ -513,23 +519,31 @@ export async function handleCommandDb(command: Command, playerId: string): Promi
           break;
         }
 
-        const merchants = await AgentSchema.find({ 
+        // Phase 25: Use new vendor system
+        const vendors = await AgentSchema.find({ 
           _id: { $in: listRoom.agents },
-          shopItems: { $exists: true, $ne: [] }
-        });
+          isVendor: true
+        }).populate('shopInventory');
 
-        if (merchants.length === 0) {
+        if (vendors.length === 0) {
           responses.push('Không có ai ở đây để bán hàng.');
           break;
         }
 
-        const merchant = merchants[0];
-        const shopItems = await ItemSchema.find({ _id: { $in: merchant.shopItems } });
+        const vendor = vendors[0];
+        const shopInventory = vendor.shopInventory || [];
 
-        responses.push(`════════ HÀNG CỦA ${merchant.name.toUpperCase()} ════════`);
-        shopItems.forEach((item: any, index: number) => {
-          const spaces = ' '.repeat(20 - item.name.length);
-          responses.push(`${index + 1}. [${item.name}]${spaces}- ${item.value} vàng`);
+        if (shopInventory.length === 0) {
+          responses.push(`[${vendor.name}] không có gì để bán.`);
+          break;
+        }
+
+        const currencySymbol = vendor.shopType === 'premium' ? '💎' : '💰';
+        responses.push(`════════ HÀNG CỦA ${vendor.name.toUpperCase()} ════════`);
+        shopInventory.forEach((item: any, index: number) => {
+          const itemPrice = vendor.shopType === 'premium' ? item.premiumPrice : item.price;
+          const spaces = ' '.repeat(Math.max(20 - item.name.length, 1));
+          responses.push(`${index + 1}. [${item.name}]${spaces}- ${itemPrice} ${currencySymbol}`);
         });
         responses.push('═══════════════════════════════════════');
         responses.push('Gõ \'buy [tên vật phẩm]\' để mua.');
@@ -547,47 +561,80 @@ export async function handleCommandDb(command: Command, playerId: string): Promi
           break;
         }
 
-        const buyMerchants = await AgentSchema.find({ 
+        // Phase 25: Use new vendor system
+        const buyVendors = await AgentSchema.find({ 
           _id: { $in: buyRoom.agents },
-          shopItems: { $exists: true, $ne: [] }
-        });
+          isVendor: true
+        }).populate('shopInventory');
 
-        if (buyMerchants.length === 0) {
+        if (buyVendors.length === 0) {
           responses.push('Không có ai ở đây để bán hàng.');
           break;
         }
 
-        const buyMerchant = buyMerchants[0];
-        const buyShopItems = await ItemSchema.find({ _id: { $in: buyMerchant.shopItems } });
-        const buyItem = buyShopItems.find((i: any) => 
+        const buyVendor = buyVendors[0];
+        const buyShopInventory = buyVendor.shopInventory || [];
+        const buyItem = buyShopInventory.find((i: any) => 
           i.name.toLowerCase().includes(target.toLowerCase())
         );
 
         if (!buyItem) {
-          responses.push(`[${buyMerchant.name}] không bán "${target}".`);
+          responses.push(`[${buyVendor.name}] không bán "${target}".`);
           break;
         }
 
-        if (player.gold < buyItem.value) {
-          responses.push(`Bạn không có đủ vàng để mua [${buyItem.name}]. Cần ${buyItem.value} vàng, bạn chỉ có ${player.gold} vàng.`);
-          break;
+        // Check price based on shop type
+        const isPremiumShop = buyVendor.shopType === 'premium';
+        const itemPrice = isPremiumShop ? buyItem.premiumPrice : buyItem.price;
+        const currencySymbol = isPremiumShop ? '💎' : '💰';
+
+        if (isPremiumShop) {
+          if (player.premiumCurrency < itemPrice) {
+            responses.push(`Bạn không có đủ Cổ Thạch để mua [${buyItem.name}]. Cần ${itemPrice} ${currencySymbol}, bạn chỉ có ${player.premiumCurrency} ${currencySymbol}.`);
+            break;
+          }
+        } else {
+          if (player.gold < itemPrice) {
+            responses.push(`Bạn không có đủ vàng để mua [${buyItem.name}]. Cần ${itemPrice} ${currencySymbol}, bạn chỉ có ${player.gold} ${currencySymbol}.`);
+            break;
+          }
         }
 
         // Create a new item instance for the player
-        const newItem = await ItemSchema.create({
+        const newBuyItem = await ItemSchema.create({
           name: buyItem.name,
           description: buyItem.description,
           type: buyItem.type,
           value: buyItem.value,
-          stats: buyItem.stats
+          price: buyItem.price,
+          sellValue: buyItem.sellValue,
+          premiumPrice: buyItem.premiumPrice,
+          stats: buyItem.stats,
+          effects: buyItem.effects,
+          quality: buyItem.quality,
+          rarity: buyItem.rarity,
+          slot: buyItem.slot,
+          requiredLevel: buyItem.requiredLevel,
+          recipe: buyItem.recipe,
+          resultItem: buyItem.resultItem
         });
 
-        player.gold -= buyItem.value;
-        player.inventory.push(newItem._id);
+        // Deduct currency
+        if (isPremiumShop) {
+          player.premiumCurrency -= itemPrice;
+        } else {
+          player.gold -= itemPrice;
+        }
+        
+        player.inventory.push(newBuyItem._id);
         await player.save();
 
-        responses.push(`Bạn đã mua [${buyItem.name}] với giá ${buyItem.value} vàng.`);
-        responses.push(`Vàng còn lại: ${player.gold}`);
+        responses.push(`Bạn đã mua [${buyItem.name}] với giá ${itemPrice} ${currencySymbol}!`);
+        if (isPremiumShop) {
+          responses.push(`Cổ Thạch còn lại: ${player.premiumCurrency} ${currencySymbol}`);
+        } else {
+          responses.push(`Vàng còn lại: ${player.gold} ${currencySymbol}`);
+        }
         break;
 
       case 'sell':
@@ -602,12 +649,14 @@ export async function handleCommandDb(command: Command, playerId: string): Promi
           break;
         }
 
-        const sellMerchants = await AgentSchema.find({ 
+        // Phase 25: Check for vendors (only gold shops buy items)
+        const sellVendors = await AgentSchema.find({ 
           _id: { $in: sellRoom.agents },
-          shopItems: { $exists: true }
+          isVendor: true,
+          shopType: 'gold'
         });
 
-        if (sellMerchants.length === 0) {
+        if (sellVendors.length === 0) {
           responses.push('Không có ai ở đây để mua hàng.');
           break;
         }
@@ -622,7 +671,13 @@ export async function handleCommandDb(command: Command, playerId: string): Promi
           break;
         }
 
-        const sellValue = Math.floor(sellItem.value * 0.5); // Sell for 50% of value
+        // Phase 25: Use sellValue field or fallback to 50% of value
+        const sellValue = sellItem.sellValue > 0 ? sellItem.sellValue : Math.floor(sellItem.value * 0.5);
+
+        if (sellValue === 0) {
+          responses.push(`Không thể bán [${sellItem.name}]. Vật phẩm này không có giá trị bán.`);
+          break;
+        }
 
         player.gold += sellValue;
         player.inventory = player.inventory.filter((id: any) => id.toString() !== sellItem._id.toString());
@@ -631,7 +686,7 @@ export async function handleCommandDb(command: Command, playerId: string): Promi
         // Delete the sold item
         await ItemSchema.findByIdAndDelete(sellItem._id);
 
-        responses.push(`Bạn đã bán [${sellItem.name}] với giá ${sellValue} vàng.`);
+        responses.push(`Bạn đã bán [${sellItem.name}] nhận được ${sellValue} 💰 Vàng.`);
         responses.push(`Vàng hiện có: ${player.gold}`);
         break;
 
