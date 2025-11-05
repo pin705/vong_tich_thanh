@@ -415,7 +415,7 @@ export async function executeCombatTick(playerId: string, agentId: string): Prom
         );
         
         // Schedule respawn
-        scheduleAgentRespawn(agentData, room._id.toString());
+        await scheduleAgentRespawn(agentData, room._id.toString());
       }
       
       // Delete the agent

@@ -4,6 +4,11 @@ import { PlayerSchema } from '../../models/Player';
 import { RoomSchema } from '../../models/Room';
 import { gameState } from './gameState';
 
+// Constants for boss mechanics
+const STOMP_BASE_DAMAGE = 150;
+const HEAL_PERCENTAGE = 0.2; // 20% of max HP
+const STARTING_ROOM_NAME = 'Cổng Thành Cũ';
+
 // Interface for mechanic definitions
 export interface BossMechanic {
   trigger: 'health_below_50' | 'health_below_25' | 'timer_30s' | 'timer_45s' | 'timer_60s';
@@ -160,7 +165,8 @@ async function startCastStomp(agent: any, roomId: string): Promise<void> {
 
 // Execute AoE Stomp damage
 async function executeStomp(agent: any, roomId: string): Promise<void> {
-  const damage = 150;
+  // Calculate damage based on boss stats
+  const damage = Math.floor(STOMP_BASE_DAMAGE + (agent.level * 10));
   const playersInRoom = gameState.getPlayersInRoom(roomId);
   
   // Broadcast execution message
@@ -206,7 +212,7 @@ async function executeStomp(agent: any, roomId: string): Promise<void> {
       player.combatTarget = undefined;
       
       // Respawn at starting location
-      const startingRoom = await RoomSchema.findOne({ name: 'Cổng Thành Cũ' });
+      const startingRoom = await RoomSchema.findOne({ name: STARTING_ROOM_NAME });
       if (startingRoom) {
         player.currentRoomId = startingRoom._id;
         gameState.updatePlayerRoom(player._id.toString(), startingRoom._id.toString());
@@ -299,8 +305,8 @@ async function executeMechanic(agent: any, mechanic: BossMechanic, roomId: strin
       break;
       
     case 'heal_self':
-      // Heal 20% of max HP
-      const healAmount = Math.floor(agent.maxHp * 0.2);
+      // Heal based on percentage constant
+      const healAmount = Math.floor(agent.maxHp * HEAL_PERCENTAGE);
       agent.hp = Math.min(agent.maxHp, agent.hp + healAmount);
       await agent.save();
       
