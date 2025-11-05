@@ -95,9 +95,8 @@ const renderBar = (current: number, max: number): string => {
 <style scoped>
 .status-pane {
   padding: 0.75rem;
-  background-color: rgba(0, 136, 0, 0.05);
-  border: 1px solid var(--text-dim);
-  border-radius: 4px;
+  background-color: rgba(0, 136, 0, 0.03);
+  border: 1px solid rgba(0, 136, 0, 0.3);
   font-family: 'VT323', 'Source Code Pro', monospace;
   font-size: 16px;
   line-height: 1.6;
@@ -113,7 +112,7 @@ const renderBar = (current: number, max: number): string => {
 }
 
 .target-section {
-  border-top: 1px solid var(--text-dim);
+  border-top: 1px solid rgba(0, 136, 0, 0.3);
   padding-top: 0.75rem;
 }
 

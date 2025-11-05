@@ -23,8 +23,39 @@ export interface PlayerState {
   mp: number;
   maxMp: number;
   level: number;
+  exp: number;
+  nextLevelExp: number;
   gold: number;
   inCombat: boolean;
+  stats: {
+    damage: number;
+    defense: number;
+    critChance: number;
+    critDamage: number;
+    lifesteal: number;
+    dodge: number;
+  };
+  inventoryItems: (InventoryItem | null)[];
+}
+
+// Inventory item for UI
+export interface InventoryItem {
+  id: string;
+  name: string;
+  description: string;
+  type: 'weapon' | 'armor' | 'consumable' | 'misc';
+  value: number;
+  stats?: {
+    damage?: number;
+    defense?: number;
+    healing?: number;
+    critChance?: number;
+    critDamage?: number;
+    lifesteal?: number;
+    dodge?: number;
+  };
+  levelRequirement?: number;
+  equipped?: boolean;
 }
 
 // Target state for UI
