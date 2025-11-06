@@ -41,7 +41,7 @@
     </div>
 
     <!-- Footer Tab Bar (5-10%) -->
-    <FooterTabBar @tabClick="handleTabClick" />
+    <FooterTabBar @tabClick="handleTabClick" :hasUnreadMail="playerState.hasUnreadMail" />
 
     <!-- Popups/Modals -->
     <Popover
@@ -227,6 +227,13 @@
       @itemPurchased="handlePremiumItemPurchased"
     />
 
+    <!-- Mail Popup -->
+    <MailPopup
+      :isOpen="mailPopupOpen"
+      @close="mailPopupOpen = false"
+      @mailUpdated="handleMailUpdated"
+    />
+
     <!-- Shop Popup (Phase 25: Vendor System) -->
     <ShopPopup
       ref="shopPopupRef"
@@ -262,6 +269,7 @@ import ProfessionChoiceOverlay from '~/components/ProfessionChoiceOverlay.vue';
 import TradingPopup from '~/components/TradingPopup.vue';
 import PremiumShopPopup from '~/components/PremiumShopPopup.vue';
 import ShopPopup from '~/components/ShopPopup.vue';
+import MailPopup from '~/components/MailPopup.vue';
 
 definePageMeta({
   middleware: 'auth'
@@ -314,6 +322,7 @@ const guildPopupOpen = ref(false);
 const auctionHousePopupOpen = ref(false);
 const premiumShopPopupOpen = ref(false);
 const shopPopupOpen = ref(false);
+const mailPopupOpen = ref(false);
 const shopPopupRef = ref<InstanceType<typeof ShopPopup> | null>(null);
 const contextualPopupData = ref<{
   title: string;
@@ -567,6 +576,9 @@ const handleTabClick = async (tabId: string) => {
       break;
     case 'guild':
       guildPopupOpen.value = true;
+      break;
+    case 'mail':
+      mailPopupOpen.value = true;
       break;
     case 'auction':
       auctionHousePopupOpen.value = true;
@@ -1003,6 +1015,20 @@ const handlePremiumItemPurchased = () => {
   sendCommand();
 };
 
+// Handle mail updates (Phase 27: Mail System)
+const handleMailUpdated = async () => {
+  // Check if there are any unread mails
+  try {
+    const response = await $fetch('/api/mail/inbox');
+    if (response.success) {
+      const hasUnread = response.mails.some((mail: any) => !mail.isRead);
+      playerState.value.hasUnreadMail = hasUnread;
+    }
+  } catch (error) {
+    console.error('Error checking unread mails:', error);
+  }
+};
+
 // Phase 25: Vendor System - Shop handlers
 const sendCommandFromShop = (command: string) => {
   currentInput.value = command;
@@ -1166,6 +1192,7 @@ const connectWebSocket = () => {
               premiumCurrency: payload.premiumCurrency ?? playerState.value.premiumCurrency,
               profession: payload.profession ?? playerState.value.profession,
               inCombat: payload.inCombat ?? playerState.value.inCombat,
+              hasUnreadMail: payload.hasUnreadMail ?? playerState.value.hasUnreadMail ?? false,
               stats: payload.stats ? {
                 damage: payload.stats.damage ?? playerState.value.stats.damage,
                 defense: payload.stats.defense ?? playerState.value.stats.defense,
@@ -1236,6 +1263,11 @@ const connectWebSocket = () => {
               isLeader: payload.isLeader || false
             };
           }
+          break;
+        case 'new_mail':
+          // Handle new mail notification
+          playerState.value.hasUnreadMail = true;
+          addMessage('📬 Bạn có thư mới!', 'system');
           break;
         case 'chat':
           // Handle chat messages with categories

@@ -8,6 +8,7 @@
       @click="handleTabClick(tab.id)"
     >
       {{ tab.label }}
+      <span v-if="tab.id === 'mail' && hasUnreadMail" class="unread-indicator">[!]</span>
     </button>
   </div>
 </template>
@@ -20,6 +21,14 @@ interface Tab {
   label: string;
 }
 
+interface Props {
+  hasUnreadMail?: boolean;
+}
+
+const props = withDefaults(defineProps<Props>(), {
+  hasUnreadMail: false
+});
+
 const tabs: Tab[] = [
   { id: 'map', label: '[Bản Đồ]' },
   { id: 'occupants', label: '[Xung Quanh]' },
@@ -27,6 +36,7 @@ const tabs: Tab[] = [
   { id: 'inventory', label: '[Túi Đồ]' },
   { id: 'party', label: '[Nhóm]' },
   { id: 'guild', label: '[Bang Hội]' },
+  { id: 'mail', label: '[Thư]' },
   { id: 'auction', label: '[Chợ]' },
   { id: 'quests', label: '[Nhiệm Vụ]' },
   { id: 'settings', label: '[Cài Đặt]' }
@@ -72,6 +82,18 @@ const handleTabClick = (tabId: string) => {
 
 .tab-button:last-child {
   border-right: none;
+}
+
+.tab-button .unread-indicator {
+  margin-left: 0.25rem;
+  color: var(--text-danger);
+  font-weight: bold;
+  animation: blink 1s infinite;
+}
+
+@keyframes blink {
+  0%, 50%, 100% { opacity: 1; }
+  25%, 75% { opacity: 0.3; }
 }
 
 .tab-button:hover {

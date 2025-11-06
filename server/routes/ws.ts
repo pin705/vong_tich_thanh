@@ -27,7 +27,8 @@ async function sendPlayerState(peer: Peer, playerId: string) {
       level: player.level,
       currency: player.gold,
       premiumCurrency: player.premiumCurrency || 0,
-      inCombat: player.inCombat
+      inCombat: player.inCombat,
+      hasUnreadMail: player.hasUnreadMail || false
     }
   }));
 
@@ -162,6 +163,17 @@ async function sendPartyState(peer: Peer, playerId: string) {
       isLeader: playerId === party.leaderId
     }
   }));
+}
+
+// Helper function to send new mail notification
+export function notifyNewMail(playerId: string) {
+  const playerState = gameState.getPlayer(playerId);
+  if (playerState?.ws) {
+    playerState.ws.send(JSON.stringify({
+      type: 'new_mail',
+      message: 'Bạn có thư mới!'
+    }));
+  }
 }
 
 export default defineWebSocketHandler({
