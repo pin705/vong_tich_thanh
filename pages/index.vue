@@ -303,6 +303,9 @@
       @sendCommand="sendCommandFromShop"
       @itemPurchased="handleShopTransaction"
     />
+
+    <!-- Loading Indicator -->
+    <LoadingIndicator :isLoading="isLoading" :text="loadingText" />
   </div>
 </template>
 
@@ -346,6 +349,7 @@ import MainLogPane from '~/components/MainLogPane.vue';
 import CombatLogPane from '~/components/CombatLogPane.vue';
 import ChatLogPane from '~/components/ChatLogPane.vue';
 import RoomOccupantsPane from '~/components/RoomOccupantsPane.vue';
+import LoadingIndicator from '~/components/LoadingIndicator.vue';
 
 definePageMeta({
   middleware: 'auth'
@@ -471,6 +475,11 @@ const craftingPopupOpen = ref(false);
 const shopPopupOpen = ref(false);
 const mailPopupOpen = ref(false);
 const shopPopupRef = ref<InstanceType<typeof ShopPopup> | null>(null);
+
+// Loading state
+const isLoading = ref(false);
+const loadingText = ref('Đang tải...');
+
 const contextualPopupData = ref<{
   title: string;
   entityType: 'npc' | 'mob' | 'player' | null;
@@ -757,45 +766,57 @@ const focusInput = (event?: MouseEvent) => {
 
 // Handle tab bar clicks
 const handleTabClick = async (tabId: string) => {
-  switch (tabId) {
-    case 'map':
-    case 'worldmap':
-      // Load world map data before opening
-      await loadWorldMap();
-      mapPopupOpen.value = true;
-      break;
-    case 'occupants':
-      occupantsPopupOpen.value = true;
-      break;
-    case 'party':
-      partyPopupOpen.value = true;
-      break;
-    case 'guild':
-      guildPopupOpen.value = true;
-      break;
-    case 'mail':
-      mailPopupOpen.value = true;
-      break;
-    case 'auction':
-      auctionHousePopupOpen.value = true;
-      break;
-    case 'character':
-      // Load skills and talents data before opening
-      await loadSkills();
-      await loadTalents();
-      characterMenuOpen.value = true;
-      break;
-    case 'crafting':
-      await loadCraftingRecipes();
-      craftingPopupOpen.value = true;
-      break;
-    case 'settings':
-      settingsOpen.value = true;
-      break;
-    case 'quests':
-      await loadQuests();
-      questsOpen.value = true;
-      break;
+  try {
+    switch (tabId) {
+      case 'map':
+      case 'worldmap':
+        // Load world map data before opening
+        isLoading.value = true;
+        loadingText.value = 'Đang tải bản đồ...';
+        await loadWorldMap();
+        mapPopupOpen.value = true;
+        break;
+      case 'occupants':
+        occupantsPopupOpen.value = true;
+        break;
+      case 'party':
+        partyPopupOpen.value = true;
+        break;
+      case 'guild':
+        guildPopupOpen.value = true;
+        break;
+      case 'mail':
+        mailPopupOpen.value = true;
+        break;
+      case 'auction':
+        auctionHousePopupOpen.value = true;
+        break;
+      case 'character':
+        // Load skills and talents data before opening
+        isLoading.value = true;
+        loadingText.value = 'Đang tải thông tin nhân vật...';
+        await loadSkills();
+        await loadTalents();
+        characterMenuOpen.value = true;
+        break;
+      case 'crafting':
+        isLoading.value = true;
+        loadingText.value = 'Đang tải công thức chế tạo...';
+        await loadCraftingRecipes();
+        craftingPopupOpen.value = true;
+        break;
+      case 'settings':
+        settingsOpen.value = true;
+        break;
+      case 'quests':
+        isLoading.value = true;
+        loadingText.value = 'Đang tải nhiệm vụ...';
+        await loadQuests();
+        questsOpen.value = true;
+        break;
+    }
+  } finally {
+    isLoading.value = false;
   }
 };
 
