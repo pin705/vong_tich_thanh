@@ -1,5 +1,7 @@
 import { gameState } from '../utils/gameState';
 import { RoomSchema } from '../../models/Room';
+import { broadcastService } from '../utils/broadcastService';
+import { guildService } from '../utils/guildService';
 
 export async function handleSayCommand(
   playerId: string,
@@ -30,7 +32,7 @@ export async function handleSayCommand(
     category: 'say',
     user: player.username,
     message: message
-  }, playerId); // Exclude sender
+  }, playerId); // Exclude sender (playerId) to prevent receiving own message
   
   // Don't add to responses - it will be shown via chat system
   return responses;
@@ -53,7 +55,6 @@ export async function handleWorldCommand(
   }
   
   // Broadcast to all players
-  const { broadcastService } = await import('../utils/broadcastService');
   broadcastService.sendWorldMessage(playerId, message, player.username);
   
   // Don't add to responses - it will be shown via chat system
@@ -76,7 +77,6 @@ export async function handleGuildChatCommand(
     return responses;
   }
   
-  const { guildService } = await import('../utils/guildService');
   const guildResult = await guildService.sendGuildChat(playerId, message);
   
   if (!guildResult.success) {

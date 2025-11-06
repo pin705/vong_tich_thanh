@@ -238,7 +238,7 @@ async function checkLevelUp(player: any): Promise<string[]> {
     player.maxHp += HP_GAIN_PER_LEVEL;
     player.hp = player.maxHp; // Full heal on level up
     
-    // Grant talent point on every level up
+    // Grant talent point on every level up (changed from level 10+ only)
     player.talentPoints = (player.talentPoints || 0) + 1;
     
     // Phase 29: Grant skill points on level up
