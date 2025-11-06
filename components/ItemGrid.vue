@@ -120,9 +120,21 @@ interface InventoryItem {
   stats?: ItemStats;
   levelRequirement?: number;
   equipped?: boolean;
-  quality?: string; // Item quality
-  setName?: string; // Set bonus name
-  setBonus?: string; // Set bonus description
+  /** 
+   * Item quality tier affecting stats and rarity
+   * Values: Thô (Poor/Gray), Thường (Common/Green), Tốt (Good/Bright Green), 
+   * Hiếm (Rare/Blue), Sử Thi (Epic/Purple)
+   */
+  quality?: string;
+  /** 
+   * Equipment set name for set bonus (e.g., "Set Chiến Binh")
+   */
+  setName?: string;
+  /** 
+   * Description of set bonuses when multiple pieces are equipped
+   * Format: "(2 món): +10 HP, (4 món): +15 Damage"
+   */
+  setBonus?: string;
 }
 
 interface ItemAction {
@@ -153,6 +165,23 @@ const emit = defineEmits<{
 
 const popoverOpen = ref(false);
 const selectedItem = ref<InventoryItem | null>(null);
+
+// Quality mapping constants
+const QUALITY_MAP = {
+  'Thô': 'quality-poor',
+  'Thường': 'quality-common',
+  'Tốt': 'quality-good',
+  'Hiếm': 'quality-rare',
+  'Sử Thi': 'quality-epic'
+} as const;
+
+const QUALITY_ICONS = {
+  'Thô': '●',
+  'Thường': '●',
+  'Tốt': '◆',
+  'Hiếm': '★',
+  'Sử Thi': '⬟'
+} as const;
 
 const getItemIcon = (type: string): string => {
   const icons: Record<string, string> = {
@@ -185,25 +214,11 @@ const getTypeName = (type: string): string => {
 };
 
 const getQualityClass = (quality?: string): string => {
-  const qualityMap: Record<string, string> = {
-    'Thô': 'quality-poor',
-    'Thường': 'quality-common',
-    'Tốt': 'quality-good',
-    'Hiếm': 'quality-rare',
-    'Sử Thi': 'quality-epic'
-  };
-  return quality ? qualityMap[quality] || '' : '';
+  return quality ? QUALITY_MAP[quality as keyof typeof QUALITY_MAP] || '' : '';
 };
 
 const getQualityIcon = (quality?: string): string => {
-  const qualityIcons: Record<string, string> = {
-    'Thô': '●',
-    'Thường': '●',
-    'Tốt': '◆',
-    'Hiếm': '★',
-    'Sử Thi': '⬟'
-  };
-  return quality ? qualityIcons[quality] || '' : '';
+  return quality ? QUALITY_ICONS[quality as keyof typeof QUALITY_ICONS] || '' : '';
 };
 
 const handleItemClick = (item: InventoryItem, event: MouseEvent) => {

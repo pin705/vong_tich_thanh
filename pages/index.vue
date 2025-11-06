@@ -309,6 +309,21 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, nextTick, watch, computed } from 'vue';
 import type { Message, ChatMessage, PlayerState, TargetState, ExitsState, RoomOccupantsState, SelectedTarget, Skill } from '~/types';
+
+// Recipe interface for crafting
+interface Recipe {
+  id: string;
+  name: string;
+  description: string;
+  quality?: string;
+  resultName: string;
+  materials: Array<{
+    id: string;
+    name: string;
+    quantity: number;
+  }>;
+}
+
 import PlayerStatusHeader from '~/components/PlayerStatusHeader.vue';
 import InventoryPane from '~/components/InventoryPane.vue';
 import HelpOverlay from '~/components/HelpOverlay.vue';
@@ -492,7 +507,7 @@ const shopData = ref<{
 
 // Crafting state
 const craftingData = ref<{
-  knownRecipes: any[];
+  knownRecipes: Recipe[];
   loading: boolean;
 }>({
   knownRecipes: [],
@@ -1172,7 +1187,7 @@ const handleCraft = async (recipeId: string) => {
     }
   } catch (error: any) {
     console.error('Error crafting:', error);
-    const errorMsg = error.data?.message || 'Không thể chế tạo vật phẩm.';
+    const errorMsg = error?.data?.message || error?.message || 'Không thể chế tạo vật phẩm.';
     addMessage(errorMsg, 'error');
   }
 };
