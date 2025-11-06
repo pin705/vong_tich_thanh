@@ -7,7 +7,8 @@ export interface Message {
         'chat_say' | 'chat_guild';
   timestamp: Date;
   user?: string; // For chat messages
-  category?: 'combat' | 'chat' | 'system' | 'reward'; // Semantic category for styling
+  category?: 'combat' | 'chat' | 'system' | 'reward' | 'world' | 'party' | 'guild' | 'say' | 'world_alert' | 'combat-player' | 'room-description'; // Semantic category for styling and filtering
+  channel?: 'main' | 'combat' | 'chat'; // Channel for message routing
 }
 
 // Chat message type
