@@ -7,6 +7,7 @@ import { partyService } from './partyService';
 import { scheduleAgentRespawn } from './npcAI';
 import { applyExpBuff } from './buffSystem';
 import { clearBossState } from './bossMechanics';
+import { broadcastRoomOccupants } from '../routes/ws';
 import { COMBAT_TICK_INTERVAL, FLEE_SUCCESS_CHANCE, EXPERIENCE_PER_LEVEL, HP_GAIN_PER_LEVEL, MINIMUM_DAMAGE } from './constants';
 
 // Boss reward constants
@@ -528,7 +529,6 @@ export async function executeCombatTick(playerId: string, agentId: string): Prom
         );
         
         // Update room occupants for all players in the room
-        const { broadcastRoomOccupants } = await import('../routes/ws');
         await broadcastRoomOccupants(room._id.toString());
       }
       

@@ -3,6 +3,7 @@ import { RoomSchema } from '../../models/Room';
 import { PlayerSchema } from '../../models/Player';
 import { gameState } from './gameState';
 import { startCombat } from './combatSystem';
+import { broadcastRoomOccupants } from '../routes/ws';
 
 // AI tick interval - process agent behaviors every 10 seconds
 const AI_TICK_INTERVAL = 10000;
@@ -289,7 +290,6 @@ export async function scheduleAgentRespawn(agentData: any, roomId: string): Prom
         );
         
         // Update room occupants for all players in the room
-        const { broadcastRoomOccupants } = await import('../routes/ws');
         await broadcastRoomOccupants(room._id.toString());
         
         // If boss, send world alert
