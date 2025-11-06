@@ -1533,7 +1533,7 @@ const handleTabCompletion = (event: KeyboardEvent) => {
     // Add items from inventory if command is "use", "drop", or "equip"
     if (['use', 'sử', 'dụng', 'drop', 'vứt', 'equip', 'trang'].includes(command.toLowerCase())) {
       playerState.value.inventoryItems.forEach((item: any) => {
-        if (item && item.name && item.name.toLowerCase().startsWith(targetPrefix)) {
+        if (item?.name?.toLowerCase().startsWith(targetPrefix)) {
           targets.push(item.name);
         }
       });
