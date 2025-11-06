@@ -8,6 +8,10 @@ import { broadcastRoomOccupants } from '../routes/ws';
 // AI tick interval - process agent behaviors every 10 seconds
 const AI_TICK_INTERVAL = 10000;
 
+// Default max instances for agent spawning
+const DEFAULT_MOB_MAX_INSTANCES = 3;
+const DEFAULT_AGENT_MAX_INSTANCES = 1;
+
 // Wander behavior - agent moves randomly to adjacent rooms
 async function processWanderBehavior(agent: any): Promise<void> {
   try {
@@ -269,7 +273,7 @@ export async function scheduleAgentRespawn(agentData: any, roomId: string): Prom
   const timer = setTimeout(async () => {
     try {
       // Get max instances for this agent type (default to 3 for mobs, 1 for others)
-      const maxInstances = agentData.maxInstances || (agentData.type === 'mob' ? 3 : 1);
+      const maxInstances = agentData.maxInstances || (agentData.type === 'mob' ? DEFAULT_MOB_MAX_INSTANCES : DEFAULT_AGENT_MAX_INSTANCES);
       
       // Count how many instances of this agent (by name and type) already exist in the room
       const room = await RoomSchema.findById(roomId);

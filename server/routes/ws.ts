@@ -4,6 +4,7 @@ import { handleCommand } from '../utils/commandHandler';
 import { handleCommandDb } from '../utils/commandHandlerDb';
 import { gameState } from '../utils/gameState';
 import { partyService } from '../utils/partyService';
+import { getRoomRespawns } from '../utils/npcAI';
 import { PlayerSchema } from '../../models/Player';
 import { RoomSchema } from '../../models/Room';
 import { AgentSchema } from '../../models/Agent';
@@ -95,7 +96,6 @@ async function sendRoomOccupants(peer: Peer, roomId: string, currentPlayerId: st
     .map((a: any) => ({ id: a._id.toString(), name: a.name }));
 
   // Get respawn information for this room
-  const { getRoomRespawns } = await import('./npcAI');
   const respawns = getRoomRespawns(roomId);
 
   peer.send(JSON.stringify({
