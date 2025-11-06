@@ -36,6 +36,7 @@ export interface PlayerState {
   resource?: number;
   maxResource?: number;
   talentPoints?: number;
+  hasUnreadMail?: boolean;
   stats: {
     damage: number;
     defense: number;

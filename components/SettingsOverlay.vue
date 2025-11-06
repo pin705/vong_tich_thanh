@@ -63,6 +63,36 @@
             <p class="coming-soon">Cài đặt lối chơi đang được phát triển...</p>
           </div>
         </div>
+
+        <!-- Gift Code Tab -->
+        <div v-else-if="activeTab === 'giftcode'" class="tab-panel">
+          <div class="setting-section">
+            <h3 class="section-title">Nhập Gift Code:</h3>
+            <p class="section-description">Nhập mã Gift Code để nhận quà tặng đặc biệt!</p>
+            
+            <div class="giftcode-input-container">
+              <input
+                v-model="giftCodeInput"
+                type="text"
+                class="giftcode-input"
+                placeholder="Nhập mã code..."
+                @keydown.enter="redeemGiftCode"
+              />
+              <button
+                class="giftcode-button"
+                @click="redeemGiftCode"
+                :disabled="!giftCodeInput.trim() || redeemingCode"
+              >
+                {{ redeemingCode ? 'Đang xử lý...' : '[Nhận]' }}
+              </button>
+            </div>
+
+            <!-- Status message -->
+            <div v-if="giftCodeMessage" class="giftcode-message" :class="giftCodeStatus">
+              {{ giftCodeMessage }}
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </FullscreenOverlay>
@@ -88,7 +118,8 @@ const emit = defineEmits<{
 const tabs = [
   { id: 'theme', label: 'Giao Diện', order: '1' },
   { id: 'audio', label: 'Âm Thanh', order: '2' },
-  { id: 'gameplay', label: 'Lối Chơi', order: '3' }
+  { id: 'gameplay', label: 'Lối Chơi', order: '3' },
+  { id: 'giftcode', label: 'Gift Code', order: '4' }
 ];
 
 // Theme definitions
@@ -117,6 +148,10 @@ const fontSizes = [
 const activeTab = ref('theme');
 const currentTheme = ref('vong-tich');
 const currentFontSize = ref('medium');
+const giftCodeInput = ref('');
+const giftCodeMessage = ref('');
+const giftCodeStatus = ref<'success' | 'error'>('success');
+const redeemingCode = ref(false);
 
 const close = () => {
   emit('close');
@@ -145,6 +180,33 @@ const selectFontSize = (sizeId: string) => {
     } catch (error) {
       console.warn('Failed to save font size preference:', error);
     }
+  }
+};
+
+const redeemGiftCode = async () => {
+  if (!giftCodeInput.value.trim() || redeemingCode.value) return;
+  
+  redeemingCode.value = true;
+  giftCodeMessage.value = '';
+  
+  try {
+    const response = await $fetch('/api/player/redeem-code', {
+      method: 'POST',
+      body: {
+        code: giftCodeInput.value.trim()
+      }
+    });
+    
+    if (response.success) {
+      giftCodeMessage.value = response.message;
+      giftCodeStatus.value = 'success';
+      giftCodeInput.value = '';
+    }
+  } catch (error: any) {
+    giftCodeMessage.value = error.data?.statusMessage || 'Không thể sử dụng mã code.';
+    giftCodeStatus.value = 'error';
+  } finally {
+    redeemingCode.value = false;
   }
 };
 
@@ -305,6 +367,77 @@ onMounted(() => {
   color: var(--text-dim);
   font-style: italic;
   font-size: 16px;
+}
+
+/* Gift Code styles */
+.section-description {
+  color: var(--text-dim);
+  font-size: 16px;
+  margin-bottom: 1rem;
+}
+
+.giftcode-input-container {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.giftcode-input {
+  flex: 1;
+  background-color: var(--bg-black);
+  color: var(--text-bright);
+  border: 1px solid var(--text-dim);
+  padding: 0.75rem;
+  font-family: 'VT323', 'Source Code Pro', monospace;
+  font-size: 18px;
+  text-transform: uppercase;
+}
+
+.giftcode-input:focus {
+  outline: none;
+  border-color: var(--text-accent);
+  box-shadow: 0 0 5px rgba(0, 255, 0, 0.3);
+}
+
+.giftcode-button {
+  background: transparent;
+  color: var(--text-accent);
+  border: 2px solid var(--text-accent);
+  padding: 0.75rem 1.5rem;
+  cursor: pointer;
+  font-family: 'VT323', 'Source Code Pro', monospace;
+  font-size: 18px;
+  font-weight: bold;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.giftcode-button:hover:not(:disabled) {
+  background-color: var(--text-accent);
+  color: var(--bg-black);
+}
+
+.giftcode-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.giftcode-message {
+  padding: 0.75rem;
+  border-left: 3px solid;
+  margin-top: 0.5rem;
+}
+
+.giftcode-message.success {
+  background-color: rgba(0, 255, 0, 0.1);
+  border-color: var(--text-accent);
+  color: var(--text-accent);
+}
+
+.giftcode-message.error {
+  background-color: rgba(255, 0, 0, 0.1);
+  border-color: var(--text-danger);
+  color: var(--text-danger);
 }
 
 /* Mobile responsiveness */
