@@ -283,6 +283,12 @@ export async function scheduleAgentRespawn(agentData: any, roomId: string): Prom
             message: `[${newAgent.name}] xuất hiện!`
           }
         );
+        
+        // If boss, send world alert
+        if (agentData.agentType === 'boss') {
+          const { broadcastService } = await import('./broadcastService');
+          broadcastService.sendWorldAlert(`*** [${newAgent.name}] đã xuất hiện tại [${room.name}]! ***`);
+        }
       }
 
       // Remove from respawn timers

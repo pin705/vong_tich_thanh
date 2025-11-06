@@ -362,17 +362,17 @@ export async function handleCommandDb(command: Command, playerId: string): Promi
         const message = [target, ...(args || [])].filter(Boolean).join(' ');
         responses.push(`Bạn nói: "${message}"`);
         
-        // Broadcast to room as chat_log
+        // Broadcast to room as chat with proper channel and category
         const sayRoom = await RoomSchema.findById(player.currentRoomId);
         if (sayRoom) {
           gameState.broadcastToRoom(
             sayRoom._id.toString(),
             {
-              type: 'chat_log',
-              payload: {
-                user: player.username,
-                message: message
-              }
+              type: 'chat',
+              channel: 'chat',
+              category: 'say',
+              user: player.username,
+              message: message
             },
             playerId
           );
@@ -998,6 +998,7 @@ export async function handleCommandDb(command: Command, playerId: string): Promi
             if (member.ws) {
               member.ws.send(JSON.stringify({
                 type: 'chat',
+                channel: 'chat',
                 category: 'party',
                 user: player.username,
                 message: chatMessage
@@ -1967,6 +1968,48 @@ export async function handleCommandDb(command: Command, playerId: string): Promi
             responses.push('Sử dụng: trade [invite/accept/decline/add/gold/lock/confirm/cancel]');
             break;
         }
+        break;
+      }
+
+      case 'world':
+      case 'w': {
+        // World chat
+        const chatMessage = [target, ...(args || [])].filter(Boolean).join(' ');
+        
+        if (!chatMessage) {
+          responses.push('Bạn muốn nói gì với toàn thế giới?');
+          break;
+        }
+        
+        // Import and use broadcast service
+        const { broadcastService } = await import('./broadcastService');
+        broadcastService.sendWorldMessage(playerId, chatMessage, player.username);
+        
+        responses.push(`[Thế Giới] Bạn nói: "${chatMessage}"`);
+        break;
+      }
+
+      case 'guild':
+      case 'g': {
+        // Guild chat
+        const chatMessage = [target, ...(args || [])].filter(Boolean).join(' ');
+        
+        if (!chatMessage) {
+          responses.push('Bạn muốn nói gì với bang hội?');
+          break;
+        }
+        
+        // Check if player is in a guild
+        if (!player.guild) {
+          responses.push('Bạn không ở trong bang hội nào.');
+          break;
+        }
+        
+        // Import and use broadcast service
+        const { broadcastService } = await import('./broadcastService');
+        await broadcastService.sendGuildMessage(playerId, player.guild.toString(), chatMessage);
+        
+        responses.push(`[Guild] Bạn nói: "${chatMessage}"`);
         break;
       }
 

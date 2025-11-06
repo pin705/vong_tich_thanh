@@ -29,6 +29,10 @@ class GameState {
     return Array.from(this.activePlayers.values()).filter(p => p.roomId === roomId);
   }
 
+  getAllPlayers(): ActivePlayer[] {
+    return Array.from(this.activePlayers.values());
+  }
+
   updatePlayerRoom(playerId: string, newRoomId: string) {
     const player = this.activePlayers.get(playerId);
     if (player) {
