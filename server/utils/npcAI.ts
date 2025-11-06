@@ -235,9 +235,27 @@ interface RespawnTimer {
   agentData: any;
   roomId: string;
   timer: NodeJS.Timeout;
+  respawnTime: Date; // When the agent will respawn
 }
 
 const respawnTimers: Map<string, RespawnTimer> = new Map();
+
+// Get respawn information for a room
+export function getRoomRespawns(roomId: string): Array<{ name: string; respawnTime: Date; type: string }> {
+  const respawns: Array<{ name: string; respawnTime: Date; type: string }> = [];
+  
+  for (const [agentId, timerData] of respawnTimers.entries()) {
+    if (timerData.roomId === roomId) {
+      respawns.push({
+        name: timerData.agentData.name,
+        respawnTime: timerData.respawnTime,
+        type: timerData.agentData.type
+      });
+    }
+  }
+  
+  return respawns;
+}
 
 // Schedule agent respawn - uses room's respawnTimeSeconds or defaults to 5 minutes
 // Can spawn multiple instances based on maxInstances setting
@@ -246,6 +264,7 @@ export async function scheduleAgentRespawn(agentData: any, roomId: string): Prom
   const room = await RoomSchema.findById(roomId);
   const respawnSeconds = room?.respawnTimeSeconds || 300; // Default 5 minutes
   const RESPAWN_TIME = respawnSeconds * 1000;
+  const respawnTime = new Date(Date.now() + RESPAWN_TIME);
   
   const timer = setTimeout(async () => {
     try {
@@ -338,7 +357,9 @@ export async function scheduleAgentRespawn(agentData: any, roomId: string): Prom
   respawnTimers.set(agentData._id.toString(), {
     agentData,
     roomId,
-    timer
+    timer,
+    respawnTime
+  });
   });
 }
 

@@ -94,12 +94,17 @@ async function sendRoomOccupants(peer: Peer, roomId: string, currentPlayerId: st
     .filter((a: any) => a.type === 'mob')
     .map((a: any) => ({ id: a._id.toString(), name: a.name }));
 
+  // Get respawn information for this room
+  const { getRoomRespawns } = await import('./npcAI');
+  const respawns = getRoomRespawns(roomId);
+
   peer.send(JSON.stringify({
     type: 'room_occupants',
     payload: {
       players,
       npcs,
-      mobs
+      mobs,
+      respawns
     }
   }));
 }

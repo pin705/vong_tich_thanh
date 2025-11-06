@@ -41,6 +41,7 @@
           :players="roomOccupants.players"
           :npcs="roomOccupants.npcs"
           :mobs="roomOccupants.mobs"
+          :respawns="roomOccupants.respawns"
           :selectedTarget="selectedTarget"
           @selectTarget="handleEntitySelect"
         />
@@ -574,7 +575,8 @@ const allocatedTalents = ref<Record<string, number>>({});
 const roomOccupants = ref<RoomOccupantsState>({
   players: [],
   npcs: [],
-  mobs: []
+  mobs: [],
+  respawns: []
 });
 
 // Selected target for actions
@@ -1621,7 +1623,8 @@ const connectWebSocket = () => {
             roomOccupants.value = {
               players: payload.players || [],
               npcs: payload.npcs || [],
-              mobs: payload.mobs || []
+              mobs: payload.mobs || [],
+              respawns: payload.respawns || []
             };
           }
           break;

@@ -95,11 +95,19 @@ export interface RoomOccupant {
   name: string;
 }
 
+// Agent respawn info
+export interface AgentRespawn {
+  name: string;
+  respawnTime: string; // ISO date string
+  type: string;
+}
+
 // Room occupants state
 export interface RoomOccupantsState {
   players: RoomOccupant[];
   npcs: RoomOccupant[];
   mobs: RoomOccupant[];
+  respawns?: AgentRespawn[];
 }
 
 // Selected target
