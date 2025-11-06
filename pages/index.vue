@@ -1515,6 +1515,25 @@ const connectWebSocket = () => {
         case 'combat_log':
           addMessage(message || payload, 'combat_log', undefined, 'combat', category);
           break;
+        // Combat-specific message types
+        case 'damage_in':
+          addMessage(message || payload, 'damage_in', undefined, channel || 'combat', category);
+          break;
+        case 'damage_out':
+          addMessage(message || payload, 'damage_out', undefined, channel || 'combat', category);
+          break;
+        case 'heal':
+          addMessage(message || payload, 'heal', undefined, channel || 'combat', category);
+          break;
+        case 'critical':
+          addMessage(message || payload, 'critical', undefined, channel || 'combat', category);
+          break;
+        case 'xp':
+          addMessage(message || payload, 'xp', undefined, channel || 'combat', category);
+          break;
+        case 'loot':
+          addMessage(message || payload, 'loot', undefined, channel || 'combat', category);
+          break;
         case 'chat_log':
           addMessage(message || payload.message, 'chat_log', payload.user, 'chat', category);
           break;
