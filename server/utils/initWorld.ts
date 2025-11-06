@@ -993,27 +993,11 @@ export async function initializeWorld() {
       agents: []
     });
 
-    const thápCổ = await RoomSchema.create({
-      name: 'Tháp Cổ',
-      description: 'Một tòa tháp cổ cao ngất. Cầu thang xoắn ốc dẫn lên trên. Tường đá phủ đầy bụi và rêu.',
-      exits: {},
-      items: [],
-      agents: []
-    });
-
     const phòngKhóTreasure = await RoomSchema.create({
       name: 'Phòng Kho Báu',
       description: 'Một phòng nhỏ với nhiều rương gỗ. Không khí tĩnh lặng đến đáng ngờ. Có vẻ như ai đó đã ở đây trước bạn.',
       exits: {},
       items: [binhMauLon._id, kiemThep._id],
-      agents: []
-    });
-
-    const hànhLang = await RoomSchema.create({
-      name: 'Hành Lang Dài',
-      description: 'Một hành lang dài và hẹp. Đèn dầu trên tường còn cháy yếu ớt. Có nhiều cửa phòng ở hai bên.',
-      exits: {},
-      items: [],
       agents: []
     });
 
@@ -1025,7 +1009,7 @@ export async function initializeWorld() {
       agents: []
     });
 
-    // Phase 22: Zone 2 - Hầm Ngầm Bỏ Hoang (Abandoned Sewers) - 25 rooms
+    // Phase 22: Zone 2 - Hầm Ngầm Bỏ Hoang (Abandoned Sewers) - 7 rooms total
     const loiVaoHamNgam = await RoomSchema.create({
       name: 'Lối Vào Hầm Ngầm',
       description: 'Lối xuống tối tăm với các bậc đá ẩm ướt. Mùi hôi thối nồng nặc thoát lên từ bên dưới.',
@@ -1034,25 +1018,9 @@ export async function initializeWorld() {
       agents: []
     });
 
-    const hamNgam1 = await RoomSchema.create({
-      name: 'Hầm Ngầm Ẩm Ướt',
-      description: 'Hầm ngầm tối tăm với nước bẩn chảy dọc hai bên. Tường phủ đầy rêu xanh độc.',
-      exits: {},
-      items: [],
-      agents: []
-    });
-
     const hamNgam2 = await RoomSchema.create({
       name: 'Đường Hầm Cong',
       description: 'Đường hầm uốn cong với ánh sáng yếu ớt từ rêu phát quang. Tiếng nước nhỏ giọt vang vọng.',
-      exits: {},
-      items: [],
-      agents: []
-    });
-
-    const hamNgam3 = await RoomSchema.create({
-      name: 'Phòng Lọc Cũ',
-      description: 'Phòng lọc nước đã bị bỏ hoang. Các máy móc rỉ sét nằm la liệt.',
       exits: {},
       items: [],
       agents: []
@@ -1074,9 +1042,9 @@ export async function initializeWorld() {
       agents: []
     });
 
-    // Simplified: Create 19 more sewer rooms with variation (bulk insert)
+    // Simplified: Create 3 more sewer rooms with variation (bulk insert)
     const sewerRoomDocs = [];
-    for (let i = 5; i <= 23; i++) {
+    for (let i = 5; i <= 7; i++) {
       sewerRoomDocs.push({
         name: `Hầm Ngầm Khu ${i}`,
         description: `Khu vực hầm ngầm tối tăm, nước bẩn chảy ào ạt. ${i % 3 === 0 ? 'Có tiếng động lạ phía trước.' : i % 3 === 1 ? 'Mùi hôi thối nồng nặc.' : 'Tường phủ đầy rêu độc.'}`,
@@ -1087,18 +1055,10 @@ export async function initializeWorld() {
     }
     const sewerRooms = await RoomSchema.insertMany(sewerRoomDocs);
 
-    // Phase 22: Zone 3 - Nhà Máy Lắp Ráp Cũ (Old Assembly Plant) - 30 rooms
+    // Phase 22: Zone 3 - Nhà Máy Lắp Ráp Cũ (Old Assembly Plant) - 9 rooms total
     const loiVaoNhaMay = await RoomSchema.create({
       name: 'Cổng Nhà Máy',
       description: 'Cổng sắt khổng lồ đã rỉ sét nửa mở. Biển báo "Nguy Hiểm - Cấm Vào" đã phai màu.',
-      exits: {},
-      items: [],
-      agents: []
-    });
-
-    const nhaMay1 = await RoomSchema.create({
-      name: 'Sảnh Nhà Máy',
-      description: 'Sảnh rộng với trần nhà cao. Các băng chuyền đã ngừng hoạt động từ lâu.',
       exits: {},
       items: [],
       agents: []
@@ -1128,9 +1088,9 @@ export async function initializeWorld() {
       agents: []
     });
 
-    // Simplified: Create 25 more factory rooms (bulk insert)
+    // Simplified: Create 5 more factory rooms (bulk insert)
     const factoryRoomDocs = [];
-    for (let i = 4; i <= 28; i++) {
+    for (let i = 4; i <= 8; i++) {
       factoryRoomDocs.push({
         name: `Khu Vực Nhà Máy ${i}`,
         description: `${i % 4 === 0 ? 'Phân xưởng' : i % 4 === 1 ? 'Kho chứa' : i % 4 === 2 ? 'Hành lang' : 'Phòng kỹ thuật'} số ${i}. ${i % 2 === 0 ? 'Máy móc rỉ sét nằm la liệt.' : 'Có dấu hiệu hoạt động gần đây.'}`,
@@ -1141,7 +1101,7 @@ export async function initializeWorld() {
     }
     const factoryRooms = await RoomSchema.insertMany(factoryRoomDocs);
 
-    // Phase 22: Zone 4 - Phòng Thí Nghiệm Bị Chôn Vùi (Sunken Laboratory) - 35 rooms
+    // Phase 22: Zone 4 - Phòng Thí Nghiệm Bị Chôn Vùi (Sunken Laboratory) - 9 rooms total
     const loiVaoPhongLab = await RoomSchema.create({
       name: 'Lối Vào Phòng Lab',
       description: 'Lối vào bị ngập nước. Cửa kim loại dày bị cong vênh. Cảnh báo sinh học phát sáng đỏ.',
@@ -1174,9 +1134,9 @@ export async function initializeWorld() {
       agents: []
     });
 
-    // Simplified: Create 31 more lab rooms (bulk insert)
+    // Simplified: Create 5 more lab rooms (bulk insert)
     const labRoomDocs = [];
-    for (let i = 3; i <= 33; i++) {
+    for (let i = 3; i <= 7; i++) {
       labRoomDocs.push({
         name: `Phòng Lab Khu ${i}`,
         description: `${i % 5 === 0 ? 'Phòng thí nghiệm' : i % 5 === 1 ? 'Kho mẫu vật' : i % 5 === 2 ? 'Phòng quan sát' : i % 5 === 3 ? 'Phòng khử trùng' : 'Hành lang lab'} số ${i}. Ngập nước và tối tăm.`,
@@ -1187,7 +1147,7 @@ export async function initializeWorld() {
     }
     const labRooms = await RoomSchema.insertMany(labRoomDocs);
 
-    // Phase 22: Zone 5 - Trung Tâm Vong Tích Thành (Citadel Core) - 30 elite rooms
+    // Phase 22: Zone 5 - Trung Tâm Vong Tích Thành (Citadel Core) - 8 elite rooms total
     const loiVaoTrungTam = await RoomSchema.create({
       name: 'Cổng Vào Trung Tâm',
       description: 'Cổng khổng lồ bằng kim loại cổ đại. Các ký tự phát sáng xanh lam. Năng lượng dày đặc trong không khí.',
@@ -1220,9 +1180,9 @@ export async function initializeWorld() {
       agents: []
     });
 
-    // Simplified: Create 26 more citadel rooms (bulk insert)
+    // Simplified: Create 4 more citadel rooms (bulk insert)
     const citadelRoomDocs = [];
-    for (let i = 3; i <= 28; i++) {
+    for (let i = 3; i <= 6; i++) {
       citadelRoomDocs.push({
         name: `Trung Tâm Khu ${i}`,
         description: `${i % 4 === 0 ? 'Phòng nghi lễ' : i % 4 === 1 ? 'Hành lang cổ đại' : i % 4 === 2 ? 'Phòng bảo vật' : 'Đền thờ nhỏ'} trong Citadel Core. Năng lượng cổ ngữ bao trùm.`,
@@ -1247,37 +1207,25 @@ export async function initializeWorld() {
     hẻmTối.exits.west = khuCho._id;
     
     quảngTrường.exits.south = khuCho._id;
-    quảngTrường.exits.north = thápCổ._id;
+    quảngTrường.exits.north = phòngKhóTreasure._id; // Direct connection, bypassing removed rooms
     
     rừngRậm.exits.west = cổngThành._id;
     rừngRậm.exits.north = hang._id;
     
     hang.exits.south = rừngRậm._id;
     
-    thápCổ.exits.south = quảngTrường._id;
-    thápCổ.exits.up = hànhLang._id;
-    
-    hànhLang.exits.down = thápCổ._id;
-    hànhLang.exits.north = phòngKhóTreasure._id;
-    
-    phòngKhóTreasure.exits.south = hànhLang._id;
+    phòngKhóTreasure.exits.south = quảngTrường._id; // Direct connection back
     
     sânLuyệnTập.exits.east = khuCho._id;
 
     // Zone 2 (Sewers) - Simplified linear connection
     loiVaoHamNgam.exits.up = khuCho._id;
-    loiVaoHamNgam.exits.south = hamNgam1._id;
+    loiVaoHamNgam.exits.south = hamNgam2._id; // Direct connection, bypassing hamNgam1
     
-    hamNgam1.exits.north = loiVaoHamNgam._id;
-    hamNgam1.exits.east = hamNgam2._id;
+    hamNgam2.exits.north = loiVaoHamNgam._id; // Direct connection back
+    hamNgam2.exits.south = hamNgam4._id; // Direct connection, bypassing hamNgam3
     
-    hamNgam2.exits.west = hamNgam1._id;
-    hamNgam2.exits.south = hamNgam3._id;
-    
-    hamNgam3.exits.north = hamNgam2._id;
-    hamNgam3.exits.east = hamNgam4._id;
-    
-    hamNgam4.exits.west = hamNgam3._id;
+    hamNgam4.exits.north = hamNgam2._id; // Direct connection back
     hamNgam4.exits.south = sewerRooms[0]._id;
     
     // Link sewer rooms in a winding path
@@ -1292,12 +1240,9 @@ export async function initializeWorld() {
 
     // Zone 3 (Factory)
     loiVaoNhaMay.exits.south = hamNgamBoss._id;
-    loiVaoNhaMay.exits.north = nhaMay1._id;
+    loiVaoNhaMay.exits.north = nhaMay2._id; // Direct connection, bypassing nhaMay1
     
-    nhaMay1.exits.south = loiVaoNhaMay._id;
-    nhaMay1.exits.east = nhaMay2._id;
-    
-    nhaMay2.exits.west = nhaMay1._id;
+    nhaMay2.exits.south = loiVaoNhaMay._id; // Direct connection back
     nhaMay2.exits.north = nhaMay3._id;
     
     nhaMay3.exits.south = nhaMay2._id;
@@ -1359,23 +1304,18 @@ export async function initializeWorld() {
     await quảngTrường.save();
     await rừngRậm.save();
     await hang.save();
-    await thápCổ.save();
-    await hànhLang.save();
     await phòngKhóTreasure.save();
     await sânLuyệnTập.save();
     
     // Save Zone 2 rooms
     await loiVaoHamNgam.save();
-    await hamNgam1.save();
     await hamNgam2.save();
-    await hamNgam3.save();
     await hamNgam4.save();
     await hamNgamBoss.save();
     for (const room of sewerRooms) await room.save();
     
     // Save Zone 3 rooms
     await loiVaoNhaMay.save();
-    await nhaMay1.save();
     await nhaMay2.save();
     await nhaMay3.save();
     await nhaMayBoss.save();
@@ -1509,7 +1449,7 @@ export async function initializeWorld() {
       level: 5,
       damage: 12,
       behavior: 'patrol',
-      patrolRoute: [quảngTrường._id, thápCổ._id, hànhLang._id, thápCổ._id],
+      patrolRoute: [quảngTrường._id, phòngKhóTreasure._id, quảngTrường._id],
       dialogue: [
         'Mọi thứ đều yên ổn ở đây.',
         'Đừng gây rối trong khu vực này.',
