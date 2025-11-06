@@ -206,6 +206,8 @@ export default defineWebSocketHandler({
             return;
           }
           
+           peerToPlayer.set(peer.id, playerId);
+           
           // TODO: In a full implementation, verify the session token here
           // For now, we trust the client (acceptable for MVP/demo)
           
