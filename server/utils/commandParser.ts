@@ -42,16 +42,31 @@ const COMMAND_ALIASES: Record<string, string> = {
 };
 
 // Parse command input into structured command
-export function parseCommand(input: string): Command {
-  const trimmed = input.trim().toLowerCase();
+export function parseCommand(input: string, customAliases?: Map<string, string>): Command {
+  const trimmed = input.trim();
   if (!trimmed) {
     return { action: '' };
   }
 
-  const parts = trimmed.split(/\s+/);
+  // Check custom aliases first (case-sensitive for custom aliases)
+  if (customAliases) {
+    for (const [alias, fullCommand] of customAliases.entries()) {
+      // Check if input starts with the alias
+      if (trimmed === alias || trimmed.startsWith(alias + ' ')) {
+        // Replace alias with full command
+        const remainingInput = trimmed.slice(alias.length).trim();
+        const expandedInput = remainingInput ? `${fullCommand} ${remainingInput}` : fullCommand;
+        // Recursively parse the expanded command (without custom aliases to avoid infinite loop)
+        return parseCommand(expandedInput);
+      }
+    }
+  }
+
+  const lowerInput = trimmed.toLowerCase();
+  const parts = lowerInput.split(/\s+/);
   const rawAction = parts[0];
   
-  // Resolve alias
+  // Resolve built-in alias
   const action = COMMAND_ALIASES[rawAction] || rawAction;
   
   // Handle movement shortcuts (n, s, e, w, u, d)

@@ -118,6 +118,9 @@ export async function handleCommandDb(command: Command, playerId: string): Promi
         responses.push('');
         responses.push('KHÁC:');
         responses.push('  help                     - Hiển thị trợ giúp');
+        responses.push('  alias add [tên] [lệnh]   - Tạo lệnh tắt tùy chỉnh');
+        responses.push('  alias remove [tên]       - Xóa lệnh tắt');
+        responses.push('  alias list               - Xem danh sách lệnh tắt');
         responses.push('  quit                     - Thoát game');
         responses.push('');
         break;
@@ -1903,6 +1906,118 @@ export async function handleCommandDb(command: Command, playerId: string): Promi
       case 'quit':
         responses.push('Tạm biệt! Hẹn gặp lại.');
         break;
+
+      case 'alias': {
+        // Custom alias management
+        const subCommand = target?.toLowerCase();
+        const aliasName = args?.[0];
+        const aliasCommand = args?.slice(1).join(' ');
+
+        if (!subCommand) {
+          responses.push('═══════════════════════════════════════════════════');
+          responses.push('            HỆ THỐNG LỆNH TẮT TÙY CHỈNH           ');
+          responses.push('═══════════════════════════════════════════════════');
+          responses.push('alias add [tên] [lệnh]   - Tạo lệnh tắt mới');
+          responses.push('alias remove [tên]       - Xóa lệnh tắt');
+          responses.push('alias list               - Xem danh sách lệnh tắt');
+          responses.push('');
+          responses.push('Ví dụ: alias add dn go north');
+          responses.push('       Sau đó gõ "dn" để thực hiện "go north"');
+          break;
+        }
+
+        switch (subCommand) {
+          case 'add': {
+            if (!aliasName || !aliasCommand) {
+              responses.push('Cú pháp: alias add [tên] [lệnh]');
+              responses.push('Ví dụ: alias add dn go north');
+              break;
+            }
+
+            // Validate alias name (no spaces, no special chars)
+            if (!/^[a-zA-Z0-9_]+$/.test(aliasName)) {
+              responses.push('Tên lệnh tắt chỉ được chứa chữ cái, số và dấu gạch dưới.');
+              break;
+            }
+
+            // Prevent overriding built-in commands
+            const builtInCommands = [
+              'go', 'look', 'l', 'talk', 't', 'say', 'get', 'g', 'drop', 'use',
+              'attack', 'a', 'kill', 'flee', 'run', 'inventory', 'i',
+              'list', 'buy', 'sell', 'party', 'p', 'moi', 'roi', 'guild',
+              'pvp', 'trade', 'quit', 'help', 'alias', 'skills', 'talents',
+              'n', 's', 'e', 'w', 'u', 'd', 'north', 'south', 'east', 'west', 'up', 'down'
+            ];
+            
+            if (builtInCommands.includes(aliasName.toLowerCase())) {
+              responses.push(`Không thể đặt lệnh tắt trùng với lệnh hệ thống: "${aliasName}"`);
+              break;
+            }
+
+            // Initialize customAliases if not exists
+            if (!player.customAliases) {
+              player.customAliases = new Map();
+            }
+
+            // Check if alias already exists
+            if (player.customAliases.has(aliasName)) {
+              responses.push(`Lệnh tắt "${aliasName}" đã tồn tại. Sử dụng "alias remove ${aliasName}" để xóa trước.`);
+              break;
+            }
+
+            // Add the alias
+            player.customAliases.set(aliasName, aliasCommand);
+            await player.save();
+
+            responses.push(`[OK] Đã tạo lệnh tắt: "${aliasName}" -> "${aliasCommand}"`);
+            responses.push(`Gõ "${aliasName}" để thực hiện lệnh.`);
+            break;
+          }
+
+          case 'remove': {
+            if (!aliasName) {
+              responses.push('Cú pháp: alias remove [tên]');
+              break;
+            }
+
+            if (!player.customAliases || !player.customAliases.has(aliasName)) {
+              responses.push(`Lệnh tắt "${aliasName}" không tồn tại.`);
+              break;
+            }
+
+            player.customAliases.delete(aliasName);
+            await player.save();
+
+            responses.push(`[OK] Đã xóa lệnh tắt: "${aliasName}"`);
+            break;
+          }
+
+          case 'list': {
+            if (!player.customAliases || player.customAliases.size === 0) {
+              responses.push('Bạn chưa có lệnh tắt nào.');
+              responses.push('Sử dụng "alias add [tên] [lệnh]" để tạo lệnh tắt mới.');
+              break;
+            }
+
+            responses.push('═══════════════════════════════════════════════════');
+            responses.push('            DANH SÁCH LỆNH TẮT CỦA BẠN           ');
+            responses.push('═══════════════════════════════════════════════════');
+            
+            for (const [alias, command] of player.customAliases.entries()) {
+              responses.push(`  ${alias} -> ${command}`);
+            }
+            
+            responses.push('');
+            responses.push(`Tổng: ${player.customAliases.size} lệnh tắt`);
+            break;
+          }
+
+          default:
+            responses.push('Lệnh không hợp lệ. Sử dụng: alias [add/remove/list]');
+            break;
+        }
+        break;
+      }
 
       default:
         responses.push(`Lệnh không hợp lệ: "${action}"`);
