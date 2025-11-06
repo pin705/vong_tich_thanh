@@ -24,6 +24,19 @@
         Chưa có tin nhắn nào.
       </div>
     </div>
+
+    <!-- Chat input area -->
+    <div class="chat-input-area">
+      <input
+        v-model="chatInput"
+        type="text"
+        class="chat-input"
+        :placeholder="getChatPlaceholder()"
+        @keydown.enter="sendChatMessage"
+        autocomplete="off"
+      />
+      <button class="send-button" @click="sendChatMessage">Gửi</button>
+    </div>
   </div>
 </template>
 
@@ -35,8 +48,13 @@ const props = defineProps<{
   messages: Message[];
 }>();
 
+const emit = defineEmits<{
+  sendChatCommand: [command: string];
+}>();
+
 const currentSubTab = ref('world');
 const chatArea = ref<HTMLElement | null>(null);
+const chatInput = ref('');
 
 const subtabs = [
   { id: 'world', label: 'Thế Giới' },
@@ -44,6 +62,50 @@ const subtabs = [
   { id: 'guild', label: 'Guild' },
   { id: 'say', label: 'Lân Cận' }
 ];
+
+// Get chat command based on current sub-tab
+const getChatCommand = () => {
+  switch (currentSubTab.value) {
+    case 'world':
+      return 'world';
+    case 'party':
+      return 'party_chat';
+    case 'guild':
+      return 'guild_chat';
+    case 'say':
+    default:
+      return 'say';
+  }
+};
+
+// Get placeholder text based on current sub-tab
+const getChatPlaceholder = () => {
+  switch (currentSubTab.value) {
+    case 'world':
+      return 'Gửi tin nhắn đến toàn thế giới...';
+    case 'party':
+      return 'Chat với nhóm...';
+    case 'guild':
+      return 'Chat với bang hội...';
+    case 'say':
+    default:
+      return 'Nói với mọi người xung quanh...';
+  }
+};
+
+// Send chat message
+const sendChatMessage = () => {
+  if (!chatInput.value.trim()) return;
+  
+  const command = getChatCommand();
+  const message = chatInput.value.trim();
+  
+  // Emit command to parent
+  emit('sendChatCommand', `${command} ${message}`);
+  
+  // Clear input
+  chatInput.value = '';
+};
 
 // Filter messages based on current sub-tab
 const filteredMessages = computed(() => {
@@ -174,6 +236,47 @@ watch(currentSubTab, () => {
   font-family: 'VT323', 'Source Code Pro', monospace;
 }
 
+.chat-input-area {
+  display: flex;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  border-top: 1px solid rgba(0, 136, 136, 0.3);
+  background-color: rgba(0, 136, 136, 0.05);
+}
+
+.chat-input {
+  flex: 1;
+  padding: 0.5rem;
+  background-color: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(0, 136, 136, 0.3);
+  color: var(--text-bright);
+  font-family: 'VT323', 'Source Code Pro', monospace;
+  font-size: 16px;
+}
+
+.chat-input:focus {
+  border-color: var(--text-cyan);
+  outline: none;
+}
+
+.send-button {
+  padding: 0.5rem 1rem;
+  background-color: var(--text-cyan);
+  color: var(--bg-black);
+  border: 1px solid var(--text-cyan);
+  cursor: pointer;
+  font-family: 'VT323', 'Source Code Pro', monospace;
+  font-size: 16px;
+  font-weight: bold;
+  transition: all 0.2s;
+}
+
+.send-button:hover {
+  background-color: var(--text-bright);
+  border-color: var(--text-bright);
+  box-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
+}
+
 .empty-message {
   color: var(--text-dim);
   font-size: 16px;
@@ -257,6 +360,21 @@ watch(currentSubTab, () => {
 
   .chat-timestamp {
     font-size: 12px;
+  }
+
+  .chat-input-area {
+    padding: 0.5rem;
+    gap: 0.3rem;
+  }
+
+  .chat-input {
+    font-size: 14px;
+    padding: 0.4rem;
+  }
+
+  .send-button {
+    font-size: 14px;
+    padding: 0.4rem 0.75rem;
   }
 }
 </style>

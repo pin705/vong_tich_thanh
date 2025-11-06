@@ -81,6 +81,7 @@ watch(() => props.isOpen, (isOpen) => {
   display: flex;
   align-items: center;
   justify-content: center;
+  padding: 1rem;
 }
 
 .popover-backdrop {
@@ -100,6 +101,7 @@ watch(() => props.isOpen, (isOpen) => {
   border: 1px solid var(--text-bright);
   font-family: 'VT323', 'Source Code Pro', monospace;
   max-height: 80vh;
+  max-width: 100%;
   overflow-y: auto;
   box-shadow: 0 0 20px rgba(0, 255, 0, 0.3);
 }
@@ -161,5 +163,37 @@ watch(() => props.isOpen, (isOpen) => {
 
 .popover-content::-webkit-scrollbar-thumb:hover {
   background: var(--text-bright);
+}
+
+/* Mobile optimizations */
+@media (max-width: 768px) {
+  .popover-container {
+    padding: 0.5rem;
+  }
+
+  .popover-content {
+    max-height: 90vh;
+  }
+
+  .popover-header {
+    padding: 0.5rem;
+  }
+
+  .popover-title {
+    font-size: 16px;
+  }
+
+  .popover-close {
+    font-size: 16px;
+  }
+
+  .popover-body {
+    padding: 0.5rem;
+    font-size: 14px;
+  }
+
+  .popover-footer {
+    padding: 0.5rem;
+  }
 }
 </style>

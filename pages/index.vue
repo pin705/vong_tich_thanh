@@ -23,7 +23,11 @@
       <div class="channel-content">
         <MainLogPane v-if="currentChannel === 'main'" :messages="mainLog" />
         <CombatLogPane v-else-if="currentChannel === 'combat'" :messages="combatLog" />
-        <ChatLogPane v-else-if="currentChannel === 'chat'" :messages="chatLog" />
+        <ChatLogPane 
+          v-else-if="currentChannel === 'chat'" 
+          :messages="chatLog" 
+          @sendChatCommand="handleChatCommand"
+        />
       </div>
     </div>
 
@@ -120,10 +124,12 @@
       :branches="talentBranches"
       :allocatedTalents="allocatedTalents"
       :talentPoints="playerState.talentPoints || 0"
+      :inventoryItems="playerState.inventoryItems"
       @close="characterMenuOpen = false"
       @assignSkill="handleAssignSkill"
       @allocateTalent="handleAllocateTalent"
       @openProfessionChoice="handleOpenProfessionChoice"
+      @inventoryAction="handleInventoryAction"
     />
     
     <!-- Settings Overlay -->
@@ -645,9 +651,6 @@ const handleTabClick = async (tabId: string) => {
     case 'occupants':
       occupantsPopupOpen.value = true;
       break;
-    case 'inventory':
-      inventoryPopupOpen.value = true;
-      break;
     case 'party':
       partyPopupOpen.value = true;
       break;
@@ -1150,6 +1153,12 @@ const navigateHistory = (direction: number) => {
   currentInput.value = commandHistory.value[commandHistory.value.length - 1 - historyIndex.value];
 };
 
+// Handle chat command from chat panel
+const handleChatCommand = (command: string) => {
+  currentInput.value = command;
+  sendCommand();
+};
+
 // Send command via WebSocket
 const sendCommand = async () => {
   const input = currentInput.value.trim();
@@ -1200,10 +1209,14 @@ const connectWebSocket = () => {
 
   ws.value.onopen = () => {
     isConnected.value = true;
-    // Show banner
-    addMessage('═══════════════════════════════════════════════════', 'system');
-    addMessage('    VONG TÍCH THÀNH - MUD', 'accent');
-    addMessage('═══════════════════════════════════════════════════', 'system');
+    // Show improved welcome banner
+    addMessage('╔═══════════════════════════════════════════════════╗', 'system');
+    addMessage('║                                                   ║', 'system');
+    addMessage('║          🏰  VONG TÍCH THÀNH - MUD  ⚔️            ║', 'accent');
+    addMessage('║                                                   ║', 'system');
+    addMessage('║     Chào mừng đến với thế giới võ thuật huyền bí  ║', 'normal');
+    addMessage('║                                                   ║', 'system');
+    addMessage('╚═══════════════════════════════════════════════════╝', 'system');
     addMessage('', 'normal');
 
     // Authenticate with user session - server will send actual room data

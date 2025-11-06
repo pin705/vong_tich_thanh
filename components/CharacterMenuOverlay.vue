@@ -11,12 +11,19 @@
           [1] Thông Tin
         </button>
         <button
+          class="tab-button"
+          :class="{ active: activeTab === 'inventory' }"
+          @click="activeTab = 'inventory'"
+        >
+          [2] Túi Đồ
+        </button>
+        <button
           v-if="profession"
           class="tab-button"
           :class="{ active: activeTab === 'skills' }"
           @click="activeTab = 'skills'"
         >
-          [2] Kỹ Năng
+          [3] Kỹ Năng
         </button>
         <button
           v-if="profession"
@@ -24,7 +31,7 @@
           :class="{ active: activeTab === 'talents' }"
           @click="activeTab = 'talents'"
         >
-          [3] Thiên Phú
+          [4] Thiên Phú
         </button>
       </div>
 
@@ -100,6 +107,30 @@
           <div class="stat-row">
             <span class="stat-label">Né tránh:</span>
             <span class="stat-value">{{ stats.dodge }}%</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Inventory Tab -->
+      <div v-if="activeTab === 'inventory'" class="tab-content inventory-content">
+        <div class="inventory-section">
+          <div class="section-title">[ Túi Đồ ]</div>
+          <div class="inventory-grid">
+            <div
+              v-for="(item, index) in inventoryItems"
+              :key="index"
+              class="inventory-slot"
+              :class="{ 'has-item': item }"
+              @click="item && handleItemClick(item)"
+            >
+              <div v-if="item" class="item-content">
+                <div class="item-name">{{ item.name }}</div>
+                <div v-if="item.quantity && item.quantity > 1" class="item-quantity">x{{ item.quantity }}</div>
+              </div>
+              <div v-else class="empty-slot">
+                <span class="slot-number">{{ index + 1 }}</span>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -228,6 +259,7 @@ interface Props {
   branches: TalentBranch[];
   allocatedTalents: Record<string, number>;
   talentPoints: number;
+  inventoryItems: any[];
 }
 
 const props = defineProps<Props>();
@@ -236,10 +268,18 @@ const emit = defineEmits<{
   assignSkill: [skill: Skill];
   allocateTalent: [talentId: string];
   openProfessionChoice: [];
+  inventoryAction: [action: string, itemId: string];
 }>();
 
-const activeTab = ref<'info' | 'skills' | 'talents'>('info');
+const activeTab = ref<'info' | 'inventory' | 'skills' | 'talents'>('info');
 const loading = ref(false);
+
+// Handle inventory item click
+const handleItemClick = (item: any) => {
+  // Emit event to parent for handling item actions
+  // This could open a contextual menu or execute an action
+  emit('inventoryAction', 'use', item.id || item.name);
+};
 </script>
 
 <style scoped>
@@ -531,6 +571,69 @@ const loading = ref(false);
   font-size: 14px;
 }
 
+/* Inventory Tab Styles */
+.inventory-section {
+  width: 100%;
+}
+
+.inventory-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 0.75rem;
+}
+
+.inventory-slot {
+  aspect-ratio: 1;
+  background-color: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(0, 136, 0, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  position: relative;
+  padding: 0.5rem;
+}
+
+.inventory-slot.has-item {
+  background-color: rgba(0, 136, 0, 0.05);
+  border-color: rgba(0, 136, 0, 0.5);
+}
+
+.inventory-slot.has-item:hover {
+  background-color: rgba(0, 255, 0, 0.1);
+  border-color: var(--text-accent);
+  transform: scale(1.05);
+}
+
+.item-content {
+  text-align: center;
+  width: 100%;
+}
+
+.item-name {
+  color: var(--text-bright);
+  font-size: 14px;
+  font-weight: bold;
+  word-wrap: break-word;
+  line-height: 1.2;
+}
+
+.item-quantity {
+  color: var(--text-accent);
+  font-size: 12px;
+  margin-top: 0.25rem;
+}
+
+.empty-slot {
+  color: var(--text-dim);
+  opacity: 0.3;
+}
+
+.slot-number {
+  font-size: 12px;
+}
+
 .loading-message, .empty-message {
   text-align: center;
   color: var(--text-dim);
@@ -551,6 +654,15 @@ const loading = ref(false);
   
   .skills-grid, .branch-talents {
     grid-template-columns: 1fr;
+  }
+
+  .inventory-grid {
+    grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+    gap: 0.5rem;
+  }
+
+  .item-name {
+    font-size: 12px;
   }
 }
 </style>

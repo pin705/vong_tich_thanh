@@ -492,12 +492,35 @@ defineExpose({
     max-height: 90vh;
   }
 
+  .popup-header {
+    padding: 0.75rem;
+  }
+
   .popup-title {
     font-size: 18px;
   }
 
+  .popup-body {
+    padding: 0.5rem;
+  }
+
+  .currency-display {
+    padding: 0.5rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .currency-label,
+  .currency-value {
+    font-size: 16px;
+  }
+
   .items-grid {
     grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+
+  .item-card {
+    padding: 0.75rem;
   }
 
   .tab-button {
