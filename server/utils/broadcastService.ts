@@ -12,7 +12,7 @@ class BroadcastService {
   /**
    * Send a message to all connected players
    */
-  sendWorldMessage(senderId: string, message: string, senderName?: string): void {
+  sendWorldMessage(senderId: string, message: string, senderName: string): void {
     const allPlayers = gameState.getAllPlayers();
     
     allPlayers.forEach(player => {
@@ -21,7 +21,7 @@ class BroadcastService {
           type: 'chat',
           channel: 'chat',
           category: 'world',
-          user: senderName || player.username,
+          user: senderName,
           message: message
         }));
       }

@@ -50,7 +50,7 @@ const filteredMessages = computed(() => {
   if (!props.messages) return [];
   
   return props.messages.filter(msg => {
-    const category = (msg as any).category || 'say';
+    const category = msg.category || 'say';
     
     switch (currentSubTab.value) {
       case 'world':
@@ -84,7 +84,7 @@ const formatTime = (timestamp: Date) => {
 
 // Get CSS class for message
 const getMessageClass = (message: Message) => {
-  const category = (message as any).category;
+  const category = message.category;
   let classes = 'chat-message';
   
   if (category === 'world_alert') {

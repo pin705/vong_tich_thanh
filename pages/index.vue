@@ -1573,6 +1573,7 @@ watch(messages, () => {
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  background-color: rgba(0, 136, 0, 0.03);
 }
 
 /* Clickable items in loot messages */
