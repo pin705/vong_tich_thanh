@@ -94,12 +94,12 @@ export function getOppositeDirection(direction: string): string {
   const normalized = DIRECTION_MAP[direction] || direction;
   
   const opposites: Record<string, string> = {
-    'north': 'nam',
-    'south': 'bắc',
-    'east': 'tây',
-    'west': 'đông',
-    'up': 'dưới',
-    'down': 'trên'
+    'north': 'nam',     // from north → arrived from south
+    'south': 'bắc',     // from south → arrived from north
+    'east': 'tây',      // from east → arrived from west
+    'west': 'đông',     // from west → arrived from east
+    'up': 'xuống',      // from up → arrived from below (going down)
+    'down': 'lên'       // from down → arrived from above (going up)
   };
   
   return opposites[normalized] || direction;

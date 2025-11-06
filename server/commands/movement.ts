@@ -20,13 +20,17 @@ export async function handleMovementCommand(command: Command, playerId: string):
 
     // Check if player is in combat
     if (player.inCombat) {
-      responses.push('Bạn không thể di chuyển khi đang trong chiến đấu! Hãy dùng lệnh "flee" để thoát.');
+      responses.push('Bạn không thể di chuyển khi đang trong chiến đấu! Hãy dùng lệnh "flee" để bỏ chạy.');
       return responses;
     }
 
     // Map command to direction
     let direction: string;
-    if (action === 'go' && target) {
+    if (action === 'go') {
+      if (!target) {
+        responses.push('Bạn muốn đi hướng nào? (bắc/nam/đông/tây/lên/xuống)');
+        return responses;
+      }
       direction = DIRECTION_MAP[target] || target;
     } else {
       direction = DIRECTION_MAP[action] || action;
