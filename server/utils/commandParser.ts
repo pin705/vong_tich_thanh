@@ -41,17 +41,53 @@ const COMMAND_ALIASES: Record<string, string> = {
   'roi': 'party',
 };
 
+// Built-in commands that cannot be overridden by custom aliases
+export const BUILT_IN_COMMANDS = [
+  'go', 'look', 'l', 'talk', 't', 'say', 'get', 'g', 'drop', 'use',
+  'attack', 'a', 'kill', 'flee', 'run', 'inventory', 'i',
+  'list', 'buy', 'sell', 'party', 'p', 'moi', 'roi', 'guild',
+  'pvp', 'trade', 'quit', 'help', 'alias', 'skills', 'talents',
+  'n', 's', 'e', 'w', 'u', 'd', 'north', 'south', 'east', 'west', 'up', 'down'
+];
+
 // Parse command input into structured command
-export function parseCommand(input: string): Command {
-  const trimmed = input.trim().toLowerCase();
+export function parseCommand(input: string, customAliases?: Map<string, string>, depth: number = 0): Command {
+  const trimmed = input.trim();
   if (!trimmed) {
     return { action: '' };
   }
 
-  const parts = trimmed.split(/\s+/);
+  // Prevent infinite recursion by limiting depth
+  const MAX_RECURSION_DEPTH = 5;
+  if (depth >= MAX_RECURSION_DEPTH) {
+    console.warn('[parseCommand] Max recursion depth reached, stopping alias expansion');
+    // Parse without further alias expansion
+    const parts = trimmed.toLowerCase().split(/\s+/);
+    const action = parts[0];
+    const target = parts[1];
+    const args = parts.slice(2);
+    return { action, target, args };
+  }
+
+  // Check custom aliases first (case-sensitive for custom aliases)
+  if (customAliases && depth === 0) { // Only expand custom aliases at depth 0
+    for (const [alias, fullCommand] of customAliases.entries()) {
+      // Check if input starts with the alias
+      if (trimmed === alias || trimmed.startsWith(alias + ' ')) {
+        // Replace alias with full command
+        const remainingInput = trimmed.slice(alias.length).trim();
+        const expandedInput = remainingInput ? `${fullCommand} ${remainingInput}` : fullCommand;
+        // Recursively parse the expanded command (without custom aliases to avoid infinite loop)
+        return parseCommand(expandedInput, undefined, depth + 1);
+      }
+    }
+  }
+
+  const lowerInput = trimmed.toLowerCase();
+  const parts = lowerInput.split(/\s+/);
   const rawAction = parts[0];
   
-  // Resolve alias
+  // Resolve built-in alias
   const action = COMMAND_ALIASES[rawAction] || rawAction;
   
   // Handle movement shortcuts (n, s, e, w, u, d)

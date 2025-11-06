@@ -311,7 +311,7 @@ export default defineWebSocketHandler({
           await broadcastRoomOccupants(authRoom._id.toString());
           
           // Send initial room description using the look command
-          const lookCommand = parseCommand('look');
+          const lookCommand = parseCommand('look', authPlayer.customAliases);
           const initialResponses = await handleCommandDb(lookCommand, playerId);
           
           // Send welcome message first
@@ -362,7 +362,9 @@ export default defineWebSocketHandler({
           }
 
           try {
-            const command = parseCommand(payload.input);
+            // Get player to access custom aliases
+            const cmdPlayer = await PlayerSchema.findById(playerIdForCmd);
+            const command = parseCommand(payload.input, cmdPlayer?.customAliases);
             console.log('[WS] Command:', command, 'from player:', playerIdForCmd);
             
             // Process command with database integration
