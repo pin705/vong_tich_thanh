@@ -2517,6 +2517,64 @@ export async function initializeWorld() {
       active: true
     });
 
+    // Enhancement System: Daily Quests with upgrade material rewards
+    await QuestSchema.create({
+      name: '[Hàng Ngày] Săn Boss',
+      description: 'Tiêu diệt 3 Boss bất kỳ để nhận thưởng.',
+      type: 'daily',
+      questGiver: 'Thợ Rèn',
+      questGiverRoomId: khuCho._id,
+      objectives: [
+        { type: 'kill', target: 'Thủ Lĩnh Goblin', count: 1, progress: 0 }
+      ],
+      rewards: { 
+        exp: 500, 
+        gold: 200,
+        items: [daCuongHoaCap1._id, daCuongHoaCap1._id] // 2x Enhancement Stones
+      },
+      levelRequirement: 10,
+      isRepeatable: true,
+      active: true
+    });
+
+    await QuestSchema.create({
+      name: '[Hàng Ngày] Thu Thập Nguyên Liệu',
+      description: 'Thu thập 20 vật liệu chế tạo bất kỳ.',
+      type: 'daily',
+      questGiver: 'Thợ Rèn',
+      questGiverRoomId: khuCho._id,
+      objectives: [
+        { type: 'collect', target: 'Da Chuột', count: 20, progress: 0 }
+      ],
+      rewards: { 
+        exp: 300, 
+        gold: 150,
+        items: [daTinhLuyen._id] // 1x Refine Stone
+      },
+      levelRequirement: 5,
+      isRepeatable: true,
+      active: true
+    });
+
+    await QuestSchema.create({
+      name: '[Hàng Tuần] Chinh Phục Hầm Ngục',
+      description: 'Hoàn thành 10 tầng hầm ngục trong tuần.',
+      type: 'daily',
+      questGiver: 'Thương Nhân Hầm Ngục',
+      questGiverRoomId: dungeonLobby._id,
+      objectives: [
+        { type: 'visit', target: 'Hầm Ngục - Phòng Chiến', count: 10, progress: 0 }
+      ],
+      rewards: { 
+        exp: 1000, 
+        gold: 500,
+        items: [daNangSaoSoCap._id, daTinhLuyen._id] // Star Stone + Refine Stone
+      },
+      levelRequirement: 15,
+      isRepeatable: true,
+      active: true
+    });
+
     console.log('World initialized successfully!');
     console.log(`- Created ${await RoomSchema.countDocuments()} rooms`);
     console.log(`- Created ${await ItemSchema.countDocuments()} items`);

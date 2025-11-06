@@ -448,10 +448,21 @@ export async function handleCommandDb(command: Command, playerId: string): Promi
           break;
         }
 
-        // Check price based on shop type
+        // Check price based on shop type and currency
         const isPremiumShop = buyVendor.shopType === 'premium';
+        const isDungeonShop = buyVendor.shopCurrency === 'dungeon_coin';
         const itemPrice = isPremiumShop ? (buyItem.premiumPrice ?? 0) : (buyItem.price ?? 0);
-        const buyCurrencySymbol = isPremiumShop ? '💎' : '💰';
+        
+        let buyCurrencySymbol = '💰';
+        let playerCurrency = player.gold;
+        
+        if (isPremiumShop) {
+          buyCurrencySymbol = '💎';
+          playerCurrency = player.premiumCurrency;
+        } else if (isDungeonShop) {
+          buyCurrencySymbol = '🎫';
+          playerCurrency = player.dungeonCoin || 0;
+        }
 
         // Validate that item has a valid price
         if (itemPrice <= 0) {
@@ -459,16 +470,10 @@ export async function handleCommandDb(command: Command, playerId: string): Promi
           break;
         }
 
-        if (isPremiumShop) {
-          if (player.premiumCurrency < itemPrice) {
-            responses.push(`Bạn không có đủ Cổ Thạch để mua [${buyItem.name}]. Cần ${itemPrice} ${buyCurrencySymbol}, bạn chỉ có ${player.premiumCurrency} ${buyCurrencySymbol}.`);
-            break;
-          }
-        } else {
-          if (player.gold < itemPrice) {
-            responses.push(`Bạn không có đủ vàng để mua [${buyItem.name}]. Cần ${itemPrice} ${buyCurrencySymbol}, bạn chỉ có ${player.gold} ${buyCurrencySymbol}.`);
-            break;
-          }
+        if (playerCurrency < itemPrice) {
+          const currencyName = isPremiumShop ? 'Cổ Thạch' : isDungeonShop ? 'Xu Hầm Ngục' : 'vàng';
+          responses.push(`Bạn không có đủ ${currencyName} để mua [${buyItem.name}]. Cần ${itemPrice} ${buyCurrencySymbol}, bạn chỉ có ${playerCurrency} ${buyCurrencySymbol}.`);
+          break;
         }
 
         // Create a new item instance for the player
@@ -487,12 +492,16 @@ export async function handleCommandDb(command: Command, playerId: string): Promi
           slot: buyItem.slot,
           requiredLevel: buyItem.requiredLevel,
           recipe: buyItem.recipe,
-          resultItem: buyItem.resultItem
+          resultItem: buyItem.resultItem,
+          upgradeType: buyItem.upgradeType,
+          itemKey: buyItem.itemKey
         });
 
         // Deduct currency
         if (isPremiumShop) {
           player.premiumCurrency -= itemPrice;
+        } else if (isDungeonShop) {
+          player.dungeonCoin = (player.dungeonCoin || 0) - itemPrice;
         } else {
           player.gold -= itemPrice;
         }
@@ -503,6 +512,8 @@ export async function handleCommandDb(command: Command, playerId: string): Promi
         responses.push(`Bạn đã mua [${buyItem.name}] với giá ${itemPrice} ${buyCurrencySymbol}!`);
         if (isPremiumShop) {
           responses.push(`Cổ Thạch còn lại: ${player.premiumCurrency} ${buyCurrencySymbol}`);
+        } else if (isDungeonShop) {
+          responses.push(`Xu Hầm Ngục còn lại: ${player.dungeonCoin || 0} ${buyCurrencySymbol}`);
         } else {
           responses.push(`Vàng còn lại: ${player.gold} ${buyCurrencySymbol}`);
         }
