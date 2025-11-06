@@ -2,7 +2,7 @@
   <div class="terminal-container" @click="focusInput">
     <!-- Player Status Header -->
     <PlayerStatusHeader
-      :name="playerState.name"
+      :name="playerState?.name"
       :level="playerState.level"
       :hp="playerState.hp"
       :maxHp="playerState.maxHp"

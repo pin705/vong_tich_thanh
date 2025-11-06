@@ -11,7 +11,8 @@ export default defineEventHandler(async (event) => {
   }
 
   try {
-    const player = await PlayerSchema.findById(user.user.id).populate('skills');
+    const userId = (user.user as any).id;
+    const player = await PlayerSchema.findById(userId).populate('skills');
     
     if (!player) {
       throw createError({

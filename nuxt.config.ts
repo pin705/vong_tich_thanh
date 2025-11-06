@@ -2,9 +2,9 @@
 export default defineNuxtConfig({
   compatibilityDate: '2025-07-15',
   devtools: { enabled: false },
-  
+  ssr: false,
   modules: [
-    '@nuxtjs/tailwindcss',
+    // '@nuxtjs/tailwindcss',
     'nuxt-mongoose',
     'nuxt-auth-utils',
     '@vite-pwa/nuxt'
