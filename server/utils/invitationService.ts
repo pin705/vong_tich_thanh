@@ -20,9 +20,14 @@ class InvitationService {
   private invitations: Map<string, Invitation> = new Map();
   
   /**
-   * Generate a unique invitation ID
+   * Generate a unique invitation ID using crypto for security
    */
   private generateInvitationId(): string {
+    // Use crypto for secure random ID generation if available
+    if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+      return `inv-${crypto.randomUUID()}`;
+    }
+    // Fallback for environments without crypto.randomUUID
     return `inv-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
   }
 

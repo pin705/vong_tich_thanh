@@ -59,7 +59,7 @@ export default defineEventHandler(async (event) => {
     if (!addResult.success) {
       // Clean up the created item if adding failed
       await ItemSchema.findByIdAndDelete(newItem._id);
-      return { success: false, message: 'Failed to add item to inventory' };
+      return { success: false, message: addResult.message || 'Không thể thêm vật phẩm vào túi đồ' };
     }
 
     const deductResult = await removePremiumCurrencyFromPlayer(playerId, item.premiumPrice);
