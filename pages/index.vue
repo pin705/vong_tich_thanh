@@ -202,6 +202,12 @@
       @trackQuest="handleTrackQuest"
     />
 
+    <!-- Leaderboard Overlay -->
+    <LeaderboardOverlay
+      :isOpen="leaderboardOpen"
+      @close="leaderboardOpen = false"
+    />
+
     <!-- Profession Choice Overlay -->
     <ProfessionChoiceOverlay
       :isOpen="professionChoiceOpen"
@@ -377,6 +383,7 @@ import CraftingPopup from '~/components/CraftingPopup.vue';
 import PremiumShopPopup from '~/components/PremiumShopPopup.vue';
 import ShopPopup from '~/components/ShopPopup.vue';
 import MailPopup from '~/components/MailPopup.vue';
+import LeaderboardOverlay from '~/components/LeaderboardOverlay.vue';
 import TabSelector from '~/components/TabSelector.vue';
 import MainLogPane from '~/components/MainLogPane.vue';
 import CombatLogPane from '~/components/CombatLogPane.vue';
@@ -542,6 +549,7 @@ const settingsOpen = ref(false);
 const worldMapOpen = ref(false);
 const questsOpen = ref(false);
 const professionChoiceOpen = ref(false);
+const leaderboardOpen = ref(false);
 
 // Player settings state
 const playerAutoCombat = ref(false);
@@ -893,6 +901,9 @@ const handleTabClick = async (tabId: string) => {
         await loadSkills();
         await loadTalents();
         characterMenuOpen.value = true;
+        break;
+      case 'leaderboard':
+        leaderboardOpen.value = true;
         break;
       case 'settings':
         settingsOpen.value = true;
