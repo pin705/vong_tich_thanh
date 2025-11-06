@@ -410,6 +410,23 @@ export default defineWebSocketHandler({
               }
             }
             
+            // Special handling for list command - send structured shop data
+            if (command.action === 'list') {
+              const playerForList = await PlayerSchema.findById(playerIdForCmd);
+              if (playerForList) {
+                const room = await RoomSchema.findById(playerForList.currentRoomId);
+                if (room && room.agents && room.agents.length > 0) {
+                  const vendors = await AgentSchema.find({ 
+                    _id: { $in: room.agents },
+                    isVendor: true
+                  });
+                  if (vendors.length > 0) {
+                    await sendVendorShop(peer, vendors[0]._id.toString());
+                  }
+                }
+              }
+            }
+            
             // Send updated player state, exits, room occupants, and party state after command
             const playerAfterCmd = await PlayerSchema.findById(playerIdForCmd);
             if (playerAfterCmd) {

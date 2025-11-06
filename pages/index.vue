@@ -1666,6 +1666,23 @@ const connectWebSocket = () => {
           playerState.value.hasUnreadMail = true;
           addMessage('[!] Bạn có thư mới!', 'system', undefined, 'main', 'system');
           break;
+        case 'shop_data':
+          // Handle merchant shop data for trading popup
+          if (payload && payload.success) {
+            tradingData.value.merchantItems = (payload.items || []).map((item: any) => ({
+              id: item._id,
+              name: item.name,
+              description: item.description,
+              type: item.type,
+              value: item.price || 0,
+              stats: item.stats,
+              levelRequirement: item.requiredLevel,
+              equipped: false
+            }));
+            tradingData.value.merchantName = payload.vendor?.name || tradingData.value.merchantName;
+            tradingData.value.merchantId = payload.vendor?.id || tradingData.value.merchantId;
+          }
+          break;
         case 'chat':
           // Handle chat messages with categories - route to chat channel
           addMessage(data.message || payload, 'chat_log', data.user, 'chat', data.category || 'say');
