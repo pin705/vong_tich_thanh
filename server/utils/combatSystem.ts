@@ -146,7 +146,7 @@ async function distributeExperience(killer: any, totalExp: number, roomId: strin
     }
     
     killer.experience += modifiedExp;
-    await killer.save();
+    // Don't save here - will be saved after level up check in main combat flow
     return messages;
   }
   
@@ -169,7 +169,7 @@ async function distributeExperience(killer: any, totalExp: number, roomId: strin
     }
     
     killer.experience += modifiedExp;
-    await killer.save();
+    // Don't save here - will be saved after level up check in main combat flow
     return messages;
   }
   
@@ -185,6 +185,11 @@ async function distributeExperience(killer: any, totalExp: number, roomId: strin
     const { exp: modifiedExp, multiplier } = await applyExpBuff(member.id, expPerMember);
     
     memberPlayer.experience += modifiedExp;
+    
+    // Check for level up for party members
+    const memberLevelUpMessages = await checkLevelUp(memberPlayer);
+    
+    // Save after level up check
     await memberPlayer.save();
     
     // Send notification to member
@@ -196,6 +201,17 @@ async function distributeExperience(killer: any, totalExp: number, roomId: strin
         category: 'xp',
         message: `${prefix}Bạn nhận được ${modifiedExp} EXP (Nhóm)${buffMessage}`
       }));
+      
+      // Send level up messages if any
+      if (memberLevelUpMessages.length > 0) {
+        for (const msg of memberLevelUpMessages) {
+          member.ws.send(JSON.stringify({
+            type: 'system',
+            category: 'level',
+            message: msg
+          }));
+        }
+      }
     }
   }
   
@@ -446,11 +462,13 @@ export async function executeCombatTick(playerId: string, agentId: string): Prom
       
       player.inCombat = false;
       player.combatTarget = undefined;
-      await player.save();
       
-      // Check for level up
+      // Check for level up BEFORE saving to ensure level changes are persisted
       const levelUpMessages = await checkLevelUp(player);
       messages.push(...levelUpMessages);
+      
+      // Save player state after level up check
+      await player.save();
       
       // Drop loot
       const lootMessages = await dropLoot(agent, player.currentRoomId.toString());
