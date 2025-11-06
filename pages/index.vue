@@ -365,7 +365,7 @@ const loadChatFromStorage = () => {
     if (stored) {
       const parsed = JSON.parse(stored);
       // Restore messages with Date objects
-      chatLog.value = parsed.map((msg: any) => ({
+      chatLog.value = parsed.map((msg: Message) => ({
         ...msg,
         timestamp: new Date(msg.timestamp)
       }));
@@ -690,10 +690,10 @@ const handleItemClick = async (itemName: string) => {
 // Focus input field (but not when clicking on certain elements)
 const focusInput = (event?: MouseEvent) => {
   // Don't focus if clicking on input elements, buttons, or interactive elements
-  if (event) {
+  if (event && event.target) {
     const target = event.target as HTMLElement;
     // Check if clicked element or any parent is an input, button, or has contenteditable
-    if (target.closest('input, textarea, button, select, [contenteditable="true"], .chat-input-area')) {
+    if (target.closest && target.closest('input, textarea, button, select, [contenteditable="true"], .chat-input-area')) {
       return;
     }
   }
