@@ -14,6 +14,7 @@ import { handleCombatCommand } from '../commands/combat';
 import { handleItemCommand } from '../commands/item';
 import { formatRoomDescription } from './roomUtils';
 import { deduplicateItemsById } from './itemDeduplication';
+import { BUILT_IN_COMMANDS } from './commandParser';
 
 // Command routing configuration
 const MOVEMENT_COMMANDS = ['go', 'n', 's', 'e', 'w', 'u', 'd', 
@@ -24,6 +25,60 @@ const COMBAT_COMMANDS = ['attack', 'a', 'kill', 'flee', 'run'];
 
 const ITEM_COMMANDS = ['inventory', 'i', 'get', 'g', 'drop', 'use', 
                        'list', 'buy', 'sell'];
+
+// Helper function to format trade status display
+async function formatTradeStatus(
+  playerTrade: { tradeId: string; trade: any; isInitiator: boolean },
+  playerId: string
+): Promise<string[]> {
+  const responses: string[] = [];
+  const { trade, isInitiator } = playerTrade;
+  const otherPlayerId = isInitiator ? trade.targetId : trade.initiatorId;
+  const otherPlayer = await PlayerSchema.findById(otherPlayerId);
+  
+  responses.push('═══════════════════════════════════════════════════');
+  responses.push('            GIAO DỊCH ĐANG HOẠT ĐỘNG              ');
+  responses.push('═══════════════════════════════════════════════════');
+  responses.push(`Đối tác: [${otherPlayer?.username || 'Unknown'}]`);
+  responses.push('');
+  
+  // Show initiator's offer
+  const initiatorItems = await ItemSchema.find({ _id: { $in: trade.initiatorItems } });
+  responses.push(`${isInitiator ? 'Bạn' : otherPlayer?.username || 'Đối tác'} đưa ra:`);
+  if (initiatorItems.length > 0) {
+    initiatorItems.forEach((item: any) => {
+      responses.push(`  - [${item.name}]`);
+    });
+  }
+  if (trade.initiatorGold > 0) {
+    responses.push(`  - ${trade.initiatorGold} vàng`);
+  }
+  if (initiatorItems.length === 0 && trade.initiatorGold === 0) {
+    responses.push('  (Chưa có gì)');
+  }
+  responses.push('');
+  
+  // Show target's offer
+  const targetItems = await ItemSchema.find({ _id: { $in: trade.targetItems } });
+  responses.push(`${!isInitiator ? 'Bạn' : otherPlayer?.username || 'Đối tác'} đưa ra:`);
+  if (targetItems.length > 0) {
+    targetItems.forEach((item: any) => {
+      responses.push(`  - [${item.name}]`);
+    });
+  }
+  if (trade.targetGold > 0) {
+    responses.push(`  - ${trade.targetGold} vàng`);
+  }
+  if (targetItems.length === 0 && trade.targetGold === 0) {
+    responses.push('  (Chưa có gì)');
+  }
+  responses.push('');
+  
+  responses.push(`Trạng thái bạn: ${(isInitiator ? trade.initiatorLocked : trade.targetLocked) ? 'ĐÃ KHÓA' : 'Chưa khóa'}`);
+  responses.push(`Trạng thái đối tác: ${(isInitiator ? trade.targetLocked : trade.initiatorLocked) ? 'ĐÃ KHÓA' : 'Chưa khóa'}`);
+  
+  return responses;
+}
 
 // Main command handler with database integration
 export async function handleCommandDb(command: Command, playerId: string): Promise<string[]> {
@@ -1514,50 +1569,8 @@ export async function handleCommandDb(command: Command, playerId: string): Promi
           // Show trade status if player is in an active trade
           const playerTrade = tradeService.getPlayerTrade(playerId);
           if (playerTrade) {
-            const { trade, isInitiator } = playerTrade;
-            const otherPlayerId = isInitiator ? trade.targetId : trade.initiatorId;
-            const otherPlayer = await PlayerSchema.findById(otherPlayerId);
-            
-            responses.push('═══════════════════════════════════════════════════');
-            responses.push('            GIAO DỊCH ĐANG HOẠT ĐỘNG              ');
-            responses.push('═══════════════════════════════════════════════════');
-            responses.push(`Đối tác: [${otherPlayer?.username || 'Unknown'}]`);
-            responses.push('');
-            
-            // Show initiator's offer
-            const initiatorItems = await ItemSchema.find({ _id: { $in: trade.initiatorItems } });
-            responses.push(`${isInitiator ? 'Bạn' : otherPlayer?.username || 'Đối tác'} đưa ra:`);
-            if (initiatorItems.length > 0) {
-              initiatorItems.forEach((item: any) => {
-                responses.push(`  - [${item.name}]`);
-              });
-            }
-            if (trade.initiatorGold > 0) {
-              responses.push(`  - ${trade.initiatorGold} vàng`);
-            }
-            if (initiatorItems.length === 0 && trade.initiatorGold === 0) {
-              responses.push('  (Chưa có gì)');
-            }
-            responses.push('');
-            
-            // Show target's offer
-            const targetItems = await ItemSchema.find({ _id: { $in: trade.targetItems } });
-            responses.push(`${!isInitiator ? 'Bạn' : otherPlayer?.username || 'Đối tác'} đưa ra:`);
-            if (targetItems.length > 0) {
-              targetItems.forEach((item: any) => {
-                responses.push(`  - [${item.name}]`);
-              });
-            }
-            if (trade.targetGold > 0) {
-              responses.push(`  - ${trade.targetGold} vàng`);
-            }
-            if (targetItems.length === 0 && trade.targetGold === 0) {
-              responses.push('  (Chưa có gì)');
-            }
-            responses.push('');
-            
-            responses.push(`Trạng thái bạn: ${(isInitiator ? trade.initiatorLocked : trade.targetLocked) ? 'ĐÃ KHÓA' : 'Chưa khóa'}`);
-            responses.push(`Trạng thái đối tác: ${(isInitiator ? trade.targetLocked : trade.initiatorLocked) ? 'ĐÃ KHÓA' : 'Chưa khóa'}`);
+            const statusLines = await formatTradeStatus(playerTrade, playerId);
+            responses.push(...statusLines);
             responses.push('');
             responses.push('Lệnh: trade add/gold/lock/confirm/cancel');
           } else {
@@ -1575,50 +1588,8 @@ export async function handleCommandDb(command: Command, playerId: string): Promi
               break;
             }
             
-            const { trade, isInitiator } = playerTrade;
-            const otherPlayerId = isInitiator ? trade.targetId : trade.initiatorId;
-            const otherPlayer = await PlayerSchema.findById(otherPlayerId);
-            
-            responses.push('═══════════════════════════════════════════════════');
-            responses.push('            GIAO DỊCH ĐANG HOẠT ĐỘNG              ');
-            responses.push('═══════════════════════════════════════════════════');
-            responses.push(`Đối tác: [${otherPlayer?.username || 'Unknown'}]`);
-            responses.push('');
-            
-            // Show initiator's offer
-            const initiatorItems = await ItemSchema.find({ _id: { $in: trade.initiatorItems } });
-            responses.push(`${isInitiator ? 'Bạn' : otherPlayer?.username || 'Đối tác'} đưa ra:`);
-            if (initiatorItems.length > 0) {
-              initiatorItems.forEach((item: any) => {
-                responses.push(`  - [${item.name}]`);
-              });
-            }
-            if (trade.initiatorGold > 0) {
-              responses.push(`  - ${trade.initiatorGold} vàng`);
-            }
-            if (initiatorItems.length === 0 && trade.initiatorGold === 0) {
-              responses.push('  (Chưa có gì)');
-            }
-            responses.push('');
-            
-            // Show target's offer
-            const targetItems = await ItemSchema.find({ _id: { $in: trade.targetItems } });
-            responses.push(`${!isInitiator ? 'Bạn' : otherPlayer?.username || 'Đối tác'} đưa ra:`);
-            if (targetItems.length > 0) {
-              targetItems.forEach((item: any) => {
-                responses.push(`  - [${item.name}]`);
-              });
-            }
-            if (trade.targetGold > 0) {
-              responses.push(`  - ${trade.targetGold} vàng`);
-            }
-            if (targetItems.length === 0 && trade.targetGold === 0) {
-              responses.push('  (Chưa có gì)');
-            }
-            responses.push('');
-            
-            responses.push(`Trạng thái bạn: ${(isInitiator ? trade.initiatorLocked : trade.targetLocked) ? 'ĐÃ KHÓA' : 'Chưa khóa'}`);
-            responses.push(`Trạng thái đối tác: ${(isInitiator ? trade.targetLocked : trade.initiatorLocked) ? 'ĐÃ KHÓA' : 'Chưa khóa'}`);
+            const statusLines = await formatTradeStatus(playerTrade, playerId);
+            responses.push(...statusLines);
             break;
           }
 
@@ -2057,15 +2028,7 @@ export async function handleCommandDb(command: Command, playerId: string): Promi
             }
 
             // Prevent overriding built-in commands
-            const builtInCommands = [
-              'go', 'look', 'l', 'talk', 't', 'say', 'get', 'g', 'drop', 'use',
-              'attack', 'a', 'kill', 'flee', 'run', 'inventory', 'i',
-              'list', 'buy', 'sell', 'party', 'p', 'moi', 'roi', 'guild',
-              'pvp', 'trade', 'quit', 'help', 'alias', 'skills', 'talents',
-              'n', 's', 'e', 'w', 'u', 'd', 'north', 'south', 'east', 'west', 'up', 'down'
-            ];
-            
-            if (builtInCommands.includes(aliasName.toLowerCase())) {
+            if (BUILT_IN_COMMANDS.includes(aliasName.toLowerCase())) {
               responses.push(`Không thể đặt lệnh tắt trùng với lệnh hệ thống: "${aliasName}"`);
               break;
             }
