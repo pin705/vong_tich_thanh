@@ -5,7 +5,7 @@
       <div v-if="!showCreateForm" class="no-guild-info">
         <div class="info-box">
           <p class="title">Bạn chưa có bang hội.</p>
-          <p class="hint">Chi phí tạo bang: <span class="gold">100,000 Vàng 💰</span></p>
+          <p class="hint">Chi phí tạo bang: <span class="gold">100,000 Vàng [V]</span></p>
         </div>
         
         <button class="create-guild-btn" @click="showCreateForm = true">
@@ -56,7 +56,7 @@
         </div>
 
         <div class="form-cost">
-          <p>Chi phí: <span class="gold">100,000 Vàng 💰</span></p>
+          <p>Chi phí: <span class="gold">100,000 Vàng [V]</span></p>
         </div>
       </div>
     </div>
@@ -172,7 +172,7 @@
             <!-- Currency Display -->
             <div class="currency-display">
               <span class="currency-label">Kho Vàng Bang Hội:</span>
-              <span class="currency-value">{{ guildData.currency || 0 }} 💰</span>
+              <span class="currency-value">{{ guildData.currency || 0 }} [V]</span>
             </div>
 
             <!-- Items Grid -->

@@ -5,7 +5,7 @@
       <span class="message-text">{{ message.text }}</span>
     </div>
     <div v-if="messages.length === 0" class="empty-message">
-      ⚔️ Không có hoạt động chiến đấu nào ⚔️
+      --- Không có hoạt động chiến đấu nào ---
     </div>
   </div>
 </template>
@@ -43,12 +43,12 @@ const shouldShowIcon = (message: Message) => {
 // Get appropriate icon for message type
 const getCombatIcon = (message: Message) => {
   const icons: Record<string, string> = {
-    'damage_in': '🗡️',
-    'damage_out': '⚔️',
-    'heal': '💚',
-    'critical': '💥',
-    'xp': '✨',
-    'loot': '💎'
+    'damage_in': '<<',
+    'damage_out': '>>',
+    'heal': '+',
+    'critical': '!!',
+    'xp': '*',
+    'loot': '$'
   };
   return icons[message.type] || '';
 };

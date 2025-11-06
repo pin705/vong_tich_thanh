@@ -1227,7 +1227,7 @@ const connectWebSocket = () => {
     // Show improved welcome banner
     addMessage('╔═══════════════════════════════════════════════════╗', 'system');
     addMessage('║                                                   ║', 'system');
-    addMessage('║          🏰  VONG TÍCH THÀNH - MUD  ⚔️            ║', 'accent');
+    addMessage('║          [*] VONG TÍCH THÀNH - MUD [*]           ║', 'accent');
     addMessage('║                                                   ║', 'system');
     addMessage('║     Chào mừng đến với thế giới võ thuật huyền bí  ║', 'normal');
     addMessage('║                                                   ║', 'system');
@@ -1398,7 +1398,7 @@ const connectWebSocket = () => {
         case 'new_mail':
           // Handle new mail notification
           playerState.value.hasUnreadMail = true;
-          addMessage('📬 Bạn có thư mới!', 'system', undefined, 'main', 'system');
+          addMessage('[!] Bạn có thư mới!', 'system', undefined, 'main', 'system');
           break;
         case 'chat':
           // Handle chat messages with categories - route to chat channel

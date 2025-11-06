@@ -43,11 +43,11 @@ const shouldShowIcon = (message: Message) => {
 // Get appropriate icon for message type
 const getMessageIcon = (message: Message) => {
   const icons: Record<string, string> = {
-    'accent': '📍',
-    'system': 'ℹ️',
-    'action': '👤',
-    'xp': '✨',
-    'loot': '💎'
+    'accent': '>',
+    'system': '[i]',
+    'action': '~',
+    'xp': '*',
+    'loot': '$'
   };
   return icons[message.type] || '';
 };
