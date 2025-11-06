@@ -34,6 +34,14 @@
           <div class="stat-value">{{ stats.totalRooms }}</div>
         </div>
       </div>
+
+      <div class="stat-card">
+        <div class="stat-icon">👹</div>
+        <div class="stat-info">
+          <div class="stat-label">Tổng NPC & Mob</div>
+          <div class="stat-value">{{ stats.totalAgents }}</div>
+        </div>
+      </div>
     </div>
 
     <div class="quick-actions">
@@ -73,18 +81,23 @@ const stats = ref({
   totalPlayers: 0,
   onlinePlayers: 0,
   totalItems: 0,
-  totalRooms: 0
+  totalRooms: 0,
+  totalAgents: 0
 });
 
+const loadStats = async () => {
+  try {
+    const response = await $fetch('/api/admin/stats');
+    if (response.success) {
+      stats.value = response.stats;
+    }
+  } catch (error) {
+    console.error('Error loading stats:', error);
+  }
+};
+
 onMounted(async () => {
-  // In a real implementation, these would fetch from actual API endpoints
-  // For now, using placeholder data
-  stats.value = {
-    totalPlayers: 0,
-    onlinePlayers: 0,
-    totalItems: 0,
-    totalRooms: 0
-  };
+  await loadStats();
 });
 </script>
 

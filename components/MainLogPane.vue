@@ -4,7 +4,7 @@
       <span v-if="message.type === 'loot'" v-html="message.text"></span>
       <template v-else>
         <span v-if="shouldShowIcon(message)" class="message-icon">{{ getMessageIcon(message) }}</span>
-        <span class="message-text">{{ message.text }}</span>
+        <span class="message-text" v-html="parseClickableElements(message.text)"></span>
       </template>
     </div>
   </div>
@@ -18,6 +18,10 @@ const props = defineProps<{
   messages: Message[];
 }>();
 
+const emit = defineEmits<{
+  clickElement: [element: string, type: 'direction' | 'entity' | 'item'];
+}>();
+
 const logArea = ref<HTMLElement | null>(null);
 
 // Auto-scroll to bottom when new messages arrive
@@ -28,6 +32,25 @@ watch(() => props.messages.length, () => {
     }
   });
 });
+
+// Parse text to make elements in brackets clickable
+const parseClickableElements = (text: string): string => {
+  // Match text in brackets [text]
+  return text.replace(/\[([^\]]+)\]/g, (match, content) => {
+    // Determine the type based on content
+    const lowerContent = content.toLowerCase();
+    let type = 'entity';
+    
+    // Check if it's a direction
+    const directions = ['bắc', 'nam', 'đông', 'tây', 'lên', 'xuống', 'north', 'south', 'east', 'west', 'up', 'down'];
+    if (directions.includes(lowerContent)) {
+      type = 'direction';
+    }
+    
+    // Return clickable span
+    return `<span class="clickable clickable-${type}" data-element="${content}" data-type="${type}">[${content}]</span>`;
+  });
+};
 
 // Get CSS class for message type
 const getMessageClass = (message: Message) => {
@@ -51,6 +74,32 @@ const getMessageIcon = (message: Message) => {
   };
   return icons[message.type] || '';
 };
+
+// Handle clicks on the log area
+const handleLogClick = (event: MouseEvent) => {
+  const target = event.target as HTMLElement;
+  if (target.classList.contains('clickable')) {
+    const element = target.getAttribute('data-element');
+    const type = target.getAttribute('data-type') as 'direction' | 'entity' | 'item';
+    if (element && type) {
+      emit('clickElement', element, type);
+    }
+  }
+};
+
+// Add click handler when mounted
+onMounted(() => {
+  if (logArea.value) {
+    logArea.value.addEventListener('click', handleLogClick);
+  }
+});
+
+// Remove click handler when unmounted
+onUnmounted(() => {
+  if (logArea.value) {
+    logArea.value.removeEventListener('click', handleLogClick);
+  }
+});
 </script>
 
 <style scoped>
@@ -83,6 +132,44 @@ const getMessageIcon = (message: Message) => {
 
 .message-text {
   flex: 1;
+}
+
+/* Clickable elements */
+.message-text :deep(.clickable) {
+  color: var(--text-accent);
+  cursor: pointer;
+  text-decoration: underline;
+  text-decoration-style: dotted;
+  transition: all 0.2s;
+}
+
+.message-text :deep(.clickable:hover) {
+  color: var(--text-bright);
+  text-decoration-style: solid;
+  text-shadow: 0 0 5px rgba(255, 176, 0, 0.5);
+}
+
+.message-text :deep(.clickable:active) {
+  color: #ffcc00;
+  transform: scale(1.05);
+}
+
+.message-text :deep(.clickable-direction) {
+  color: #00ffff;
+  font-weight: bold;
+}
+
+.message-text :deep(.clickable-direction:hover) {
+  color: #00ccff;
+  text-shadow: 0 0 5px rgba(0, 255, 255, 0.5);
+}
+
+.message-text :deep(.clickable-entity) {
+  color: #ffb000;
+}
+
+.message-text :deep(.clickable-item) {
+  color: #ff00ff;
 }
 
 .message-normal {
@@ -148,6 +235,14 @@ const getMessageIcon = (message: Message) => {
 
   .message-accent {
     font-size: 17px;
+  }
+  
+  /* Make clickable elements more obvious on mobile */
+  .message-text :deep(.clickable) {
+    padding: 0.1rem 0.2rem;
+    margin: 0 0.1rem;
+    background-color: rgba(255, 176, 0, 0.1);
+    border-radius: 2px;
   }
 }
 </style>
