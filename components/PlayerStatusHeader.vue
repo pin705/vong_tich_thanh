@@ -72,7 +72,7 @@ const props = withDefaults(defineProps<Props>(), {
   border-bottom: 1px solid var(--text-bright);
   font-family: 'VT323', 'Source Code Pro', monospace;
   flex-wrap: wrap;
-  gap: 1rem;
+  gap: 0.8rem;
 }
 
 .player-info-section {
@@ -101,7 +101,7 @@ const props = withDefaults(defineProps<Props>(), {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  min-width: 200px;
+  min-width: 180px;
 }
 
 .currency-section {
@@ -121,38 +121,91 @@ const props = withDefaults(defineProps<Props>(), {
   font-weight: bold;
 }
 
-/* Mobile responsiveness */
+/* Mobile responsiveness - make it sticky and compact */
 @media (max-width: 768px) {
   .player-status-header {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 0.5rem;
-    padding: 0.5rem;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.4rem 0.5rem;
+    background-color: rgba(0, 136, 0, 0.15);
+    backdrop-filter: blur(5px);
   }
 
   .player-info-section {
-    justify-content: space-between;
+    flex: 1 1 auto;
+    justify-content: flex-start;
     min-width: auto;
+    gap: 0.5rem;
   }
 
   .player-name {
-    font-size: 18px;
+    font-size: 16px;
   }
 
   .player-level {
-    font-size: 16px;
+    font-size: 14px;
+    padding: 0.05rem 0.4rem;
   }
 
   .status-section {
+    flex: 1 1 calc(50% - 0.4rem);
     min-width: auto;
+    gap: 0.3rem;
+  }
+
+  .currency-section {
+    flex: 0 1 auto;
+    gap: 0.25rem;
   }
 
   .currency-label {
-    font-size: 16px;
+    font-size: 14px;
   }
 
   .currency-value {
-    font-size: 14px;
+    font-size: 13px;
+  }
+}
+
+/* Very small screens - further optimize */
+@media (max-width: 480px) {
+  .player-status-header {
+    gap: 0.3rem;
+    padding: 0.3rem 0.4rem;
+  }
+
+  .player-info-section {
+    flex: 1 1 100%;
+    gap: 0.4rem;
+  }
+
+  .player-name {
+    font-size: 15px;
+  }
+
+  .player-level {
+    font-size: 13px;
+  }
+
+  .status-section {
+    flex: 1 1 100%;
+  }
+
+  .currency-section {
+    flex: 0 1 auto;
+  }
+
+  .currency-label {
+    font-size: 13px;
+  }
+
+  .currency-value {
+    font-size: 12px;
   }
 }
 </style>

@@ -739,6 +739,30 @@ export async function executeCombatTick(playerId: string, agentId: string): Prom
         deathPlayerObj.ws.send(JSON.stringify({
           type: 'combat-end'
         }));
+        
+        // Send new room information to update the map/UI
+        if (startingRoom) {
+          await startingRoom.populate('agents');
+          await startingRoom.populate('items');
+          
+          deathPlayerObj.ws.send(JSON.stringify({
+            type: 'room',
+            payload: {
+              name: startingRoom.name,
+              description: startingRoom.description,
+              exits: startingRoom.exits
+            }
+          }));
+          
+          // Send exits update
+          deathPlayerObj.ws.send(JSON.stringify({
+            type: 'exits',
+            payload: startingRoom.exits
+          }));
+          
+          // Broadcast room occupants to all players in the respawn room
+          await broadcastRoomOccupants(startingRoom._id.toString());
+        }
       }
       
       // Broadcast to room

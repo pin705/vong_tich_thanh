@@ -152,21 +152,21 @@ const displaySkills = computed(() => {
 <style scoped>
 .combat-view-container {
   border-bottom: 1px solid var(--text-dim);
-  padding: 0.5rem;
+  padding: 0.4rem 0.5rem;
   background-color: rgba(0, 0, 0, 0.3);
   position: relative;
+  font-size: 14px;
 }
 
 .combatant-panes {
-  display: flex;
-  justify-content: space-between;
-  gap: 1rem;
-  margin-bottom: 0.5rem;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+  margin-bottom: 0.4rem;
 }
 
 .combatant-pane {
-  flex: 1;
-  padding: 0.5rem;
+  padding: 0.4rem;
   border: 1px solid var(--text-dim);
   background-color: rgba(0, 136, 0, 0.1);
 }
@@ -174,18 +174,22 @@ const displaySkills = computed(() => {
 .combatant-name {
   color: var(--text-bright);
   font-weight: bold;
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.3rem;
   text-align: center;
+  font-size: 0.9em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .hp-bar-container,
 .resource-bar-container {
-  margin-bottom: 0.25rem;
+  margin-bottom: 0.2rem;
 }
 
 .bar {
   position: relative;
-  height: 20px;
+  height: 16px;
   background-color: rgba(0, 0, 0, 0.5);
   border: 1px solid var(--text-dim);
   overflow: hidden;
@@ -210,7 +214,7 @@ const displaySkills = computed(() => {
 
 .bar-text {
   text-align: center;
-  font-size: 0.85em;
+  font-size: 0.75em;
   color: var(--text-bright);
   margin-top: 0.1rem;
 }
@@ -218,27 +222,28 @@ const displaySkills = computed(() => {
 .combat-status {
   text-align: center;
   font-style: italic;
-  margin-top: 0.5rem;
+  margin-top: 0.3rem;
   color: var(--text-accent);
-  padding: 0.25rem;
+  padding: 0.2rem;
   border-top: 1px dashed var(--text-dim);
+  font-size: 0.85em;
 }
 
 .skill-bar {
   display: flex;
   justify-content: center;
-  gap: 0.5rem;
-  padding-top: 0.5rem;
+  gap: 0.3rem;
+  padding-top: 0.3rem;
   border-top: 1px dashed var(--text-dim);
-  margin-top: 0.5rem;
+  margin-top: 0.3rem;
   flex-wrap: wrap;
 }
 
 .skill-slot {
   border: 1px solid var(--text-dim);
-  padding: 0.3rem 0.5rem;
+  padding: 0.25rem 0.4rem;
   text-align: center;
-  min-width: 80px;
+  min-width: 65px;
   background-color: rgba(0, 0, 0, 0.3);
   transition: all 0.2s;
 }
@@ -253,14 +258,17 @@ const displaySkills = computed(() => {
 }
 
 .skill-name {
-  font-size: 0.85em;
+  font-size: 0.75em;
   color: var(--text-bright);
   font-weight: bold;
-  margin-bottom: 0.2rem;
+  margin-bottom: 0.15rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .skill-cooldown-text {
-  font-size: 0.75em;
+  font-size: 0.7em;
   color: var(--text-dim);
 }
 
@@ -268,28 +276,70 @@ const displaySkills = computed(() => {
   color: var(--text-accent);
 }
 
-/* Mobile responsiveness */
+/* Mobile responsiveness - more compact */
 @media (max-width: 768px) {
+  .combat-view-container {
+    padding: 0.3rem 0.4rem;
+    font-size: 13px;
+  }
+
   .combatant-panes {
-    flex-direction: column;
-    gap: 0.5rem;
+    gap: 0.4rem;
+  }
+
+  .combatant-pane {
+    padding: 0.3rem;
+  }
+
+  .combatant-name {
+    font-size: 0.85em;
+    margin-bottom: 0.25rem;
+  }
+
+  .bar {
+    height: 14px;
+  }
+
+  .bar-text {
+    font-size: 0.7em;
+  }
+
+  .combat-status {
+    font-size: 0.8em;
+    padding: 0.15rem;
+    margin-top: 0.25rem;
   }
 
   .skill-bar {
-    gap: 0.25rem;
+    gap: 0.2rem;
+    padding-top: 0.25rem;
+    margin-top: 0.25rem;
   }
 
   .skill-slot {
-    min-width: 70px;
+    min-width: 55px;
     padding: 0.2rem 0.3rem;
   }
 
   .skill-name {
-    font-size: 0.75em;
+    font-size: 0.7em;
+    margin-bottom: 0.1rem;
   }
 
   .skill-cooldown-text {
-    font-size: 0.7em;
+    font-size: 0.65em;
+  }
+}
+
+/* Very small screens - stack vertically */
+@media (max-width: 480px) {
+  .combatant-panes {
+    grid-template-columns: 1fr;
+    gap: 0.3rem;
+  }
+
+  .combat-view-container {
+    padding: 0.25rem 0.3rem;
   }
 }
 </style>

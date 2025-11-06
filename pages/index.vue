@@ -91,6 +91,14 @@
     <!-- Footer Tab Bar (5-10%) -->
     <FooterTabBar @tabClick="handleTabClick" :hasUnreadMail="playerState.hasUnreadMail" />
 
+    <!-- Mobile Floating Action Menu (Mobile/Tablet Only) -->
+    <MobileFloatingMenu
+      :isMobileOrTablet="isMobile || isTablet"
+      @openOccupants="occupantsPopupOpen = true"
+      @openMap="handleTabClick('map')"
+      @openInventory="inventoryPopupOpen = true"
+    />
+
     <!-- Popups/Modals -->
     <Popover
       :isOpen="inventoryPopupOpen"
@@ -376,6 +384,7 @@ import ChatLogPane from '~/components/ChatLogPane.vue';
 import RoomOccupantsPane from '~/components/RoomOccupantsPane.vue';
 import LoadingIndicator from '~/components/LoadingIndicator.vue';
 import CombatView from '~/components/CombatView.vue';
+import MobileFloatingMenu from '~/components/MobileFloatingMenu.vue';
 
 definePageMeta({
   middleware: 'auth'
