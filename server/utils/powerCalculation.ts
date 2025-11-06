@@ -66,7 +66,7 @@ function calculateTalentPointsSpent(player: any): number {
   } else if (typeof player.talents === 'object') {
     // Handle plain object or Mongoose document
     for (const key in player.talents) {
-      if (player.talents.hasOwnProperty(key)) {
+      if (Object.prototype.hasOwnProperty.call(player.talents, key)) {
         spent += player.talents[key];
       }
     }
@@ -92,7 +92,7 @@ function calculateTotalSkillLevel(player: any): number {
   } else if (typeof player.learnedSkills === 'object') {
     // Handle plain object or Mongoose document
     for (const key in player.learnedSkills) {
-      if (player.learnedSkills.hasOwnProperty(key)) {
+      if (Object.prototype.hasOwnProperty.call(player.learnedSkills, key)) {
         totalLevel += player.learnedSkills[key];
       }
     }
