@@ -243,6 +243,14 @@ const allCommands: Command[] = [
     examples: ['attack Chuột Biến Dị', 'a Goblin', 'kill Sói Rừng']
   },
   {
+    name: 'auto',
+    shortDesc: 'Bật/tắt tự động tấn công',
+    description: 'Bật hoặc tắt chế độ tự động tấn công trong chiến đấu. Khi bật, bạn sẽ tự động tấn công mục tiêu mỗi 2 giây. Khi tắt, bạn có thể đánh thủ công hoặc rút lui.',
+    category: 'combat',
+    usage: ['auto'],
+    examples: ['auto']
+  },
+  {
     name: 'flee',
     shortDesc: 'Bỏ chạy khỏi chiến đấu',
     description: 'Cố gắng trốn thoát khỏi chiến đấu (tỷ lệ thành công 60%)',

@@ -12,6 +12,22 @@
       :premiumCurrency="playerState.premiumCurrency"
     />
 
+    <!-- Combat View (shown when in combat) -->
+    <CombatView
+      v-if="isInCombat"
+      :player="{
+        name: playerState.name,
+        hp: playerState.hp,
+        maxHp: playerState.maxHp,
+        resource: playerState.resource,
+        maxResource: playerState.maxResource
+      }"
+      :target="combatTarget"
+      :combatStatus="combatStatusText"
+      :skills="playerCombatSkills"
+      :cooldowns="playerCooldowns"
+    />
+
     <!-- Main Content Area with Side Panel for Desktop -->
     <div class="main-content-wrapper">
       <!-- Main Output Area with Channel Tabs -->
@@ -63,6 +79,8 @@
         @keydown.ctrl.h.prevent="toggleHelp"
         @keydown.meta.h.prevent="toggleHelp"
         @keydown.f1.prevent="toggleHelp"
+        @focus="commandInputFocus = true"
+        @blur="commandInputFocus = false"
         autocomplete="off"
         spellcheck="false"
       />
@@ -355,6 +373,7 @@ import CombatLogPane from '~/components/CombatLogPane.vue';
 import ChatLogPane from '~/components/ChatLogPane.vue';
 import RoomOccupantsPane from '~/components/RoomOccupantsPane.vue';
 import LoadingIndicator from '~/components/LoadingIndicator.vue';
+import CombatView from '~/components/CombatView.vue';
 
 definePageMeta({
   middleware: 'auth'
@@ -433,6 +452,15 @@ const channelTabs = computed(() => [
   { id: 'combat', label: 'Chiến Đấu', hasUnread: combatUnread.value },
   { id: 'chat', label: 'Chat', hasUnread: chatUnread.value }
 ]);
+
+// Combat status text
+const combatStatusText = computed(() => {
+  if (!isInCombat.value) return '';
+  if (commandInputFocus.value) {
+    return 'Đang chờ lệnh... (Gõ "auto" để bật tự động tấn công)';
+  }
+  return 'Tự động tấn công đang hoạt động';
+});
 
 // Handle channel tab change
 const handleChannelChange = (channelId: string) => {
@@ -589,6 +617,13 @@ const roomOccupants = ref<RoomOccupantsState>({
 
 // Selected target for actions
 const selectedTarget = ref<SelectedTarget | null>(null);
+
+// Combat state
+const isInCombat = ref(false);
+const combatTarget = ref<any>(null);
+const playerCombatSkills = ref<Skill[]>([]);
+const playerCooldowns = ref<any[]>([]);
+const commandInputFocus = ref(false);
 
 // Player state
 const playerState = ref<PlayerState>({
@@ -1698,6 +1733,28 @@ const connectWebSocket = () => {
         case 'chat':
           // Handle chat messages with categories - route to chat channel
           addMessage(data.message || payload, 'chat_log', data.user, 'chat', data.category || 'say');
+          break;
+        case 'combat-start':
+          // Handle combat start
+          if (payload || data) {
+            isInCombat.value = true;
+            combatTarget.value = data.targetData || payload.targetData || null;
+            playerCombatSkills.value = data.playerSkills || payload.playerSkills || [];
+            playerCooldowns.value = data.playerCooldowns || payload.playerCooldowns || [];
+          }
+          break;
+        case 'combat-end':
+          // Handle combat end
+          isInCombat.value = false;
+          combatTarget.value = null;
+          playerCombatSkills.value = [];
+          playerCooldowns.value = [];
+          break;
+        case 'skill-cooldown-update':
+          // Update skill cooldowns
+          if (data.cooldowns || payload?.cooldowns) {
+            playerCooldowns.value = data.cooldowns || payload.cooldowns;
+          }
           break;
         default:
           console.log('Unknown message type:', type);
