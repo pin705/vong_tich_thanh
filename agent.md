@@ -276,12 +276,21 @@ Chiến đấu trong MUD cổ điển **không phải** là turn-based (theo lư
 ## CÁC PHASE CHƯA TRIỂN KHAI (Từ Kế Hoạch Gốc)
 
 * **Phase 8 (cũ): Hệ Thống Bang Hội (Guilds)**
-    * **Trạng thái:** ❌ **[CHƯA BẮT ĐẦU]**
-    * **Ghi chú:** Chưa có Model, API, hay UI nào cho Bang Hội.
+    * **Trạng thái:** ✅ **[ĐÃ HOÀN THÀNH - Phase 17]**
+    * **Ghi chú:** 
+        * Models: `Guild.ts`, `GuildSchema` đã có
+        * Commands: `guild create`, `guild invite`, `guild deposit`, `guild withdraw` đã triển khai trong `commandHandlerDb.ts`
+        * UI: `GuildOverlay.vue` đã có
+        * Database field: `Player.guild`, `Player.guildInvite` đã có
 
 * **Phase 9 (cũ): PvP & Danh Vọng (Factions)**
-    * **Trạng thái:** ❌ **[CHƯA BẮT ĐẦU]**
-    * **Ghi chú:** `combatSystem.ts` mới chỉ xử lý PvE (Player vs Agent). Chưa có logic cho PvP, cờ PvP, hay hệ thống Faction.
+    * **Trạng thái:** ✅ **[ĐÃ HOÀN THÀNH - Phase 18]**
+    * **Ghi chú:**
+        * Models: `Faction.ts`, `PlayerFaction.ts` đã có
+        * PvP Combat: `startPvPCombat()` function trong `combatSystem.ts`
+        * PvP Toggle: `pvp on/off` command đã có
+        * Database fields: `Player.pvpEnabled`, `Room.isSafeZone` đã có
+        * Faction reputation system đã triển khai qua `factionService.ts`
 
 * **Phase 11: Kinh Tế Sâu & Nhà Ở (Advanced Economy & Housing)**
     * **Trạng thái:** 🟡 **[ĐANG TRIỂN KHAI]**
