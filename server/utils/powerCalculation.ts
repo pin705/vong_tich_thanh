@@ -1,8 +1,9 @@
-import type { IPlayer } from '../../models/Player';
-
 /**
  * Calculate player power score based on stats
  * Similar to PoW (Power over Weight) concept but adapted for game stats
+ * 
+ * @param player - Player object from database (Mongoose lean object or document)
+ * @returns Calculated power score as an integer
  */
 export function calculatePlayerPower(player: any): number {
   let power = 0;
