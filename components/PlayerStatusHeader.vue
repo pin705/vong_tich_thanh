@@ -100,6 +100,7 @@ const props = withDefaults(defineProps<Props>(), {
 .status-section {
   display: flex;
   align-items: center;
+  gap: 0.5rem;
   min-width: 200px;
 }
 
