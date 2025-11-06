@@ -53,13 +53,23 @@ export function calculatePlayerPower(player: any): number {
  * Calculate total talent points spent by a player
  */
 function calculateTalentPointsSpent(player: any): number {
-  if (!player.talents || !(player.talents instanceof Map)) {
+  if (!player.talents) {
     return 0;
   }
   
   let spent = 0;
-  for (const [, value] of player.talents) {
-    spent += value;
+  // Handle both plain objects and Mongoose Map fields
+  if (player.talents instanceof Map) {
+    for (const [, value] of player.talents) {
+      spent += value;
+    }
+  } else if (typeof player.talents === 'object') {
+    // Handle plain object or Mongoose document
+    for (const key in player.talents) {
+      if (player.talents.hasOwnProperty(key)) {
+        spent += player.talents[key];
+      }
+    }
   }
   
   return spent;
@@ -69,25 +79,24 @@ function calculateTalentPointsSpent(player: any): number {
  * Calculate total skill upgrade levels
  */
 function calculateTotalSkillLevel(player: any): number {
-  if (!player.learnedSkills || !(player.learnedSkills instanceof Map)) {
+  if (!player.learnedSkills) {
     return 0;
   }
   
   let totalLevel = 0;
-  for (const [, level] of player.learnedSkills) {
-    totalLevel += level;
+  // Handle both plain objects and Mongoose Map fields
+  if (player.learnedSkills instanceof Map) {
+    for (const [, level] of player.learnedSkills) {
+      totalLevel += level;
+    }
+  } else if (typeof player.learnedSkills === 'object') {
+    // Handle plain object or Mongoose document
+    for (const key in player.learnedSkills) {
+      if (player.learnedSkills.hasOwnProperty(key)) {
+        totalLevel += player.learnedSkills[key];
+      }
+    }
   }
   
   return totalLevel;
-}
-
-/**
- * Calculate dungeon power score based on highest floor reached
- */
-export function calculateDungeonPower(player: any): number {
-  const highestFloor = player.dungeonProgress?.highestFloor || 1;
-  
-  // Exponential scaling for dungeon power
-  // Higher floors = much more power
-  return Math.floor(highestFloor * highestFloor * 0.5);
 }
