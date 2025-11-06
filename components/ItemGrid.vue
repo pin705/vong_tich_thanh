@@ -5,13 +5,23 @@
         v-for="(item, index) in items"
         :key="item ? item.id : `empty-${index}`"
         class="inventory-slot"
-        :class="{ 'has-item': item, 'equipped': item?.equipped, 'clickable': clickable }"
+        :class="{ 
+          'has-item': item, 
+          'equipped': item?.equipped, 
+          'clickable': clickable,
+          [getQualityClass(item?.quality)]: item?.quality
+        }"
         @click="item && clickable && handleItemClick(item, $event)"
       >
         <div v-if="item" class="item-icon">
           {{ getItemIcon(item.type) }}
         </div>
-        <div v-if="item" class="item-name">{{ truncateName(item.name) }}</div>
+        <div v-if="item" class="item-name" :class="getQualityClass(item.quality)">
+          {{ truncateName(item.name) }}
+        </div>
+        <div v-if="item?.quality" class="item-quality-icon" :class="getQualityClass(item.quality)">
+          {{ getQualityIcon(item.quality) }}
+        </div>
         <div v-if="item && showPrice" class="item-price">{{ item.value }}g</div>
       </div>
     </div>
@@ -24,6 +34,10 @@
       width="350px"
     >
       <div v-if="selectedItem" class="item-details">
+        <div v-if="selectedItem.quality" class="item-quality" :class="getQualityClass(selectedItem.quality)">
+          {{ getQualityIcon(selectedItem.quality) }} {{ selectedItem.quality }}
+        </div>
+        
         <div class="item-description">{{ selectedItem.description }}</div>
         
         <div class="item-stats" v-if="selectedItem.stats">
@@ -48,6 +62,13 @@
           </div>
           <div v-if="selectedItem.stats.dodge" class="stat-line">
             + {{ selectedItem.stats.dodge }}% Né tránh
+          </div>
+        </div>
+
+        <div v-if="selectedItem.setName" class="item-set-info">
+          <div class="set-title">[ Bộ Đồ: {{ selectedItem.setName }} ]</div>
+          <div v-if="selectedItem.setBonus" class="set-bonus-desc">
+            {{ selectedItem.setBonus }}
           </div>
         </div>
 
@@ -99,6 +120,9 @@ interface InventoryItem {
   stats?: ItemStats;
   levelRequirement?: number;
   equipped?: boolean;
+  quality?: string; // Item quality
+  setName?: string; // Set bonus name
+  setBonus?: string; // Set bonus description
 }
 
 interface ItemAction {
@@ -158,6 +182,28 @@ const getTypeName = (type: string): string => {
     misc: 'Khác'
   };
   return typeNames[type] || type;
+};
+
+const getQualityClass = (quality?: string): string => {
+  const qualityMap: Record<string, string> = {
+    'Thô': 'quality-poor',
+    'Thường': 'quality-common',
+    'Tốt': 'quality-good',
+    'Hiếm': 'quality-rare',
+    'Sử Thi': 'quality-epic'
+  };
+  return quality ? qualityMap[quality] || '' : '';
+};
+
+const getQualityIcon = (quality?: string): string => {
+  const qualityIcons: Record<string, string> = {
+    'Thô': '●',
+    'Thường': '●',
+    'Tốt': '◆',
+    'Hiếm': '★',
+    'Sử Thi': '⬟'
+  };
+  return quality ? qualityIcons[quality] || '' : '';
 };
 
 const handleItemClick = (item: InventoryItem, event: MouseEvent) => {
@@ -261,9 +307,67 @@ const executeAction = (actionId: string) => {
   right: 4px;
 }
 
+.item-quality-icon {
+  position: absolute;
+  top: 2px;
+  right: 4px;
+  font-size: 12px;
+}
+
+/* Quality colors */
+.quality-poor {
+  color: #9d9d9d !important;
+}
+
+.quality-common {
+  color: var(--text-bright) !important;
+}
+
+.quality-good {
+  color: #00ff00 !important;
+}
+
+.quality-rare {
+  color: #0099ff !important;
+}
+
+.quality-epic {
+  color: #ff00ff !important;
+}
+
+/* Slot border colors by quality */
+.inventory-slot.quality-poor {
+  border-color: #9d9d9d;
+}
+
+.inventory-slot.quality-common {
+  border-color: var(--text-bright);
+}
+
+.inventory-slot.quality-good {
+  border-color: #00ff00;
+}
+
+.inventory-slot.quality-rare {
+  border-color: #0099ff;
+}
+
+.inventory-slot.quality-epic {
+  border-color: #ff00ff;
+}
+
 /* Popover Item Details */
 .item-details {
   color: var(--text-dim);
+}
+
+.item-quality {
+  font-size: 16px;
+  font-weight: bold;
+  margin-bottom: 0.75rem;
+  padding: 0.5rem;
+  background-color: rgba(0, 136, 0, 0.1);
+  border-left: 3px solid currentColor;
 }
 
 .item-description {
@@ -288,6 +392,27 @@ const executeAction = (actionId: string) => {
 .stat-line {
   color: var(--text-bright);
   margin-bottom: 0.25rem;
+}
+
+.item-set-info {
+  margin-bottom: 1rem;
+  padding: 0.75rem;
+  background-color: rgba(0, 255, 255, 0.1);
+  border: 1px solid var(--text-cyan);
+}
+
+.set-title {
+  color: var(--text-cyan);
+  font-weight: bold;
+  font-size: 15px;
+  margin-bottom: 0.5rem;
+}
+
+.set-bonus-desc {
+  color: var(--text-bright);
+  font-size: 13px;
+  line-height: 1.5;
+  font-style: italic;
 }
 
 .item-info {
