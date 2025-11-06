@@ -366,39 +366,11 @@ export async function scheduleAgentRespawn(agentData: any, roomId: string): Prom
   });
 }
 
-// AI tick interval timer
-let aiTickInterval: NodeJS.Timeout | null = null;
-
-// Start AI system
-export function startAISystem(): void {
-  if (aiTickInterval) {
-    console.log('AI system already running');
-    return;
-  }
-
-  console.log('Starting AI system...');
-  
-  // Process immediately, then every AI_TICK_INTERVAL
-  processAgentBehaviors();
-  
-  aiTickInterval = setInterval(() => {
-    processAgentBehaviors();
-  }, AI_TICK_INTERVAL);
-
-  console.log('AI system started');
-}
-
-// Stop AI system
-export function stopAISystem(): void {
-  if (aiTickInterval) {
-    clearInterval(aiTickInterval);
-    aiTickInterval = null;
-    console.log('AI system stopped');
-  }
-
-  // Clear all respawn timers
+// Clear all respawn timers (for cleanup on server shutdown)
+export function clearAllRespawnTimers(): void {
   respawnTimers.forEach(({ timer }) => clearTimeout(timer));
   respawnTimers.clear();
+  console.log('[NPC AI] Cleared all respawn timers');
 }
 
 // Export for use in other modules

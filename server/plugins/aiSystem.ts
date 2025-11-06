@@ -1,21 +1,25 @@
-import { startAISystem, stopAISystem } from '../utils/npcAI';
+import { processAgentBehaviors, clearAllRespawnTimers } from '../utils/npcAI';
 import { processBossMechanics } from '../utils/bossMechanics';
+import { onTick } from './globalTick';
 
 export default defineNitroPlugin((nitroApp) => {
   console.log('[NPC AI] Initializing AI system...');
   
-  // Start AI system when server starts
-  startAISystem();
+  // Subscribe to 10-second tick for AI behaviors
+  onTick('tick:10s', () => {
+    processAgentBehaviors();
+  });
   
-  // Start boss mechanics processing (every 2 seconds for more responsive mechanics)
-  const bossMechanicsInterval = setInterval(() => {
+  // Subscribe to 2-second tick for boss mechanics
+  onTick('tick:2s', () => {
     processBossMechanics();
-  }, 2000);
+  });
   
-  // Stop AI system on server shutdown (for cleanup)
+  console.log('[NPC AI] Subscribed to global tick events');
+  
+  // Cleanup on server shutdown
   nitroApp.hooks.hook('close', () => {
-    console.log('[NPC AI] Stopping AI system...');
-    stopAISystem();
-    clearInterval(bossMechanicsInterval);
+    console.log('[NPC AI] Cleaning up respawn timers...');
+    clearAllRespawnTimers();
   });
 });
