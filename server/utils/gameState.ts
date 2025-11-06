@@ -7,18 +7,43 @@ interface ActivePlayer {
   partyId?: string | null;
 }
 
+// Player skill cooldown tracking
+export interface PlayerSkillCooldown {
+  skillId: string;
+  readyAt: number; // Date.now() when skill is ready
+}
+
+// Player combat state
+export interface PlayerState {
+  inCombat: boolean;
+  isAutoAttacking: boolean;
+  combatTargetId: string | null;
+  skillCooldowns: PlayerSkillCooldown[];
+}
+
 class GameState {
   private activePlayers: Map<string, ActivePlayer> = new Map();
   private combatTicks: Map<string, NodeJS.Timeout> = new Map();
+  private playerStates: Map<string, PlayerState> = new Map();
 
   // Player management
   addPlayer(playerId: string, username: string, roomId: string, ws?: any) {
     this.activePlayers.set(playerId, { id: playerId, username, roomId, ws });
+    // Initialize player state if not exists
+    if (!this.playerStates.has(playerId)) {
+      this.playerStates.set(playerId, {
+        inCombat: false,
+        isAutoAttacking: false,
+        combatTargetId: null,
+        skillCooldowns: []
+      });
+    }
   }
 
   removePlayer(playerId: string) {
     this.stopCombat(playerId);
     this.activePlayers.delete(playerId);
+    this.playerStates.delete(playerId);
   }
 
   getPlayer(playerId: string): ActivePlayer | undefined {
@@ -84,6 +109,27 @@ class GameState {
         }
       }
     });
+  }
+
+  // Player state management
+  getPlayerState(playerId: string): PlayerState | undefined {
+    // Initialize if not exists
+    if (!this.playerStates.has(playerId)) {
+      this.playerStates.set(playerId, {
+        inCombat: false,
+        isAutoAttacking: false,
+        combatTargetId: null,
+        skillCooldowns: []
+      });
+    }
+    return this.playerStates.get(playerId);
+  }
+
+  updatePlayerState(playerId: string, updates: Partial<PlayerState>) {
+    const state = this.getPlayerState(playerId);
+    if (state) {
+      Object.assign(state, updates);
+    }
   }
 }
 
