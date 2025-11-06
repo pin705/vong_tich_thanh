@@ -80,6 +80,15 @@ export default defineEventHandler(async (event) => {
     recipient.hasUnreadMail = true;
     await recipient.save();
 
+    // Notify recipient if they are online
+    try {
+      const { notifyNewMail } = await import('~/server/routes/ws');
+      notifyNewMail(recipient._id.toString());
+    } catch (error) {
+      // Player not online, notification will be shown when they log in
+      console.log('Recipient not online, will see mail on next login');
+    }
+
     return {
       success: true,
       message: `Đã gửi thư đến [${recipientUsername}].`
