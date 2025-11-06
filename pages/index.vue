@@ -894,12 +894,6 @@ const handleTabClick = async (tabId: string) => {
         await loadTalents();
         characterMenuOpen.value = true;
         break;
-      case 'crafting':
-        isLoading.value = true;
-        loadingText.value = 'Đang tải công thức chế tạo...';
-        await loadCraftingRecipes();
-        craftingPopupOpen.value = true;
-        break;
       case 'settings':
         settingsOpen.value = true;
         break;
@@ -964,6 +958,13 @@ const handleContextualAction = async (action: { command: string }) => {
       shopType
     };
     shopPopupOpen.value = true;
+  } else if (action.command.startsWith('__crafting__:')) {
+    // Open crafting menu
+    isLoading.value = true;
+    loadingText.value = 'Đang tải công thức chế tạo...';
+    await loadCraftingRecipes();
+    craftingPopupOpen.value = true;
+    isLoading.value = false;
   } else {
     // Execute normal command
     currentInput.value = action.command;
@@ -981,6 +982,15 @@ const getActionsForEntity = (type: 'player' | 'npc' | 'mob', name: string, entit
         { label: 'Giao Dịch (Trade)', command: `__trade__:${entityId}:${name}`, disabled: false },
         { label: 'Tấn Công (Attack)', command: `attack ${name}`, disabled: false }
       ];
+      
+      // Add crafting action for Blacksmith
+      if (name === 'Thợ Rèn') {
+        actions.splice(2, 0, { 
+          label: 'Chế Tạo (Craft)', 
+          command: `__crafting__:${entityId}:${name}`, 
+          disabled: false 
+        });
+      }
       
       // Phase 25: Add vendor shop action for known vendors
       if (name === 'Thương Gia') {
