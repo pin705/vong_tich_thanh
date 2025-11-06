@@ -2,6 +2,7 @@ import { PlayerSchema } from '../../models/Player';
 import { AgentSchema } from '../../models/Agent';
 import { ItemSchema } from '../../models/Item';
 import { RoomSchema } from '../../models/Room';
+import { PlayerQuestSchema } from '../../models/PlayerQuest';
 import { gameState } from './gameState';
 import { partyService } from './partyService';
 import { scheduleAgentRespawn } from './npcAI';
@@ -1042,8 +1043,6 @@ async function updateQuestProgress(playerId: string, actionType: string, target:
   const messages: string[] = [];
   
   try {
-    const { PlayerQuestSchema } = await import('../../models/PlayerQuest');
-    
     // Find active quests for this player
     const activeQuests = await PlayerQuestSchema.find({
       playerId,

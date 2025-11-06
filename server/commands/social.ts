@@ -17,7 +17,7 @@ export async function handleSayCommand(
     return responses;
   }
   
-  // Broadcast to room
+  // Broadcast to room, excluding the sender
   const room = await RoomSchema.findById(player.currentRoomId);
   if (!room) {
     responses.push('Lỗi: Không tìm thấy phòng hiện tại.');
@@ -30,7 +30,7 @@ export async function handleSayCommand(
     category: 'say',
     user: player.username,
     message: message
-  });
+  }, playerId); // Exclude sender
   
   // Don't add to responses - it will be shown via chat system
   return responses;
@@ -54,7 +54,7 @@ export async function handleWorldCommand(
   
   // Broadcast to all players
   const { broadcastService } = await import('../utils/broadcastService');
-  broadcastService.sendWorldChat(player.username, message);
+  broadcastService.sendWorldMessage(playerId, message, player.username);
   
   // Don't add to responses - it will be shown via chat system
   return responses;
