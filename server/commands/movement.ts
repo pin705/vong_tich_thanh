@@ -3,6 +3,7 @@ import { PlayerSchema } from '../../models/Player';
 import { RoomSchema } from '../../models/Room';
 import { gameState } from '../utils/gameState';
 import { formatRoomDescription, DIRECTION_MAP, DIRECTION_NAMES_VI, getOppositeDirection } from '../utils/roomUtils';
+import { movePetToRoom } from '../utils/petService';
 import type { Types } from 'mongoose';
 
 /**
@@ -90,6 +91,15 @@ export async function handleMovementCommand(command: Command, playerId: string):
 
     // Update in-memory state
     gameState.updatePlayerRoom(playerId, nextRoom._id.toString());
+
+    // Move pet if player has active pet
+    if (player.activePetId) {
+      await movePetToRoom(
+        player.activePetId.toString(), 
+        nextRoom._id.toString(), 
+        currentRoom._id.toString()
+      );
+    }
 
     // Broadcast to new room that player arrived
     const oppositeDir = getOppositeDirection(direction);

@@ -4,6 +4,7 @@ import { RoomSchema } from '../../models/Room';
 import { ItemSchema } from '../../models/Item';
 import { AgentSchema } from '../../models/Agent';
 import { QuestSchema } from '../../models/Quest';
+import { PetTemplateSchema } from '../../models/PetTemplate';
 
 export async function initializeWorld() {
   try {
@@ -230,6 +231,93 @@ export async function initializeWorld() {
       stats: { defense: 40 },
       quality: 'Sử Thi',
       requiredLevel: 20
+    });
+
+    // Pet System Items
+    const trungSoi = await ItemSchema.create({
+      name: 'Trứng Sói',
+      description: 'Một quả trứng lớn với vỏ cứng màu xám bạc. Có vẻ chứa một sinh vật mạnh mẽ bên trong.',
+      type: 'PET_EGG',
+      itemKey: 'egg_wolf',
+      value: 0,
+      price: 500,
+      sellValue: 0,
+      data: { grantsPetKey: 'wolf' }
+    });
+
+    const thucAnPetSoCap = await ItemSchema.create({
+      name: 'Thức Ăn Pet Sơ Cấp',
+      description: 'Một túi thức ăn dinh dưỡng dành cho thú cưng. Cung cấp 50 điểm kinh nghiệm.',
+      type: 'PET_FOOD',
+      itemKey: 'pet_food_1',
+      value: 10,
+      price: 50,
+      sellValue: 10,
+      data: { expValue: 50 }
+    });
+
+    const thucAnPetCaoCap = await ItemSchema.create({
+      name: 'Thức Ăn Pet Cao Cấp',
+      description: 'Một túi thức ăn cao cấp dành cho thú cưng. Cung cấp 200 điểm kinh nghiệm.',
+      type: 'PET_FOOD',
+      itemKey: 'pet_food_2',
+      value: 50,
+      price: 250,
+      sellValue: 50,
+      data: { expValue: 200 }
+    });
+
+    const daTayTuyPet = await ItemSchema.create({
+      name: 'Đá Tẩy Tủy Pet',
+      description: 'Một viên đá quý hiếm phát sáng ánh vàng. Có thể dùng để thay đổi phẩm chất của thú cưng.',
+      type: 'PET_UPGRADE',
+      itemKey: 'pet_reroll_stone',
+      value: 0,
+      price: 0,
+      sellValue: 0
+    });
+
+    const sachKyNangPetCanXe = await ItemSchema.create({
+      name: 'Sách Kỹ Năng Pet: Cắn Xé',
+      description: 'Một cuốn sách cũ kỹ chứa kỹ thuật huấn luyện. Dạy thú cưng kỹ năng Cắn Xé.',
+      type: 'PET_SKILLBOOK',
+      itemKey: 'pet_skillbook_bite',
+      value: 0,
+      price: 300,
+      sellValue: 0,
+      data: { skillKey: 'bite' }
+    });
+
+    const theDoiTenPet = await ItemSchema.create({
+      name: 'Thẻ Đổi Tên Pet',
+      description: 'Một tấm thẻ đặc biệt cho phép bạn đổi tên thú cưng của mình.',
+      type: 'PET_CONSUMABLE',
+      itemKey: 'pet_rename_tag',
+      value: 0,
+      price: 100,
+      sellValue: 0
+    });
+
+    const binhMauPetNho = await ItemSchema.create({
+      name: 'Bình Máu Pet Nhỏ',
+      description: 'Một bình thuốc chuyên dụng cho thú cưng. Hồi phục 100 HP cho pet.',
+      type: 'PET_CONSUMABLE',
+      itemKey: 'pet_heal_potion_1',
+      value: 15,
+      price: 75,
+      sellValue: 15,
+      data: { healAmount: 100 }
+    });
+
+    const thuocCuongHoaPet = await ItemSchema.create({
+      name: 'Thuốc Cường Hóa Pet',
+      description: 'Một lọ thuốc màu đỏ tươi. Tăng sát thương của pet trong 30 giây.',
+      type: 'PET_CONSUMABLE',
+      itemKey: 'pet_strength_potion_1',
+      value: 25,
+      price: 125,
+      sellValue: 25,
+      data: { buffKey: 'PET_ATTACK_BUFF', duration: 30000 }
     });
 
     // Phase 21 & 22: Crafting Materials
@@ -1004,6 +1092,23 @@ export async function initializeWorld() {
       ]
     });
 
+    // Pet Templates
+    const wolfTemplate = await PetTemplateSchema.create({
+      petKey: 'wolf',
+      name: 'Sói',
+      description: 'Một con sói dũng mãnh với bộ lông bạc óng ánh. Trung thành và mạnh mẽ.',
+      baseStats: {
+        hp: 80,
+        attack: 12,
+        defense: 5
+      },
+      statGrowth: {
+        hpPerLevel: 15,
+        attackPerLevel: 2,
+        defensePerLevel: 1
+      }
+    });
+
     // Create rooms
     const cổngThành = await RoomSchema.create({
       name: 'Cổng Thành Cũ',
@@ -1464,6 +1569,37 @@ export async function initializeWorld() {
         congThucGiayLangKhach._id
       ],
       shopType: 'gold'
+    });
+
+    const petTamer = await AgentSchema.create({
+      name: 'Huấn Luyện Sư Kito',
+      description: 'Một người đàn ông với mái tóc bạc và đôi mắt sắc bén. Xung quanh ông có vài con thú nhỏ đang chơi đùa.',
+      type: 'npc',
+      currentRoomId: cổngThành._id,
+      hp: 120,
+      maxHp: 120,
+      level: 15,
+      damage: 20,
+      behavior: 'passive',
+      dialogue: [
+        'Chào mừng đến với thế giới của Huấn Luyện Sư! Gõ "list" để xem cửa hàng của ta.',
+        'Ta có thể dạy ngươi cách huấn luyện và chăm sóc thú cưng.',
+        'Muốn thử sức với Tháp Thử Luyện? Gõ "thử luyện" để bắt đầu!',
+        'Huy Hiệu Huấn Luyện có thể đổi lấy vật phẩm quý hiếm cho thú cưng.'
+      ],
+      isVendor: true,
+      shopInventory: [
+        trungSoi._id,
+        thucAnPetSoCap._id,
+        thucAnPetCaoCap._id,
+        sachKyNangPetCanXe._id,
+        theDoiTenPet._id,
+        binhMauPetNho._id,
+        thuocCuongHoaPet._id,
+        daTayTuyPet._id
+      ],
+      shopType: 'gold',
+      shopCurrency: 'tamer_badge'
     });
 
     const chuotBienDi = await AgentSchema.create({
