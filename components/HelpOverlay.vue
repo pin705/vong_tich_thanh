@@ -105,7 +105,7 @@ const selectedCommandDetail = ref<Command | null>(null);
 
 const categories: Category[] = [
   { id: 'all', name: 'Tất cả' },
-  { id: 'mechanics', name: '🎮 Cơ Chế Game' },
+  { id: 'mechanics', name: 'Cơ Chế Game' },
   { id: 'basic', name: 'Lệnh cơ bản' },
   { id: 'movement', name: 'Di chuyển' },
   { id: 'combat', name: 'Chiến đấu' },
@@ -118,7 +118,7 @@ const categories: Category[] = [
 const allCommands: Command[] = [
   // Game Mechanics Guide
   {
-    name: '📖 Hướng Dẫn Chơi Game',
+    name: 'Hướng Dẫn Chơi Game',
     shortDesc: 'Giới thiệu tổng quan về game',
     description: 'Vong Tích Thành là một game nhập vai văn bản (MUD) nơi bạn khám phá thế giới, chiến đấu với quái vật, hoàn thành nhiệm vụ, và tương tác với người chơi khác. Sử dụng lệnh từ bàn phím để điều khiển nhân vật của bạn. Click vào các nút ở cuối màn hình để mở các menu nhanh.',
     category: 'mechanics',
@@ -126,7 +126,7 @@ const allCommands: Command[] = [
     examples: ['look - Xem xung quanh', 'n - Di chuyển về hướng bắc', 'attack Goblin - Tấn công Goblin']
   },
   {
-    name: '⚔️ Phẩm Chất Vật Phẩm',
+    name: 'Phẩm Chất Vật Phẩm',
     shortDesc: 'Hiểu về độ hiếm của vật phẩm',
     description: 'Vật phẩm trong game có các phẩm chất khác nhau ảnh hưởng đến sức mạnh và giá trị. Phẩm chất cao hơn thường có chỉ số tốt hơn và màu sắc đặc biệt khi hiển thị.',
     category: 'mechanics',
@@ -140,7 +140,7 @@ const allCommands: Command[] = [
     examples: ['Kiếm Gỉ [Thô] - Damage: +2', 'Kiếm Thép [Tốt] - Damage: +8, Crit: +2%']
   },
   {
-    name: '🛡️ Hệ Thống Trang Bị',
+    name: 'Hệ Thống Trang Bị',
     shortDesc: 'Cách trang bị và nâng cấp đồ',
     description: 'Nhân vật có thể trang bị vũ khí và giáp để tăng sức mạnh. Mỗi món đồ có các chỉ số như Damage (Sát thương), Defense (Phòng thủ), Crit (Chí mạng), Lifesteal (Hút máu), và Dodge (Né tránh). Click vào [Nhân Vật] ở menu dưới để xem trang bị hiện tại.',
     category: 'mechanics',
@@ -152,7 +152,7 @@ const allCommands: Command[] = [
     examples: ['equip Kiếm Thép', 'equip Áo Giáp Sắt']
   },
   {
-    name: '✨ Set Đồ (Equipment Sets)',
+    name: 'Set Đồ (Equipment Sets)',
     shortDesc: 'Bonus khi mặc cùng bộ',
     description: 'Khi trang bị nhiều món đồ cùng một bộ (set), bạn sẽ nhận được bonus đặc biệt. Ví dụ: Set Chiến Binh (2 món: +10 HP, 4 món: +15 Damage). Càng nhiều món trong set, bonus càng mạnh!',
     category: 'mechanics',
@@ -164,7 +164,7 @@ const allCommands: Command[] = [
     examples: ['Set Chiến Binh: Mũ Chiến Binh + Giáp Chiến Binh + Găng Chiến Binh']
   },
   {
-    name: '🔨 Hệ Thống Chế Tạo',
+    name: 'Hệ Thống Chế Tạo',
     shortDesc: 'Tạo vật phẩm từ nguyên liệu',
     description: 'Thu thập công thức chế tạo từ quái vật hoặc NPC. Dùng nguyên liệu để chế tạo vật phẩm mới. Click nút [Chế Tạo] ở menu dưới để mở giao diện chế tạo.',
     category: 'mechanics',
@@ -177,7 +177,7 @@ const allCommands: Command[] = [
     examples: ['Công Thức: Bình Máu Lớn = 2x Bình Máu Nhỏ + 1x Thảo Dược']
   },
   {
-    name: '📊 Chỉ Số Nhân Vật',
+    name: 'Chỉ Số Nhân Vật',
     shortDesc: 'Hiểu các chỉ số quan trọng',
     description: 'Nhân vật có nhiều chỉ số ảnh hưởng đến chiến đấu. HP (Máu), Damage (Sát thương cơ bản), Defense (Giảm sát thương nhận), Crit (% Chí mạng gây x2 sát thương), Lifesteal (% Hồi máu khi đánh), Dodge (% Né đòn).',
     category: 'mechanics',
@@ -192,7 +192,7 @@ const allCommands: Command[] = [
     examples: ['Damage 20 + Crit 10% = Trung bình 22 sát thương']
   },
   {
-    name: '💰 Hệ Thống Kinh Tế',
+    name: 'Hệ Thống Kinh Tế',
     shortDesc: 'Kiếm và sử dụng tiền',
     description: 'Có 2 loại tiền: Gold (Vàng - kiếm từ quái và bán đồ) và Premium Currency (Kim Cương - mua bằng tiền thật). Dùng vàng để mua đồ từ NPC, sửa chữa, và giao dịch với người chơi.',
     category: 'mechanics',
