@@ -174,19 +174,30 @@ const error = ref('');
 const purchasing = ref(false);
 const selling = ref(false);
 
-// Fetch shop items when popup opens
-watch(() => props.isOpen, (isOpen) => {
-  if (isOpen) {
+// Fetch shop items when popup opens or vendorId changes
+watch(() => [props.isOpen, props.vendorId], async ([isOpen, vendorId]) => {
+  if (isOpen && vendorId) {
     activeTab.value = 'buy';
-    // Request shop inventory via command
-    emit('sendCommand', `list`);
+    loading.value = true;
+    error.value = '';
+    shopItems.value = [];
+    
+    try {
+      // Fetch shop inventory from API
+      const response = await $fetch(`/api/shop/vendor/${vendorId}`);
+      if (response.success && response.items) {
+        shopItems.value = response.items;
+      } else {
+        error.value = response.message || 'Không thể tải cửa hàng';
+      }
+    } catch (err: any) {
+      console.error('Failed to load shop:', err);
+      error.value = err.data?.statusMessage || 'Không thể tải cửa hàng';
+    } finally {
+      loading.value = false;
+    }
   }
-});
-
-// This will be called from parent when list command returns
-const setShopItems = (items: ShopItem[]) => {
-  shopItems.value = items;
-};
+}, { immediate: true });
 
 const getItemPrice = (item: ShopItem): number => {
   return props.shopType === 'premium' ? item.premiumPrice : item.price;
@@ -240,11 +251,6 @@ const sellItem = (item: ShopItem) => {
 const close = () => {
   emit('close');
 };
-
-// Expose setShopItems for parent component
-defineExpose({
-  setShopItems
-});
 </script>
 
 <style scoped>
