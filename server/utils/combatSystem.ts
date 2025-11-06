@@ -584,6 +584,14 @@ export async function executeCombatTick(playerId: string, agentId: string): Prom
       // Send state update (combat ended)
       await sendCombatStateUpdate(playerId);
       
+      // Send combat-end message
+      const endPlayerObj = gameState.getPlayer(playerId);
+      if (endPlayerObj && endPlayerObj.ws) {
+        endPlayerObj.ws.send(JSON.stringify({
+          type: 'combat-end'
+        }));
+      }
+      
       // Broadcast to room
       if (room) {
         gameState.broadcastToRoom(
@@ -715,6 +723,14 @@ export async function executeCombatTick(playerId: string, agentId: string): Prom
       // Send state update (player died, combat ended)
       await sendCombatStateUpdate(playerId);
       
+      // Send combat-end message
+      const deathPlayerObj = gameState.getPlayer(playerId);
+      if (deathPlayerObj && deathPlayerObj.ws) {
+        deathPlayerObj.ws.send(JSON.stringify({
+          type: 'combat-end'
+        }));
+      }
+      
       // Broadcast to room
       if (room) {
         gameState.broadcastToRoom(
@@ -843,6 +859,28 @@ export async function startCombat(playerId: string, agentId: string): Promise<st
       );
     }
     
+    // Send combat-start message with skills and cooldowns to player
+    const playerObj = gameState.getPlayer(playerId);
+    if (playerObj && playerObj.ws) {
+      // Populate player skills
+      await player.populate('skills');
+      
+      const playerState = gameState.getPlayerState(playerId);
+      
+      playerObj.ws.send(JSON.stringify({
+        type: 'combat-start',
+        targetData: {
+          id: agent._id.toString(),
+          name: agent.name,
+          hp: agent.hp,
+          maxHp: agent.maxHp,
+          level: agent.level
+        },
+        playerSkills: player.skills || [],
+        playerCooldowns: playerState?.skillCooldowns || []
+      }));
+    }
+    
     // Start combat tick
     gameState.startCombat(playerId, COMBAT_TICK_INTERVAL, () => {
       executeCombatTick(playerId, agentId);
@@ -933,6 +971,14 @@ export async function fleeCombat(playerId: string): Promise<string[]> {
         fleePlayerState.inCombat = false;
         fleePlayerState.isAutoAttacking = false;
         fleePlayerState.combatTargetId = null;
+      }
+      
+      // Send combat-end message
+      const fleePlayerObj = gameState.getPlayer(playerId);
+      if (fleePlayerObj && fleePlayerObj.ws) {
+        fleePlayerObj.ws.send(JSON.stringify({
+          type: 'combat-end'
+        }));
       }
       
       // Broadcast to new room
