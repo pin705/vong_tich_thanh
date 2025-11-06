@@ -37,6 +37,7 @@ export interface PlayerState {
   maxResource?: number;
   talentPoints?: number;
   hasUnreadMail?: boolean;
+  guild?: string; // Guild ID if player is in a guild
   stats: {
     damage: number;
     defense: number;

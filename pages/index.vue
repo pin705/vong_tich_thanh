@@ -721,12 +721,24 @@ const getActionsForEntity = (type: 'player' | 'npc' | 'mob', name: string, entit
         { label: 'Xem Xét (Look)', command: `look ${name}`, disabled: false }
       ];
     case 'player':
-      return [
+      const playerActions = [
         { label: 'Nói Chuyện (Say)', command: `say Xin chào ${name}!`, disabled: false },
         { label: 'Xem Xét (Look)', command: `look ${name}`, disabled: false },
         { label: 'Giao Dịch (Trade)', command: `trade ${name}`, disabled: true },
         { label: 'Mời Vào Nhóm (Party)', command: `party invite ${name}`, disabled: false }
       ];
+      
+      // Add guild invite action if player is in a guild and has permission
+      // We'll need to check this from playerState
+      if (playerState.value.guild) {
+        playerActions.push({
+          label: 'Mời Vào Bang (Guild)',
+          command: `guild invite ${name}`,
+          disabled: false
+        });
+      }
+      
+      return playerActions;
     default:
       return [];
   }
@@ -1225,6 +1237,7 @@ const connectWebSocket = () => {
               profession: payload.profession ?? playerState.value.profession,
               inCombat: payload.inCombat ?? playerState.value.inCombat,
               hasUnreadMail: payload.hasUnreadMail ?? playerState.value.hasUnreadMail ?? false,
+              guild: payload.guild ?? playerState.value.guild,
               stats: payload.stats ? {
                 damage: payload.stats.damage ?? playerState.value.stats.damage,
                 defense: payload.stats.defense ?? playerState.value.stats.defense,
@@ -1405,11 +1418,6 @@ const handleLeaveParty = () => {
   currentInput.value = 'party leave';
   sendCommand();
   partyPopupOpen.value = false;
-};
-
-const loadGuildInfo = async () => {
-  // This will be called when guild popup is opened or needs refresh
-  // The actual loading is done by the GuildOverlay component
 };
 
 const acceptPartyInvitation = () => {
