@@ -2,6 +2,8 @@
   <div class="terminal-container" @click="focusInput">
     <!-- Player Status Header -->
     <PlayerStatusHeader
+      :name="playerState.name"
+      :level="playerState.level"
       :hp="playerState.hp"
       :maxHp="playerState.maxHp"
       :resource="playerState.resource"
@@ -23,7 +25,7 @@
         
         <!-- Content Area for Active Tab -->
         <div class="channel-content">
-          <MainLogPane v-if="currentChannel === 'main'" :messages="mainLog" />
+          <MainLogPane v-if="currentChannel === 'main'" :messages="mainLog" @clickElement="handleClickableElement" />
           <CombatLogPane v-else-if="currentChannel === 'combat'" :messages="combatLog" />
           <ChatLogPane 
             v-else-if="currentChannel === 'chat'" 
@@ -876,6 +878,68 @@ const handleMapNavigation = (direction: string) => {
   sendCommand();
 };
 
+// Handle clickable elements in main log
+const handleClickableElement = (element: string, type: 'direction' | 'entity' | 'item') => {
+  console.log('Clicked element:', element, 'type:', type);
+  
+  if (type === 'direction') {
+    // Map Vietnamese directions to commands
+    const directionMap: Record<string, string> = {
+      'bắc': 'n',
+      'nam': 's',
+      'đông': 'e',
+      'tây': 'w',
+      'lên': 'u',
+      'xuống': 'd',
+      'north': 'n',
+      'south': 's',
+      'east': 'e',
+      'west': 'w',
+      'up': 'u',
+      'down': 'd'
+    };
+    
+    const command = directionMap[element.toLowerCase()] || element;
+    currentInput.value = command;
+    sendCommand();
+  } else if (type === 'entity') {
+    // For NPCs, mobs, players - open contextual menu
+    const entityName = element;
+    const playersInRoom = roomOccupants.value.players;
+    const npcsInRoom = roomOccupants.value.npcs;
+    const mobsInRoom = roomOccupants.value.mobs;
+    
+    // Check if it's an NPC
+    const npc = npcsInRoom.find((n: any) => n.name === entityName);
+    if (npc) {
+      handleEntitySelect({ id: npc.id, name: npc.name, type: 'npc' });
+      return;
+    }
+    
+    // Check if it's a mob
+    const mob = mobsInRoom.find((m: any) => m.name === entityName);
+    if (mob) {
+      handleEntitySelect({ id: mob.id, name: mob.name, type: 'mob' });
+      return;
+    }
+    
+    // Check if it's a player
+    const player = playersInRoom.find((p: any) => p.name === entityName);
+    if (player) {
+      handleEntitySelect({ id: player.id, name: player.name, type: 'player' });
+      return;
+    }
+    
+    // If not found in current room data, just look at it
+    currentInput.value = `look ${entityName}`;
+    sendCommand();
+  } else if (type === 'item') {
+    // For items, try to get or look at them
+    currentInput.value = `look ${element}`;
+    sendCommand();
+  }
+};
+
 // Toggle help overlay
 const toggleHelp = () => {
   helpOpen.value = !helpOpen.value;
@@ -1584,6 +1648,9 @@ watch(messages, () => {
   flex-direction: column;
   background-color: var(--bg-black);
   overflow: hidden;
+  /* Center and limit max width */
+  max-width: 1400px;
+  margin: 0 auto;
 }
 
 .main-content-wrapper {
