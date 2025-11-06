@@ -110,5 +110,10 @@ export const AgentSchema = defineMongooseModel({
       enum: ['gold', 'premium'],
       default: 'gold',
     },
+    // Maximum number of instances of this agent that can spawn in the room
+    maxInstances: {
+      type: Number,
+      default: 1,
+    },
   },
 });

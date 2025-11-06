@@ -4,6 +4,7 @@ import { handleCommand } from '../utils/commandHandler';
 import { handleCommandDb } from '../utils/commandHandlerDb';
 import { gameState } from '../utils/gameState';
 import { partyService } from '../utils/partyService';
+import { getRoomRespawns } from '../utils/npcAI';
 import { PlayerSchema } from '../../models/Player';
 import { RoomSchema } from '../../models/Room';
 import { AgentSchema } from '../../models/Agent';
@@ -94,12 +95,16 @@ async function sendRoomOccupants(peer: Peer, roomId: string, currentPlayerId: st
     .filter((a: any) => a.type === 'mob')
     .map((a: any) => ({ id: a._id.toString(), name: a.name }));
 
+  // Get respawn information for this room
+  const respawns = getRoomRespawns(roomId);
+
   peer.send(JSON.stringify({
     type: 'room_occupants',
     payload: {
       players,
       npcs,
-      mobs
+      mobs,
+      respawns
     }
   }));
 }
@@ -407,6 +412,23 @@ export default defineWebSocketHandler({
                   type: 'normal',
                   message: response
                 }));
+              }
+            }
+            
+            // Special handling for list command - send structured shop data
+            if (command.action === 'list') {
+              const playerForList = await PlayerSchema.findById(playerIdForCmd);
+              if (playerForList) {
+                const room = await RoomSchema.findById(playerForList.currentRoomId);
+                if (room && room.agents && room.agents.length > 0) {
+                  const vendors = await AgentSchema.find({ 
+                    _id: { $in: room.agents },
+                    isVendor: true
+                  });
+                  if (vendors.length > 0) {
+                    await sendVendorShop(peer, vendors[0]._id.toString());
+                  }
+                }
               }
             }
             
