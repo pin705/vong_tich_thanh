@@ -2,6 +2,7 @@ import type { Command } from '~/types';
 import { PlayerSchema } from '../../models/Player';
 import { RoomSchema } from '../../models/Room';
 import { gameState } from '../utils/gameState';
+import { formatRoomDescription, DIRECTION_MAP, DIRECTION_NAMES_VI, getOppositeDirection } from '../utils/roomUtils';
 
 /**
  * Handle movement commands (go, n, s, e, w, u, d, etc.)
@@ -24,20 +25,11 @@ export async function handleMovementCommand(command: Command, playerId: string):
     }
 
     // Map command to direction
-    const directionMap: Record<string, string> = {
-      'n': 'north', 'bắc': 'north', 'north': 'north',
-      's': 'south', 'nam': 'south', 'south': 'south',
-      'e': 'east', 'đông': 'east', 'east': 'east',
-      'w': 'west', 'tây': 'west', 'west': 'west',
-      'u': 'up', 'lên': 'up', 'up': 'up',
-      'd': 'down', 'xuống': 'down', 'down': 'down',
-    };
-
     let direction: string;
     if (action === 'go' && target) {
-      direction = directionMap[target] || target;
+      direction = DIRECTION_MAP[target] || target;
     } else {
-      direction = directionMap[action] || action;
+      direction = DIRECTION_MAP[action] || action;
     }
 
     // Get current room
@@ -61,12 +53,15 @@ export async function handleMovementCommand(command: Command, playerId: string):
       return responses;
     }
 
+    // Get Vietnamese direction name for broadcasting
+    const directionVi = DIRECTION_NAMES_VI[direction] || direction;
+
     // Broadcast to current room that player is leaving
     gameState.broadcastToRoom(
       currentRoom._id.toString(),
       {
         type: 'system',
-        message: `[${player.username}] đi về phía ${direction}.`
+        message: `[${player.username}] đi về phía ${directionVi}.`
       },
       playerId
     );
@@ -79,16 +74,17 @@ export async function handleMovementCommand(command: Command, playerId: string):
     gameState.updatePlayerRoom(playerId, nextRoom._id.toString());
 
     // Broadcast to new room that player arrived
+    const oppositeDir = getOppositeDirection(direction);
     gameState.broadcastToRoom(
       nextRoom._id.toString(),
       {
         type: 'system',
-        message: `[${player.username}] đến từ hướng ${getOppositeDirection(direction)}.`
+        message: `[${player.username}] đến từ hướng ${oppositeDir}.`
       },
       playerId
     );
 
-    // Show new room description using formatRoomDescription
+    // Show new room description
     const roomDescription = await formatRoomDescription(nextRoom, player);
     responses.push(...roomDescription);
 
@@ -182,74 +178,5 @@ export async function handleGotoCommand(command: Command, playerId: string): Pro
     responses.push('Lỗi khi dịch chuyển.');
   }
 
-  return responses;
-}
-
-// Helper function to get opposite direction
-function getOppositeDirection(direction: string): string {
-  const opposites: Record<string, string> = {
-    'north': 'nam', 'south': 'bắc',
-    'east': 'tây', 'west': 'đông',
-    'up': 'dưới', 'down': 'trên'
-  };
-  return opposites[direction] || direction;
-}
-
-// Helper function to format room description
-async function formatRoomDescription(room: any, player: any): Promise<string[]> {
-  const { ItemSchema } = await import('../../models/Item');
-  const { AgentSchema } = await import('../../models/Agent');
-  const responses: string[] = [];
-  
-  // Room name
-  responses.push(`[${room.name}]`);
-  
-  // Room description
-  responses.push(room.description);
-  responses.push('');
-  
-  // Exits
-  const exits = [];
-  if (room.exits.north) exits.push('bắc');
-  if (room.exits.south) exits.push('nam');
-  if (room.exits.east) exits.push('đông');
-  if (room.exits.west) exits.push('tây');
-  if (room.exits.up) exits.push('lên');
-  if (room.exits.down) exits.push('xuống');
-  
-  if (exits.length > 0) {
-    responses.push(`Lối ra: [${exits.join(', ')}]`);
-  } else {
-    responses.push('Không có lối ra rõ ràng.');
-  }
-  
-  // Items in room
-  if (room.items && room.items.length > 0) {
-    const items = await ItemSchema.find({ _id: { $in: room.items } });
-    if (items.length > 0) {
-      responses.push('Bạn thấy:');
-      items.forEach((item: any) => {
-        responses.push(`  - [${item.name}]`);
-      });
-    }
-  }
-  
-  // Agents in room
-  if (room.agents && room.agents.length > 0) {
-    const agents = await AgentSchema.find({ _id: { $in: room.agents } });
-    agents.forEach((agent: any) => {
-      responses.push(`Một [${agent.name}] đang đứng đây.`);
-    });
-  }
-  
-  // Other players in room
-  const playersInRoom = gameState.getPlayersInRoom(room._id.toString());
-  const otherPlayers = playersInRoom.filter(p => p.id !== player._id.toString());
-  if (otherPlayers.length > 0) {
-    otherPlayers.forEach(p => {
-      responses.push(`[${p.username}] đang ở đây.`);
-    });
-  }
-  
   return responses;
 }

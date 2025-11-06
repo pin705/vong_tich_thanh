@@ -12,63 +12,17 @@ import { tradeService } from './tradeService';
 import { handleMovementCommand, handleGotoCommand } from '../commands/movement';
 import { handleCombatCommand } from '../commands/combat';
 import { handleItemCommand } from '../commands/item';
+import { formatRoomDescription } from './roomUtils';
 
-// Helper function to format room description
-async function formatRoomDescription(room: any, player: any): Promise<string[]> {
-  const responses: string[] = [];
-  
-  // Room name
-  responses.push(`[${room.name}]`);
-  
-  // Room description
-  responses.push(room.description);
-  responses.push('');
-  
-  // Exits
-  const exits = [];
-  if (room.exits.north) exits.push('bắc');
-  if (room.exits.south) exits.push('nam');
-  if (room.exits.east) exits.push('đông');
-  if (room.exits.west) exits.push('tây');
-  if (room.exits.up) exits.push('lên');
-  if (room.exits.down) exits.push('xuống');
-  
-  if (exits.length > 0) {
-    responses.push(`Lối ra: [${exits.join(', ')}]`);
-  } else {
-    responses.push('Không có lối ra rõ ràng.');
-  }
-  
-  // Items in room
-  if (room.items && room.items.length > 0) {
-    const items = await ItemSchema.find({ _id: { $in: room.items } });
-    if (items.length > 0) {
-      responses.push('Bạn thấy:');
-      items.forEach((item: any) => {
-        responses.push(`  - [${item.name}]`);
-      });
-    }
-  }
-  
-  // Agents in room
-  if (room.agents && room.agents.length > 0) {
-    const agents = await AgentSchema.find({ _id: { $in: room.agents } });
-    agents.forEach((agent: any) => {
-      responses.push(`Một [${agent.name}] đang đứng đây.`);
-    });
-  }
-  
-  // Other players in room
-  const playersInRoom = gameState.getPlayersInRoom(room._id.toString());
-  const otherPlayers = playersInRoom.filter(p => p.id !== player._id.toString());
-  if (otherPlayers.length > 0) {
-    otherPlayers.forEach(p => {
-      responses.push(`[${p.username}] đang ở đây.`);
-    });
-  }
-  
-  return responses;
-}
+// Command routing configuration
+const MOVEMENT_COMMANDS = ['go', 'n', 's', 'e', 'w', 'u', 'd', 
+                           'north', 'south', 'east', 'west', 'up', 'down',
+                           'bắc', 'nam', 'đông', 'tây', 'lên', 'xuống'];
+
+const COMBAT_COMMANDS = ['attack', 'a', 'kill', 'flee', 'run'];
+
+const ITEM_COMMANDS = ['inventory', 'i', 'get', 'g', 'drop', 'use', 
+                       'list', 'buy', 'sell'];
 
 // Main command handler with database integration
 export async function handleCommandDb(command: Command, playerId: string): Promise<string[]> {
@@ -79,10 +33,7 @@ export async function handleCommandDb(command: Command, playerId: string): Promi
     // Route to specialized command handlers first
     
     // Movement commands
-    const movementCommands = ['go', 'n', 's', 'e', 'w', 'u', 'd', 
-                               'north', 'south', 'east', 'west', 'up', 'down',
-                               'bắc', 'nam', 'đông', 'tây', 'lên', 'xuống'];
-    if (movementCommands.includes(action)) {
+    if (MOVEMENT_COMMANDS.includes(action)) {
       return await handleMovementCommand(command, playerId);
     }
 
@@ -92,15 +43,12 @@ export async function handleCommandDb(command: Command, playerId: string): Promi
     }
 
     // Combat commands
-    const combatCommands = ['attack', 'a', 'kill', 'flee', 'run'];
-    if (combatCommands.includes(action)) {
+    if (COMBAT_COMMANDS.includes(action)) {
       return await handleCombatCommand(command, playerId);
     }
 
     // Item commands
-    const itemCommands = ['inventory', 'i', 'get', 'g', 'drop', 'use', 
-                          'list', 'buy', 'sell'];
-    if (itemCommands.includes(action)) {
+    if (ITEM_COMMANDS.includes(action)) {
       return await handleItemCommand(command, playerId);
     }
 
