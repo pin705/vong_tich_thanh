@@ -10,7 +10,7 @@ import { applyExpBuff } from './buffSystem';
 import { clearBossState } from './bossMechanics';
 import { broadcastRoomOccupants } from '../routes/ws';
 import { addGoldToPlayer, addPremiumCurrencyToPlayer } from './inventoryService';
-import { COMBAT_TICK_INTERVAL, FLEE_SUCCESS_CHANCE, EXPERIENCE_PER_LEVEL, HP_GAIN_PER_LEVEL, MINIMUM_DAMAGE } from './constants';
+import { COMBAT_TICK_INTERVAL, FLEE_SUCCESS_CHANCE, EXPERIENCE_PER_LEVEL, HP_GAIN_PER_LEVEL, MINIMUM_DAMAGE, TALENT_POINTS_PER_LEVEL, SKILL_POINTS_PER_LEVEL } from './constants';
 
 // Boss reward constants
 const BOSS_PREMIUM_CURRENCY_MULTIPLIER = 10;
@@ -240,10 +240,10 @@ async function checkLevelUp(player: any): Promise<string[]> {
     player.hp = player.maxHp; // Full heal on level up
     
     // Grant talent point on every level up (changed from level 10+ only)
-    player.talentPoints = (player.talentPoints || 0) + 1;
+    player.talentPoints = (player.talentPoints || 0) + TALENT_POINTS_PER_LEVEL;
     
     // Phase 29: Grant skill points on level up
-    player.skillPoints = (player.skillPoints || 0) + 1;
+    player.skillPoints = (player.skillPoints || 0) + SKILL_POINTS_PER_LEVEL;
     
     messages.push('');
     messages.push('═══════════════════════════════════');
@@ -1164,7 +1164,7 @@ export async function startPvPCombat(attackerId: string, targetId: string): Prom
 }
 
 // Update quest progress when player performs an action
-async function updateQuestProgress(playerId: string, actionType: string, target: string): Promise<string[]> {
+export async function updateQuestProgress(playerId: string, actionType: string, target: string): Promise<string[]> {
   const messages: string[] = [];
   
   try {

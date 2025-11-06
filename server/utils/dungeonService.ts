@@ -3,6 +3,7 @@ import { AgentSchema } from '../../models/Agent';
 import { RoomSchema } from '../../models/Room';
 import { addGoldToPlayer } from './inventoryService';
 import { gameState } from './gameState';
+import { DUNGEON_BASE_GOLD_REWARD, DUNGEON_GOLD_MULTIPLIER, DUNGEON_BASE_COIN_REWARD, DUNGEON_COIN_FLOOR_DIVISOR } from './constants';
 
 /**
  * Dungeon Service - Core logic for dungeon system
@@ -168,11 +169,8 @@ export async function completeFloor(playerId: string, floorNumber: number) {
     }
 
     // Calculate rewards based on floor
-    const baseGold = 50;
-    const baseDungeonCoin = 1;
-
-    const goldReward = Math.floor(baseGold * floorNumber * 1.2);
-    const dungeonCoinReward = Math.floor(baseDungeonCoin * Math.max(1, floorNumber / 5));
+    const goldReward = Math.floor(DUNGEON_BASE_GOLD_REWARD * floorNumber * DUNGEON_GOLD_MULTIPLIER);
+    const dungeonCoinReward = Math.floor(DUNGEON_BASE_COIN_REWARD * Math.max(1, floorNumber / DUNGEON_COIN_FLOOR_DIVISOR));
 
     // Grant rewards
     await addGoldToPlayer(playerId, goldReward);
