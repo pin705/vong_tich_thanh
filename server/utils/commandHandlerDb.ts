@@ -798,6 +798,7 @@ export async function handleCommandDb(command: Command, playerId: string): Promi
 
       case 'goto':
         // Teleport to a specific room by ID (from world map)
+        console.log('target', target)
         if (!target) {
           responses.push('Cần chỉ định phòng đích.');
           break;
@@ -811,6 +812,7 @@ export async function handleCommandDb(command: Command, playerId: string): Promi
 
         // Find target room
         const gotoRoom = await RoomSchema.findById(target);
+        console.log('Goto room:', gotoRoom, target);
         if (!gotoRoom) {
           responses.push('Không tìm thấy phòng đích.');
           break;

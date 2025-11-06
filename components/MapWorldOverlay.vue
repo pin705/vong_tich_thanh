@@ -259,9 +259,13 @@ const activeTab = ref<'map' | 'world'>('map');
 const searchQuery = ref('');
 const activeFilter = ref('all');
 const selectedRoom = ref<Room | null>(null);
-
+console.log('selectedRoom', selectedRoom.value)
 const overlayTitle = computed(() => {
   return activeTab.value === 'map' ? 'Bản Đồ Địa Phương' : 'Bản Đồ Thế Giới';
+});
+
+onUnmounted(() => {
+  selectedRoom.value = null;
 });
 
 const filters = [

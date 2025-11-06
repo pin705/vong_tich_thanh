@@ -9,6 +9,11 @@ export async function initializeWorld() {
   try {
     console.log('Initializing game world...');
 
+    // await RoomSchema.deleteMany({});
+    // await ItemSchema.deleteMany({});
+    // await AgentSchema.deleteMany({});
+    // await QuestSchema.deleteMany({});
+
     // Check if world already exists
     const existingRooms = await RoomSchema.countDocuments();
     if (existingRooms > 0) {

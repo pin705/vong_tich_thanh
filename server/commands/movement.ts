@@ -123,14 +123,15 @@ export async function handleGotoCommand(command: Command, playerId: string): Pro
     // }
 
     if (!target) {
-      responses.push('Cú pháp: goto [tên phòng]');
+      responses.push('Cú pháp: goto [tên phòng hoặc ID]');
       return responses;
     }
 
-    // Find room by name (case-insensitive)
-    const room = await RoomSchema.findOne({
-      name: new RegExp(target, 'i')
-    });
+    // Find room by _id or name (case-insensitive)
+    
+    const room = await RoomSchema.findById(target);
+
+    console.log('target', target, 'room found:', room);
 
     if (!room) {
       responses.push(`Không tìm thấy phòng "${target}".`);
