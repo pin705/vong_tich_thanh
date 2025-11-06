@@ -279,6 +279,16 @@
       @mailUpdated="handleMailUpdated"
     />
 
+    <!-- Crafting Popup -->
+    <CraftingPopup
+      :isOpen="craftingPopupOpen"
+      :knownRecipes="craftingData.knownRecipes"
+      :inventory="playerState.inventoryItems"
+      :loading="craftingData.loading"
+      @close="craftingPopupOpen = false"
+      @craft="handleCraft"
+    />
+
     <!-- Shop Popup (Phase 25: Vendor System) -->
     <ShopPopup
       ref="shopPopupRef"
@@ -312,6 +322,7 @@ import MapWorldOverlay from '~/components/MapWorldOverlay.vue';
 import QuestTrackerOverlay from '~/components/QuestTrackerOverlay.vue';
 import ProfessionChoiceOverlay from '~/components/ProfessionChoiceOverlay.vue';
 import TradingPopup from '~/components/TradingPopup.vue';
+import CraftingPopup from '~/components/CraftingPopup.vue';
 import PremiumShopPopup from '~/components/PremiumShopPopup.vue';
 import ShopPopup from '~/components/ShopPopup.vue';
 import MailPopup from '~/components/MailPopup.vue';
@@ -441,6 +452,7 @@ const partyInvitationPopupOpen = ref(false);
 const guildPopupOpen = ref(false);
 const auctionHousePopupOpen = ref(false);
 const premiumShopPopupOpen = ref(false);
+const craftingPopupOpen = ref(false);
 const shopPopupOpen = ref(false);
 const mailPopupOpen = ref(false);
 const shopPopupRef = ref<InstanceType<typeof ShopPopup> | null>(null);
@@ -476,6 +488,15 @@ const shopData = ref<{
   vendorId: '',
   vendorName: '',
   shopType: 'gold'
+});
+
+// Crafting state
+const craftingData = ref<{
+  knownRecipes: any[];
+  loading: boolean;
+}>({
+  knownRecipes: [],
+  loading: false
 });
 
 // Party state
@@ -748,6 +769,10 @@ const handleTabClick = async (tabId: string) => {
       await loadSkills();
       await loadTalents();
       characterMenuOpen.value = true;
+      break;
+    case 'crafting':
+      await loadCraftingRecipes();
+      craftingPopupOpen.value = true;
       break;
     case 'settings':
       settingsOpen.value = true;
@@ -1110,6 +1135,46 @@ const loadQuests = async () => {
 const loadGuildInfo = async () => {
   // This is called when guild overlay refreshes
   // Could be used to update guild-related UI elements in the future
+};
+
+// Load crafting recipes
+const loadCraftingRecipes = async () => {
+  craftingData.value.loading = true;
+  try {
+    const response = await $fetch('/api/player/crafting/recipes');
+    if (response.success) {
+      craftingData.value.knownRecipes = response.recipes || [];
+    }
+  } catch (error) {
+    console.error('Error loading crafting recipes:', error);
+    addMessage('Không thể tải công thức chế tạo.', 'error');
+    craftingData.value.knownRecipes = [];
+  } finally {
+    craftingData.value.loading = false;
+  }
+};
+
+// Handle crafting
+const handleCraft = async (recipeId: string) => {
+  try {
+    const response = await $fetch('/api/player/crafting/craft', {
+      method: 'POST',
+      body: { recipeId }
+    });
+    
+    if (response.success) {
+      addMessage(`Đã chế tạo thành công: ${response.itemName}`, 'system');
+      await loadCraftingRecipes();
+      // Refresh inventory
+      if (ws.value && ws.value.readyState === WebSocket.OPEN) {
+        ws.value.send(JSON.stringify({ type: 'command', command: 'inventory' }));
+      }
+    }
+  } catch (error: any) {
+    console.error('Error crafting:', error);
+    const errorMsg = error.data?.message || 'Không thể chế tạo vật phẩm.';
+    addMessage(errorMsg, 'error');
+  }
 };
 
 // Handle quest completion

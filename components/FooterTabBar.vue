@@ -33,6 +33,7 @@ const tabs: Tab[] = [
   { id: 'map', label: '[Bản Đồ]' },
   { id: 'occupants', label: '[Xung Quanh]' },
   { id: 'character', label: '[Nhân Vật]' },
+  { id: 'crafting', label: '[Chế Tạo]' },
   { id: 'party', label: '[Nhóm]' },
   { id: 'guild', label: '[Bang Hội]' },
   { id: 'mail', label: '[Thư]' },
