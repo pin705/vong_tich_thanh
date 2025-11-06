@@ -116,6 +116,16 @@ export async function handleCommandDb(command: Command, playerId: string): Promi
         responses.push('  pvp [on/off]             - Bật/tắt chế độ PvP');
         responses.push('  attack [tên người chơi]  - Tấn công người chơi (cần PvP)');
         responses.push('');
+        responses.push('GIAO DỊCH:');
+        responses.push('  trade invite [tên]       - Mời người chơi giao dịch');
+        responses.push('  trade accept             - Chấp nhận lời mời giao dịch');
+        responses.push('  trade decline            - Từ chối lời mời giao dịch');
+        responses.push('  trade add [vật]          - Thêm vật phẩm vào giao dịch');
+        responses.push('  trade gold [số]          - Thêm vàng vào giao dịch');
+        responses.push('  trade lock               - Khóa giao dịch');
+        responses.push('  trade confirm            - Xác nhận giao dịch');
+        responses.push('  trade cancel             - Hủy giao dịch');
+        responses.push('');
         responses.push('KHÁC:');
         responses.push('  help                     - Hiển thị trợ giúp');
         responses.push('  alias add [tên] [lệnh]   - Tạo lệnh tắt tùy chỉnh');
@@ -1501,11 +1511,117 @@ export async function handleCommandDb(command: Command, playerId: string): Promi
         const subTarget = args?.[0];
 
         if (!subCommand) {
-          responses.push('Sử dụng: trade [invite/accept/decline/add/gold/lock/confirm/cancel]');
+          // Show trade status if player is in an active trade
+          const playerTrade = tradeService.getPlayerTrade(playerId);
+          if (playerTrade) {
+            const { trade, isInitiator } = playerTrade;
+            const otherPlayerId = isInitiator ? trade.targetId : trade.initiatorId;
+            const otherPlayer = await PlayerSchema.findById(otherPlayerId);
+            
+            responses.push('═══════════════════════════════════════════════════');
+            responses.push('            GIAO DỊCH ĐANG HOẠT ĐỘNG              ');
+            responses.push('═══════════════════════════════════════════════════');
+            responses.push(`Đối tác: [${otherPlayer?.username || 'Unknown'}]`);
+            responses.push('');
+            
+            // Show initiator's offer
+            const initiatorItems = await ItemSchema.find({ _id: { $in: trade.initiatorItems } });
+            responses.push(`${isInitiator ? 'Bạn' : otherPlayer?.username || 'Đối tác'} đưa ra:`);
+            if (initiatorItems.length > 0) {
+              initiatorItems.forEach((item: any) => {
+                responses.push(`  - [${item.name}]`);
+              });
+            }
+            if (trade.initiatorGold > 0) {
+              responses.push(`  - ${trade.initiatorGold} vàng`);
+            }
+            if (initiatorItems.length === 0 && trade.initiatorGold === 0) {
+              responses.push('  (Chưa có gì)');
+            }
+            responses.push('');
+            
+            // Show target's offer
+            const targetItems = await ItemSchema.find({ _id: { $in: trade.targetItems } });
+            responses.push(`${!isInitiator ? 'Bạn' : otherPlayer?.username || 'Đối tác'} đưa ra:`);
+            if (targetItems.length > 0) {
+              targetItems.forEach((item: any) => {
+                responses.push(`  - [${item.name}]`);
+              });
+            }
+            if (trade.targetGold > 0) {
+              responses.push(`  - ${trade.targetGold} vàng`);
+            }
+            if (targetItems.length === 0 && trade.targetGold === 0) {
+              responses.push('  (Chưa có gì)');
+            }
+            responses.push('');
+            
+            responses.push(`Trạng thái bạn: ${(isInitiator ? trade.initiatorLocked : trade.targetLocked) ? 'ĐÃ KHÓA' : 'Chưa khóa'}`);
+            responses.push(`Trạng thái đối tác: ${(isInitiator ? trade.targetLocked : trade.initiatorLocked) ? 'ĐÃ KHÓA' : 'Chưa khóa'}`);
+            responses.push('');
+            responses.push('Lệnh: trade add/gold/lock/confirm/cancel');
+          } else {
+            responses.push('Sử dụng: trade [invite/accept/decline/add/gold/lock/confirm/cancel/status]');
+          }
           break;
         }
 
         switch (subCommand) {
+          case 'status': {
+            // Show current trade status
+            const playerTrade = tradeService.getPlayerTrade(playerId);
+            if (!playerTrade) {
+              responses.push('Bạn không đang trong giao dịch nào.');
+              break;
+            }
+            
+            const { trade, isInitiator } = playerTrade;
+            const otherPlayerId = isInitiator ? trade.targetId : trade.initiatorId;
+            const otherPlayer = await PlayerSchema.findById(otherPlayerId);
+            
+            responses.push('═══════════════════════════════════════════════════');
+            responses.push('            GIAO DỊCH ĐANG HOẠT ĐỘNG              ');
+            responses.push('═══════════════════════════════════════════════════');
+            responses.push(`Đối tác: [${otherPlayer?.username || 'Unknown'}]`);
+            responses.push('');
+            
+            // Show initiator's offer
+            const initiatorItems = await ItemSchema.find({ _id: { $in: trade.initiatorItems } });
+            responses.push(`${isInitiator ? 'Bạn' : otherPlayer?.username || 'Đối tác'} đưa ra:`);
+            if (initiatorItems.length > 0) {
+              initiatorItems.forEach((item: any) => {
+                responses.push(`  - [${item.name}]`);
+              });
+            }
+            if (trade.initiatorGold > 0) {
+              responses.push(`  - ${trade.initiatorGold} vàng`);
+            }
+            if (initiatorItems.length === 0 && trade.initiatorGold === 0) {
+              responses.push('  (Chưa có gì)');
+            }
+            responses.push('');
+            
+            // Show target's offer
+            const targetItems = await ItemSchema.find({ _id: { $in: trade.targetItems } });
+            responses.push(`${!isInitiator ? 'Bạn' : otherPlayer?.username || 'Đối tác'} đưa ra:`);
+            if (targetItems.length > 0) {
+              targetItems.forEach((item: any) => {
+                responses.push(`  - [${item.name}]`);
+              });
+            }
+            if (trade.targetGold > 0) {
+              responses.push(`  - ${trade.targetGold} vàng`);
+            }
+            if (targetItems.length === 0 && trade.targetGold === 0) {
+              responses.push('  (Chưa có gì)');
+            }
+            responses.push('');
+            
+            responses.push(`Trạng thái bạn: ${(isInitiator ? trade.initiatorLocked : trade.targetLocked) ? 'ĐÃ KHÓA' : 'Chưa khóa'}`);
+            responses.push(`Trạng thái đối tác: ${(isInitiator ? trade.targetLocked : trade.initiatorLocked) ? 'ĐÃ KHÓA' : 'Chưa khóa'}`);
+            break;
+          }
+
           case 'invite': {
             if (!subTarget) {
               responses.push('Mời ai giao dịch? Cú pháp: trade invite [tên người chơi]');
