@@ -348,12 +348,44 @@ export async function executeCombatTick(playerId: string, agentId: string): Prom
     agent.hp = Math.max(0, agent.hp - playerDamage);
     await agent.save();
     
-    // Enhanced combat narrative - vary attack descriptions
-    const attackVerbs = ['tấn công', 'đánh trúng', 'ra đòn', 'tung đòn', 'giáng đòn'];
-    const attackVerb = attackVerbs[Math.floor(Math.random() * attackVerbs.length)];
-    const damageDesc = playerDamage > playerBaseDamage * CRITICAL_HIT_MULTIPLIER ? ' (Chí mạng!)' : 
-                       playerDamage < playerBaseDamage * GLANCING_BLOW_MULTIPLIER ? ' (Trượt phớt)' : '';
-    messages.push(`Bạn ${attackVerb} [${agent.name}], gây ${playerDamage} sát thương${damageDesc}. (HP còn lại: ${agent.hp}/${agent.maxHp})`);
+    // Enhanced combat narrative with varied attack descriptions
+    const isCritical = playerDamage > playerBaseDamage * CRITICAL_HIT_MULTIPLIER;
+    const isGlancing = playerDamage < playerBaseDamage * GLANCING_BLOW_MULTIPLIER;
+    
+    let attackMessage = '';
+    if (isCritical) {
+      const critMessages = [
+        `Bạn tung ra một đòn chí mạng vào [${agent.name}]!`,
+        `Đòn đánh của bạn xé toạc phòng thủ của [${agent.name}]!`,
+        `Bạn tìm được khe hở và giáng một đòn hiểm hóc vào [${agent.name}]!`,
+        `Sức mạnh bùng nổ! Bạn đánh trúng điểm yếu của [${agent.name}]!`
+      ];
+      attackMessage = critMessages[Math.floor(Math.random() * critMessages.length)];
+      attackMessage += ` Gây ${playerDamage} sát thương! (Chí mạng!)`;
+    } else if (isGlancing) {
+      const glancingMessages = [
+        `Đòn đánh của bạn chỉ sượt qua [${agent.name}].`,
+        `[${agent.name}] né tránh một phần đòn tấn công của bạn.`,
+        `Bạn đánh trúng [${agent.name}] nhưng không gây nhiều sát thương.`,
+        `Đòn đánh yếu ớt, [${agent.name}] hầu như không bị ảnh hưởng.`
+      ];
+      attackMessage = glancingMessages[Math.floor(Math.random() * glancingMessages.length)];
+      attackMessage += ` Gây ${playerDamage} sát thương. (Trượt phớt)`;
+    } else {
+      const normalMessages = [
+        `Bạn vung vũ khí đánh trúng [${agent.name}].`,
+        `Bạn tấn công [${agent.name}] với một đòn chắc chắn.`,
+        `Bạn ra đòn và [${agent.name}] không kịp né.`,
+        `Bạn giáng xuống một đòn uy lực lên [${agent.name}].`,
+        `Bạn lao tới và tung đòn vào [${agent.name}].`,
+        `Vũ khí của bạn rít lên khi chém vào [${agent.name}].`
+      ];
+      attackMessage = normalMessages[Math.floor(Math.random() * normalMessages.length)];
+      attackMessage += ` Gây ${playerDamage} sát thương.`;
+    }
+    
+    attackMessage += ` (HP còn lại: ${agent.hp}/${agent.maxHp})`;
+    messages.push(attackMessage);
     
     // Check if agent died
     if (agent.hp <= 0) {
@@ -547,14 +579,40 @@ export async function executeCombatTick(playerId: string, agentId: string): Prom
     player.hp = Math.max(0, player.hp - actualDamage);
     await player.save();
     
-    // Enhanced enemy attack narrative
-    const enemyAttackVerbs = ['tấn công', 'lao vào', 'đánh trả', 'phản công', 'tấn công ngược'];
-    const enemyAttackVerb = enemyAttackVerbs[Math.floor(Math.random() * enemyAttackVerbs.length)];
+    // Enhanced enemy attack narrative with more variety
+    const hpPercent = (player.hp / player.maxHp) * 100;
+    let enemyAttackMessage = '';
+    
     if (playerDefense > 0) {
-      messages.push(`[${agent.name}] ${enemyAttackVerb} bạn! Gây ${agentDamage} sát thương, nhưng giáp của bạn giảm ${playerDefense} sát thương. (HP còn lại: ${player.hp}/${player.maxHp})`);
+      const deflectMessages = [
+        `[${agent.name}] lao vào tấn công bạn!`,
+        `[${agent.name}] đánh trả dữ dội!`,
+        `[${agent.name}] phản công với sức mạnh đáng sợ!`,
+        `[${agent.name}] tấn công ngược bạn!`
+      ];
+      const deflectMessage = deflectMessages[Math.floor(Math.random() * deflectMessages.length)];
+      enemyAttackMessage = `${deflectMessage} Gây ${agentDamage} sát thương, nhưng giáp của bạn hấp thụ ${playerDefense} sát thương.`;
     } else {
-      messages.push(`[${agent.name}] ${enemyAttackVerb} bạn, gây ${actualDamage} sát thương! (HP còn lại: ${player.hp}/${player.maxHp})`);
+      const attackMessages = [
+        `[${agent.name}] vung vuốt lên người bạn!`,
+        `[${agent.name}] tấn công bạn bằng sức mạnh dữ dội!`,
+        `[${agent.name}] lao vào và đánh trúng bạn!`,
+        `[${agent.name}] phản công với đòn hiểm hóc!`
+      ];
+      const attackMessage = attackMessages[Math.floor(Math.random() * attackMessages.length)];
+      enemyAttackMessage = `${attackMessage} Gây ${actualDamage} sát thương!`;
     }
+    
+    // Add HP warning if critical
+    if (hpPercent <= 20) {
+      enemyAttackMessage += ` (HP còn lại: ${player.hp}/${player.maxHp}) ⚠️ CẢN H BÁO: HP RẤT THẤP!`;
+    } else if (hpPercent <= 40) {
+      enemyAttackMessage += ` (HP còn lại: ${player.hp}/${player.maxHp}) ⚠️ Cảnh báo: HP thấp!`;
+    } else {
+      enemyAttackMessage += ` (HP còn lại: ${player.hp}/${player.maxHp})`;
+    }
+    
+    messages.push(enemyAttackMessage);
     
     // Check if player died
     if (player.hp <= 0) {

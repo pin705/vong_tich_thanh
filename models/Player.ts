@@ -204,5 +204,10 @@ export const PlayerSchema = defineMongooseModel({
       of: String, // Alias -> Full Command
       default: {},
     },
+    // Phase 30: Auto-Combat Settings
+    autoCombat: {
+      type: Boolean,
+      default: false, // Auto-attack nearest mob when available
+    },
   },
 });
