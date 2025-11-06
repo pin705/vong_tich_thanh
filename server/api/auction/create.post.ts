@@ -1,6 +1,7 @@
 import { AuctionItemSchema } from '../../../models/AuctionItem';
 import { PlayerSchema } from '../../../models/Player';
 import { ItemSchema } from '../../../models/Item';
+import { removeItemFromPlayer, removeGoldFromPlayer } from '../../../utils/inventoryService';
 
 const AUCTION_FEE = 10; // 10 gold to create auction
 const DEFAULT_DURATION = 24 * 60 * 60 * 1000; // 24 hours
@@ -76,10 +77,28 @@ export default defineEventHandler(async (event) => {
       });
     }
 
-    // Remove item from player's inventory
-    player.inventory = player.inventory.filter((id: any) => id.toString() !== itemId);
-    player.gold -= AUCTION_FEE;
-    await player.save();
+    // Use inventory service to remove item and deduct gold
+    const removeItemResult = await removeItemFromPlayer(playerId, itemId);
+    if (!removeItemResult.success) {
+      throw createError({
+        statusCode: 400,
+        statusMessage: removeItemResult.message
+      });
+    }
+
+    const removeGoldResult = await removeGoldFromPlayer(playerId, AUCTION_FEE);
+    if (!removeGoldResult.success) {
+      // Rollback: add item back to inventory
+      const player = await PlayerSchema.findById(playerId);
+      if (player) {
+        player.inventory.push(itemId);
+        await player.save();
+      }
+      throw createError({
+        statusCode: 400,
+        statusMessage: removeGoldResult.message
+      });
+    }
 
     // Create auction
     const auctionDuration = duration || DEFAULT_DURATION;

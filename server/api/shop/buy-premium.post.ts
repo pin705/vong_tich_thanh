@@ -1,5 +1,6 @@
 import { PlayerSchema } from '~/models/Player';
 import { ItemSchema } from '~/models/Item';
+import { removePremiumCurrencyFromPlayer, addItemToPlayer } from '~/server/utils/inventoryService';
 
 export default defineEventHandler(async (event) => {
   try {
@@ -35,10 +36,10 @@ export default defineEventHandler(async (event) => {
     }
 
     // Check if player has enough premium currency
-    if (player.premiumCurrency < item.premiumPrice) {
+    if ((player.premiumCurrency || 0) < item.premiumPrice) {
       return { 
         success: false, 
-        message: `Không đủ Cổ Thạch! Cần ${item.premiumPrice} Cổ Thạch, bạn có ${player.premiumCurrency} Cổ Thạch`
+        message: `Không đủ Cổ Thạch! Cần ${item.premiumPrice} Cổ Thạch, bạn có ${player.premiumCurrency || 0} Cổ Thạch`
       };
     }
 
@@ -53,13 +54,27 @@ export default defineEventHandler(async (event) => {
       effects: item.effects
     });
 
-    // Add item to player inventory
-    player.inventory.push(newItem._id);
-    
-    // Deduct premium currency
-    player.premiumCurrency -= item.premiumPrice;
-    
-    await player.save();
+    // Use inventory service to add item and deduct premium currency
+    const addResult = await addItemToPlayer(playerId, newItem._id.toString());
+    if (!addResult.success) {
+      // Clean up the created item if adding failed
+      await ItemSchema.findByIdAndDelete(newItem._id);
+      return { success: false, message: 'Failed to add item to inventory' };
+    }
+
+    const deductResult = await removePremiumCurrencyFromPlayer(playerId, item.premiumPrice);
+    if (!deductResult.success) {
+      // Rollback: remove the item we just added
+      const updatedPlayer = await PlayerSchema.findById(playerId);
+      if (updatedPlayer) {
+        updatedPlayer.inventory = updatedPlayer.inventory.filter(
+          (id: any) => id.toString() !== newItem._id.toString()
+        );
+        await updatedPlayer.save();
+      }
+      await ItemSchema.findByIdAndDelete(newItem._id);
+      return { success: false, message: deductResult.message };
+    }
 
     return {
       success: true,
@@ -69,7 +84,7 @@ export default defineEventHandler(async (event) => {
         name: newItem.name,
         description: newItem.description
       },
-      remainingPremiumCurrency: player.premiumCurrency
+      remainingPremiumCurrency: deductResult.newBalance
     };
   } catch (error) {
     console.error('Error buying premium item:', error);

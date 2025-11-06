@@ -9,6 +9,7 @@ import { scheduleAgentRespawn } from './npcAI';
 import { applyExpBuff } from './buffSystem';
 import { clearBossState } from './bossMechanics';
 import { broadcastRoomOccupants } from '../routes/ws';
+import { addGoldToPlayer, addPremiumCurrencyToPlayer } from './inventoryService';
 import { COMBAT_TICK_INTERVAL, FLEE_SUCCESS_CHANCE, EXPERIENCE_PER_LEVEL, HP_GAIN_PER_LEVEL, MINIMUM_DAMAGE } from './constants';
 
 // Boss reward constants
@@ -434,13 +435,17 @@ export async function executeCombatTick(playerId: string, agentId: string): Prom
         
         // Award premium currency (Cổ Thạch)
         const premiumReward = Math.floor(agent.level * BOSS_PREMIUM_CURRENCY_MULTIPLIER);
-        player.premiumCurrency = (player.premiumCurrency || 0) + premiumReward;
-        messages.push(`[+] Bạn nhận được ${premiumReward} Cổ Thạch!`);
+        const premiumResult = await addPremiumCurrencyToPlayer(playerId, premiumReward);
+        if (premiumResult.success) {
+          messages.push(`[+] Bạn nhận được ${premiumReward} Cổ Thạch!`);
+        }
         
         // Award gold
         const goldReward = agent.level * BOSS_GOLD_MULTIPLIER;
-        player.gold = (player.gold || 0) + goldReward;
-        messages.push(`[+] Bạn nhận được ${goldReward} Vàng!`);
+        const goldResult = await addGoldToPlayer(playerId, goldReward);
+        if (goldResult.success) {
+          messages.push(`[+] Bạn nhận được ${goldReward} Vàng!`);
+        }
         
         // Clear boss state
         clearBossState(agent._id.toString());

@@ -17,6 +17,8 @@ import { handleSayCommand, handleWorldCommand, handleGuildChatCommand } from '..
 import { formatRoomDescription } from './roomUtils';
 import { deduplicateItemsById } from './itemDeduplication';
 import { BUILT_IN_COMMANDS } from './commandParser';
+import { transferItem, transferGold, addItemToPlayer, removeItemFromPlayer } from './inventoryService';
+import { findItemOnGround, findItemInInventory } from './entityFinder';
 
 // Command routing configuration
 const MOVEMENT_COMMANDS = ['go', 'n', 's', 'e', 'w', 'u', 'd', 
@@ -347,22 +349,27 @@ export async function handleCommandDb(command: Command, playerId: string): Promi
           break;
         }
 
-        const getItems = await ItemSchema.find({ _id: { $in: getRoom.items } });
-        const getItem = getItems.find((i: any) => 
-          i.name.toLowerCase().includes(target.toLowerCase())
-        );
+        // Use entity finder to find item on ground
+        const getItem = await findItemOnGround(getRoom, target);
 
         if (!getItem) {
           responses.push(`Không có "${target}" ở đây để nhặt.`);
           break;
         }
 
-        // Remove from room, add to player inventory
+        // Remove from room
         getRoom.items = getRoom.items.filter((id: any) => id.toString() !== getItem._id.toString());
         await getRoom.save();
 
-        player.inventory.push(getItem._id);
-        await player.save();
+        // Add to player inventory using inventory service
+        const pickupResult = await addItemToPlayer(playerId, getItem._id.toString());
+        if (!pickupResult.success) {
+          // Rollback: add item back to room
+          getRoom.items.push(getItem._id);
+          await getRoom.save();
+          responses.push(pickupResult.message);
+          break;
+        }
 
         responses.push(`Bạn nhặt [${getItem.name}].`);
         
@@ -402,10 +409,8 @@ export async function handleCommandDb(command: Command, playerId: string): Promi
           break;
         }
 
-        const dropItems = await ItemSchema.find({ _id: { $in: player.inventory } });
-        const dropItem = dropItems.find((i: any) => 
-          i.name.toLowerCase().includes(target.toLowerCase())
-        );
+        // Use entity finder to find item in inventory
+        const dropItem = await findItemInInventory(player.inventory, target);
 
         if (!dropItem) {
           responses.push(`Bạn không có "${target}" trong túi đồ.`);
@@ -418,10 +423,14 @@ export async function handleCommandDb(command: Command, playerId: string): Promi
           break;
         }
 
-        // Remove from player, add to room
-        player.inventory = player.inventory.filter((id: any) => id.toString() !== dropItem._id.toString());
-        await player.save();
+        // Remove from player using inventory service
+        const dropResult = await removeItemFromPlayer(playerId, dropItem._id.toString());
+        if (!dropResult.success) {
+          responses.push(dropResult.message);
+          break;
+        }
 
+        // Add to room
         dropRoom.items.push(dropItem._id);
         await dropRoom.save();
 
@@ -1425,24 +1434,43 @@ export async function handleCommandDb(command: Command, playerId: string): Promi
                 }
                 if (validationFailed) break;
 
-                // Exchange items
+                // Exchange items using inventory service
                 for (const itemId of trade.initiatorItems) {
-                  initiator.inventory = initiator.inventory.filter((id: any) => id.toString() !== itemId);
-                  target.inventory.push(itemId);
+                  const transferResult = await transferItem(trade.initiatorId, trade.targetId, itemId);
+                  if (!transferResult.success) {
+                    responses.push(`Lỗi khi chuyển vật phẩm: ${transferResult.message}`);
+                    validationFailed = true;
+                    break;
+                  }
                 }
+                if (validationFailed) break;
+                
                 for (const itemId of trade.targetItems) {
-                  target.inventory = target.inventory.filter((id: any) => id.toString() !== itemId);
-                  initiator.inventory.push(itemId);
+                  const transferResult = await transferItem(trade.targetId, trade.initiatorId, itemId);
+                  if (!transferResult.success) {
+                    responses.push(`Lỗi khi chuyển vật phẩm: ${transferResult.message}`);
+                    validationFailed = true;
+                    break;
+                  }
                 }
+                if (validationFailed) break;
 
-                // Exchange gold
-                initiator.gold -= trade.initiatorGold;
-                target.gold += trade.initiatorGold;
-                target.gold -= trade.targetGold;
-                initiator.gold += trade.targetGold;
-
-                await initiator.save();
-                await target.save();
+                // Exchange gold using inventory service
+                if (trade.initiatorGold > 0) {
+                  const goldTransferResult = await transferGold(trade.initiatorId, trade.targetId, trade.initiatorGold);
+                  if (!goldTransferResult.success) {
+                    responses.push(`Lỗi khi chuyển vàng: ${goldTransferResult.message}`);
+                    break;
+                  }
+                }
+                
+                if (trade.targetGold > 0) {
+                  const goldTransferResult = await transferGold(trade.targetId, trade.initiatorId, trade.targetGold);
+                  if (!goldTransferResult.success) {
+                    responses.push(`Lỗi khi chuyển vàng: ${goldTransferResult.message}`);
+                    break;
+                  }
+                }
 
                 responses.push('[OK] Giao dịch thành công!');
 
