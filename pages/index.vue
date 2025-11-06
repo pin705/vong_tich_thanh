@@ -1644,7 +1644,7 @@ watch(messages, () => {
   background-color: var(--bg-black);
   overflow: hidden;
   /* Center and limit max width */
-  max-width: 1400px;
+  max-width: 1024px;
   margin: 0 auto;
 }
 

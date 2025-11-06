@@ -329,6 +329,25 @@ const handleItemClick = (item: any) => {
   padding: 1.5rem;
 }
 
+/* Mobile & Tablet optimizations for tab-content */
+@media (max-width: 1024px) {
+  .tab-content {
+    padding: 1rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .tab-content {
+    padding: 0.75rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .tab-content {
+    padding: 0.5rem;
+  }
+}
+
 /* Info Tab Styles */
 .info-content {
   display: flex;
@@ -340,6 +359,19 @@ const handleItemClick = (item: any) => {
   background-color: rgba(0, 136, 0, 0.03);
   border: 1px solid rgba(0, 136, 0, 0.3);
   padding: 1rem;
+}
+
+/* Mobile & Tablet optimizations for sections */
+@media (max-width: 768px) {
+  .info-section, .stats-section {
+    padding: 0.75rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .info-section, .stats-section {
+    padding: 0.5rem;
+  }
 }
 
 .section-title {
@@ -642,14 +674,35 @@ const handleItemClick = (item: any) => {
 }
 
 /* Mobile responsiveness */
+@media (max-width: 1024px) {
+  .tab-navigation {
+    padding: 0.75rem;
+    gap: 0.375rem;
+  }
+  
+  .tab-button {
+    padding: 0.625rem 0.875rem;
+  }
+  
+  .skill-card, .talent-branch, .talent-item {
+    padding: 0.75rem;
+  }
+  
+  .talents-header {
+    padding: 0.75rem;
+  }
+}
+
 @media (max-width: 768px) {
   .tab-navigation {
     flex-direction: column;
     gap: 0.25rem;
+    padding: 0.5rem;
   }
   
   .tab-button {
     font-size: 16px;
+    padding: 0.5rem 0.75rem;
   }
   
   .skills-grid, .branch-talents {
@@ -663,6 +716,75 @@ const handleItemClick = (item: any) => {
 
   .item-name {
     font-size: 12px;
+  }
+  
+  .skill-card, .talent-branch, .talent-item {
+    padding: 0.625rem;
+  }
+  
+  .talents-header {
+    padding: 0.625rem;
+  }
+  
+  .inventory-slot {
+    padding: 0.375rem;
+  }
+  
+  .profession-cta-section {
+    padding: 1rem;
+  }
+  
+  .info-content {
+    gap: 1rem;
+  }
+  
+  .talents-grid {
+    gap: 1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .tab-navigation {
+    padding: 0.375rem;
+  }
+  
+  .tab-button {
+    padding: 0.375rem 0.5rem;
+    font-size: 14px;
+  }
+  
+  .skill-card, .talent-branch, .talent-item {
+    padding: 0.5rem;
+  }
+  
+  .talents-header {
+    padding: 0.5rem;
+  }
+  
+  .inventory-slot {
+    padding: 0.25rem;
+  }
+  
+  .profession-cta-section {
+    padding: 0.75rem;
+  }
+  
+  .profession-cta-button {
+    padding: 0.75rem;
+    font-size: 18px;
+  }
+  
+  .info-content {
+    gap: 0.75rem;
+  }
+  
+  .talents-grid {
+    gap: 0.75rem;
+  }
+  
+  .inventory-grid {
+    grid-template-columns: repeat(auto-fill, minmax(70px, 1fr));
+    gap: 0.375rem;
   }
 }
 </style>
