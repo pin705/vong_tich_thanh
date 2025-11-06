@@ -355,50 +355,53 @@ export async function executeCombatTick(playerId: string, agentId: string): Prom
     const messages: string[] = [];
     const room = await RoomSchema.findById(player.currentRoomId);
     
-    // Player attacks
-    const playerBaseDamage = await calculatePlayerDamage(player);
-    const playerDamage = calculateDamage(playerBaseDamage);
-    agent.hp = Math.max(0, agent.hp - playerDamage);
-    await agent.save();
-    
-    // Enhanced combat narrative with varied attack descriptions
-    const isCritical = playerDamage > playerBaseDamage * CRITICAL_HIT_MULTIPLIER;
-    const isGlancing = playerDamage < playerBaseDamage * GLANCING_BLOW_MULTIPLIER;
-    
-    let attackMessage = '';
-    if (isCritical) {
-      const critMessages = [
-        `Bạn tung ra một đòn chí mạng vào [${agent.name}]!`,
-        `Đòn đánh của bạn xé toạc phòng thủ của [${agent.name}]!`,
-        `Bạn tìm được khe hở và giáng một đòn hiểm hóc vào [${agent.name}]!`,
-        `Sức mạnh bùng nổ! Bạn đánh trúng điểm yếu của [${agent.name}]!`
-      ];
-      attackMessage = critMessages[Math.floor(Math.random() * critMessages.length)];
-      attackMessage += ` Gây ${playerDamage} sát thương! (Chí mạng!)`;
-    } else if (isGlancing) {
-      const glancingMessages = [
-        `Đòn đánh của bạn chỉ sượt qua [${agent.name}].`,
-        `[${agent.name}] né tránh một phần đòn tấn công của bạn.`,
-        `Bạn đánh trúng [${agent.name}] nhưng không gây nhiều sát thương.`,
-        `Đòn đánh yếu ớt, [${agent.name}] hầu như không bị ảnh hưởng.`
-      ];
-      attackMessage = glancingMessages[Math.floor(Math.random() * glancingMessages.length)];
-      attackMessage += ` Gây ${playerDamage} sát thương. (Trượt phớt)`;
-    } else {
-      const normalMessages = [
-        `Bạn vung vũ khí đánh trúng [${agent.name}].`,
-        `Bạn tấn công [${agent.name}] với một đòn chắc chắn.`,
-        `Bạn ra đòn và [${agent.name}] không kịp né.`,
-        `Bạn giáng xuống một đòn uy lực lên [${agent.name}].`,
-        `Bạn lao tới và tung đòn vào [${agent.name}].`,
-        `Vũ khí của bạn rít lên khi chém vào [${agent.name}].`
-      ];
-      attackMessage = normalMessages[Math.floor(Math.random() * normalMessages.length)];
-      attackMessage += ` Gây ${playerDamage} sát thương.`;
+    // Player attacks (only if auto-attacking is enabled)
+    const playerState = gameState.getPlayerState(playerId);
+    if (playerState && playerState.isAutoAttacking) {
+      const playerBaseDamage = await calculatePlayerDamage(player);
+      const playerDamage = calculateDamage(playerBaseDamage);
+      agent.hp = Math.max(0, agent.hp - playerDamage);
+      await agent.save();
+      
+      // Enhanced combat narrative with varied attack descriptions
+      const isCritical = playerDamage > playerBaseDamage * CRITICAL_HIT_MULTIPLIER;
+      const isGlancing = playerDamage < playerBaseDamage * GLANCING_BLOW_MULTIPLIER;
+      
+      let attackMessage = '';
+      if (isCritical) {
+        const critMessages = [
+          `Bạn tung ra một đòn chí mạng vào [${agent.name}]!`,
+          `Đòn đánh của bạn xé toạc phòng thủ của [${agent.name}]!`,
+          `Bạn tìm được khe hở và giáng một đòn hiểm hóc vào [${agent.name}]!`,
+          `Sức mạnh bùng nổ! Bạn đánh trúng điểm yếu của [${agent.name}]!`
+        ];
+        attackMessage = critMessages[Math.floor(Math.random() * critMessages.length)];
+        attackMessage += ` Gây ${playerDamage} sát thương! (Chí mạng!)`;
+      } else if (isGlancing) {
+        const glancingMessages = [
+          `Đòn đánh của bạn chỉ sượt qua [${agent.name}].`,
+          `[${agent.name}] né tránh một phần đòn tấn công của bạn.`,
+          `Bạn đánh trúng [${agent.name}] nhưng không gây nhiều sát thương.`,
+          `Đòn đánh yếu ớt, [${agent.name}] hầu như không bị ảnh hưởng.`
+        ];
+        attackMessage = glancingMessages[Math.floor(Math.random() * glancingMessages.length)];
+        attackMessage += ` Gây ${playerDamage} sát thương. (Trượt phớt)`;
+      } else {
+        const normalMessages = [
+          `Bạn vung vũ khí đánh trúng [${agent.name}].`,
+          `Bạn tấn công [${agent.name}] với một đòn chắc chắn.`,
+          `Bạn ra đòn và [${agent.name}] không kịp né.`,
+          `Bạn giáng xuống một đòn uy lực lên [${agent.name}].`,
+          `Bạn lao tới và tung đòn vào [${agent.name}].`,
+          `Vũ khí của bạn rít lên khi chém vào [${agent.name}].`
+        ];
+        attackMessage = normalMessages[Math.floor(Math.random() * normalMessages.length)];
+        attackMessage += ` Gây ${playerDamage} sát thương.`;
+      }
+      
+      attackMessage += ` (HP còn lại: ${agent.hp}/${agent.maxHp})`;
+      messages.push(attackMessage);
     }
-    
-    attackMessage += ` (HP còn lại: ${agent.hp}/${agent.maxHp})`;
-    messages.push(attackMessage);
     
     // Check if agent died
     if (agent.hp <= 0) {
@@ -459,6 +462,14 @@ export async function executeCombatTick(playerId: string, agentId: string): Prom
       
       player.inCombat = false;
       player.combatTarget = undefined;
+      
+      // Reset player state when combat ends
+      const endPlayerState = gameState.getPlayerState(playerId);
+      if (endPlayerState) {
+        endPlayerState.inCombat = false;
+        endPlayerState.isAutoAttacking = false;
+        endPlayerState.combatTargetId = null;
+      }
       
       // Check for level up BEFORE saving to ensure level changes are persisted
       const levelUpMessages = await checkLevelUp(player);
@@ -643,6 +654,14 @@ export async function executeCombatTick(playerId: string, agentId: string): Prom
       player.inCombat = false;
       player.combatTarget = undefined;
       
+      // Reset player state when player dies
+      const deathPlayerState = gameState.getPlayerState(playerId);
+      if (deathPlayerState) {
+        deathPlayerState.inCombat = false;
+        deathPlayerState.isAutoAttacking = false;
+        deathPlayerState.combatTargetId = null;
+      }
+      
       // Respawn at starting location
       const startingRoom = await RoomSchema.findOne({ name: 'Cổng Thành Cũ' });
       if (startingRoom) {
@@ -781,6 +800,14 @@ export async function startCombat(playerId: string, agentId: string): Promise<st
     agent.combatTarget = player._id as any;
     await agent.save();
     
+    // Initialize player state with auto-attack enabled
+    const playerState = gameState.getPlayerState(playerId);
+    if (playerState) {
+      playerState.inCombat = true;
+      playerState.isAutoAttacking = true; // Auto-enable when starting combat
+      playerState.combatTargetId = agentId;
+    }
+    
     // Enhanced combat start narrative
     const combatStartMessages = [
       `Bạn rút vũ khí và lao vào tấn công [${agent.name}]!`,
@@ -899,6 +926,14 @@ export async function fleeCombat(playerId: string): Promise<string[]> {
       
       gameState.stopCombat(playerId);
       gameState.updatePlayerRoom(playerId, nextRoom._id.toString());
+      
+      // Reset player state when fleeing
+      const fleePlayerState = gameState.getPlayerState(playerId);
+      if (fleePlayerState) {
+        fleePlayerState.inCombat = false;
+        fleePlayerState.isAutoAttacking = false;
+        fleePlayerState.combatTargetId = null;
+      }
       
       // Broadcast to new room
       gameState.broadcastToRoom(

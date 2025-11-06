@@ -1510,6 +1510,31 @@ export async function handleCommandDb(command: Command, playerId: string): Promi
         responses.push(...await handleGuildChatCommand(playerId, player, target, args));
         break;
 
+      case 'auto': {
+        // Toggle auto-attack mode
+        const playerState = gameState.getPlayerState(playerId);
+        if (!playerState) {
+          responses.push('Lỗi: Không tìm thấy trạng thái người chơi.');
+          break;
+        }
+
+        // Check if player is in combat
+        if (!playerState.inCombat) {
+          responses.push('Bạn không ở trong chiến đấu.');
+          break;
+        }
+
+        // Toggle auto-attack
+        playerState.isAutoAttacking = !playerState.isAutoAttacking;
+        
+        if (playerState.isAutoAttacking) {
+          responses.push('[AUTO] Đã BẬT tự động tấn công.');
+        } else {
+          responses.push('[AUTO] Đã TẮT tự động tấn công.');
+        }
+        break;
+      }
+
       case 'quit':
         responses.push('Tạm biệt! Hẹn gặp lại.');
         break;
