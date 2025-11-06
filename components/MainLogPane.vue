@@ -36,7 +36,8 @@ watch(() => props.messages.length, () => {
 // Parse text to make elements in brackets clickable
 const parseClickableElements = (text: string): string => {
   // Match text in brackets [text]
-  return text.replace(/\[([^\]]+)\]/g, (match, content) => {
+  console.log('Parsing text for clickable elements:', text);
+  return text?.replace(/\[([^\]]+)\]/g, (match, content) => {
     // Determine the type based on content
     const lowerContent = content.toLowerCase();
     let type = 'entity';

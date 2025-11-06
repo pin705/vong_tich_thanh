@@ -698,6 +698,8 @@ const handleTabClick = async (tabId: string) => {
 
 // Handle entity selection from occupants list
 const handleEntitySelect = (type: 'player' | 'npc' | 'mob', entity: { id: string; name: string }) => {
+  if (!entity || !entity.id) return;
+  console.log('Entity selected:', type, entity);
   selectedTarget.value = { type, id: entity.id, name: entity.name };
   
   // Prepare contextual popup data
@@ -1289,13 +1291,6 @@ const connectWebSocket = () => {
   ws.value.onopen = () => {
     isConnected.value = true;
     // Show improved welcome banner
-    addMessage('╔═══════════════════════════════════════════════════╗', 'system');
-    addMessage('║                                                   ║', 'system');
-    addMessage('║          [*] VONG TÍCH THÀNH - MUD [*]           ║', 'accent');
-    addMessage('║                                                   ║', 'system');
-    addMessage('║     Chào mừng đến với thế giới võ thuật huyền bí  ║', 'normal');
-    addMessage('║                                                   ║', 'system');
-    addMessage('╚═══════════════════════════════════════════════════╝', 'system');
     addMessage('', 'normal');
 
     // Authenticate with user session - server will send actual room data
