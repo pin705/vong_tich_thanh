@@ -352,6 +352,42 @@ const mainUnread = ref(false);
 const combatUnread = ref(false);
 const chatUnread = ref(false);
 
+// Chat persistence constants
+const CHAT_STORAGE_KEY = 'vong-tich-thanh-chat-log';
+const MAX_CHAT_MESSAGES = 200; // Limit stored messages to prevent localStorage overflow
+
+// Load chat messages from localStorage
+const loadChatFromStorage = () => {
+  if (typeof window === 'undefined') return;
+  
+  try {
+    const stored = localStorage.getItem(CHAT_STORAGE_KEY);
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      // Restore messages with Date objects
+      chatLog.value = parsed.map((msg: Message) => ({
+        ...msg,
+        timestamp: new Date(msg.timestamp)
+      }));
+    }
+  } catch (error) {
+    console.error('Failed to load chat from storage:', error);
+  }
+};
+
+// Save chat messages to localStorage
+const saveChatToStorage = () => {
+  if (typeof window === 'undefined') return;
+  
+  try {
+    // Keep only the most recent messages
+    const messagesToSave = chatLog.value.slice(-MAX_CHAT_MESSAGES);
+    localStorage.setItem(CHAT_STORAGE_KEY, JSON.stringify(messagesToSave));
+  } catch (error) {
+    console.error('Failed to save chat to storage:', error);
+  }
+};
+
 // Channel tabs configuration
 const channelTabs = computed(() => [
   { id: 'main', label: 'Chính', hasUnread: mainUnread.value },
@@ -567,6 +603,8 @@ const addMessage = (text: string, type: Message['type'] = 'normal', user?: strin
     }
   } else if (channel === 'chat' || type === 'chat_log') {
     chatLog.value.push(message);
+    // Save chat to localStorage
+    saveChatToStorage();
     // Set unread indicator if not on chat tab
     if (currentChannel.value !== 'chat') {
       chatUnread.value = true;
@@ -649,8 +687,17 @@ const handleItemClick = async (itemName: string) => {
   contextualPopupOpen.value = true;
 };
 
-// Focus input field
-const focusInput = () => {
+// Focus input field (but not when clicking on certain elements)
+const focusInput = (event?: MouseEvent) => {
+  // Don't focus if clicking on input elements, buttons, or interactive elements
+  if (event && event.target) {
+    const target = event.target as HTMLElement;
+    // Check if clicked element or any parent is an input, button, or has contenteditable
+    if (target.closest && target.closest('input, textarea, button, select, [contenteditable="true"], .chat-input-area')) {
+      return;
+    }
+  }
+  
   if (inputField.value) {
     inputField.value.focus();
   }
@@ -914,21 +961,21 @@ const handleClickableElement = (element: string, type: 'direction' | 'entity' | 
     // Check if it's an NPC
     const npc = npcsInRoom.find((n: any) => n.name === entityName);
     if (npc) {
-      handleEntitySelect({ id: npc.id, name: npc.name, type: 'npc' });
+      handleEntitySelect('npc', { id: npc.id, name: npc.name });
       return;
     }
     
     // Check if it's a mob
     const mob = mobsInRoom.find((m: any) => m.name === entityName);
     if (mob) {
-      handleEntitySelect({ id: mob.id, name: mob.name, type: 'mob' });
+      handleEntitySelect('mob', { id: mob.id, name: mob.name });
       return;
     }
     
     // Check if it's a player
     const player = playersInRoom.find((p: any) => p.name === entityName);
     if (player) {
-      handleEntitySelect({ id: player.id, name: player.name, type: 'player' });
+      handleEntitySelect('player', { id: player.id, name: player.name });
       return;
     }
     
@@ -1590,6 +1637,9 @@ const declineGuildInvitation = async () => {
 onMounted(() => {
   focusInput();
   connectWebSocket();
+  
+  // Load chat history from localStorage
+  loadChatFromStorage();
   
   // Initialize device type detection
   updateDeviceType();

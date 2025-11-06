@@ -38,7 +38,24 @@ const parseClickableElements = (text: string): string => {
   // Match text in brackets [text]
   console.log('Parsing text for clickable elements:', text);
   return text?.replace(/\[([^\]]+)\]/g, (match, content) => {
-    // Determine the type based on content
+    // Check if content contains commas (multiple items)
+    if (content.includes(',')) {
+      // Split by comma and process each item individually
+      const items = content.split(',').map(item => item.trim());
+      const directions = ['bắc', 'nam', 'đông', 'tây', 'lên', 'xuống', 'north', 'south', 'east', 'west', 'up', 'down'];
+      
+      // Process each item and wrap in clickable span
+      const clickableItems = items.map(item => {
+        const lowerItem = item.toLowerCase();
+        const type = directions.includes(lowerItem) ? 'direction' : 'entity';
+        return `<span class="clickable clickable-${type}" data-element="${item}" data-type="${type}">${item}</span>`;
+      });
+      
+      // Return items wrapped in brackets with commas preserved
+      return `[${clickableItems.join(', ')}]`;
+    }
+    
+    // Single item - determine type
     const lowerContent = content.toLowerCase();
     let type = 'entity';
     
