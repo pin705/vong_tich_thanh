@@ -324,8 +324,7 @@ export async function scheduleAgentRespawn(agentData: any, roomId: string): Prom
         inCombat: false
       });
 
-      // Add to room
-      const room = await RoomSchema.findById(roomId);
+      // Add to current room
       if (room) {
         room.agents.push(newAgent._id);
         await room.save();
@@ -363,7 +362,6 @@ export async function scheduleAgentRespawn(agentData: any, roomId: string): Prom
     roomId,
     timer,
     respawnTime
-  });
   });
 }
 

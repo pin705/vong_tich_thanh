@@ -60,6 +60,8 @@
         @keydown.enter="sendCommand"
         @keydown.up="navigateHistory(-1)"
         @keydown.down="navigateHistory(1)"
+        @keydown.tab.prevent="handleTabCompletion"
+        @input="resetTabCompletion"
         @keydown.ctrl.h.prevent="toggleHelp"
         @keydown.meta.h.prevent="toggleHelp"
         @keydown.f1.prevent="toggleHelp"
@@ -391,6 +393,10 @@ const chatUnread = ref(false);
 const CHAT_STORAGE_KEY = 'vong-tich-thanh-chat-log';
 const MAX_CHAT_MESSAGES = 200; // Limit stored messages to prevent localStorage overflow
 
+// Command history constants
+const COMMAND_HISTORY_STORAGE_KEY = 'vong-tich-thanh-command-history';
+const MAX_COMMAND_HISTORY = 100; // Limit stored commands
+
 // Message limits to prevent accumulation
 const MAX_MAIN_LOG_MESSAGES = 500; // Keep last 500 messages in main log
 const MAX_COMBAT_LOG_MESSAGES = 300; // Keep last 300 messages in combat log
@@ -427,6 +433,34 @@ const saveChatToStorage = () => {
   }
 };
 
+// Load command history from localStorage
+const loadCommandHistoryFromStorage = () => {
+  if (typeof window === 'undefined') return;
+  
+  try {
+    const stored = localStorage.getItem(COMMAND_HISTORY_STORAGE_KEY);
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      commandHistory.value = Array.isArray(parsed) ? parsed : [];
+    }
+  } catch (error) {
+    console.error('Failed to load command history from storage:', error);
+  }
+};
+
+// Save command history to localStorage
+const saveCommandHistoryToStorage = () => {
+  if (typeof window === 'undefined') return;
+  
+  try {
+    // Keep only the most recent commands
+    const commandsToSave = commandHistory.value.slice(-MAX_COMMAND_HISTORY);
+    localStorage.setItem(COMMAND_HISTORY_STORAGE_KEY, JSON.stringify(commandsToSave));
+  } catch (error) {
+    console.error('Failed to save command history to storage:', error);
+  }
+};
+
 // Channel tabs configuration
 const channelTabs = computed(() => [
   { id: 'main', label: 'Chính', hasUnread: mainUnread.value },
@@ -454,6 +488,13 @@ const chatMessages = ref<ChatMessage[]>([]);
 const currentInput = ref('');
 const commandHistory = ref<string[]>([]);
 const historyIndex = ref(-1);
+const tempInput = ref(''); // Store current input when navigating history
+
+// Tab completion state
+const tabCompletionMatches = ref<string[]>([]);
+const tabCompletionIndex = ref(-1);
+const tabCompletionPrefix = ref('');
+
 const outputArea = ref<HTMLElement | null>(null);
 const inputField = ref<HTMLInputElement | null>(null);
 const ws = ref<WebSocket | null>(null);
@@ -1419,18 +1460,114 @@ const handleShopTransaction = () => {
 const navigateHistory = (direction: number) => {
   if (commandHistory.value.length === 0) return;
   
+  // Save current input when first navigating up from typing
+  if (historyIndex.value === -1 && direction === -1) {
+    tempInput.value = currentInput.value;
+  }
+  
   historyIndex.value += direction;
   
-  // Clamp history index
-  if (historyIndex.value < 0) {
-    historyIndex.value = 0;
+  // Going down past the end - restore temp input and reset index
+  if (historyIndex.value < -1) {
+    historyIndex.value = -1;
+    currentInput.value = tempInput.value;
     return;
   }
+  
+  // Going up past the beginning - stay at first command
   if (historyIndex.value >= commandHistory.value.length) {
     historyIndex.value = commandHistory.value.length - 1;
+    return;
   }
   
+  // At position -1 (no history selected) - show temp input
+  if (historyIndex.value === -1) {
+    currentInput.value = tempInput.value;
+    return;
+  }
+  
+  // Show command from history (newest = 0, oldest = length-1)
   currentInput.value = commandHistory.value[commandHistory.value.length - 1 - historyIndex.value];
+};
+
+// Handle tab completion
+const handleTabCompletion = (event: KeyboardEvent) => {
+  event.preventDefault();
+  
+  const input = currentInput.value.trim();
+  if (!input) return;
+  
+  // Parse the input to get command and target prefix
+  const parts = input.split(' ');
+  if (parts.length < 2) return; // Need at least "command target"
+  
+  const command = parts[0];
+  const targetPrefix = parts[parts.length - 1].toLowerCase();
+  
+  // If this is a new tab press (different prefix or first time)
+  if (tabCompletionPrefix.value !== targetPrefix) {
+    // Collect all possible targets from the room
+    const targets: string[] = [];
+    
+    // Add players
+    roomOccupants.value.players.forEach((player: any) => {
+      if (player.name.toLowerCase().startsWith(targetPrefix)) {
+        targets.push(player.name);
+      }
+    });
+    
+    // Add NPCs
+    roomOccupants.value.npcs.forEach((npc: any) => {
+      if (npc.name.toLowerCase().startsWith(targetPrefix)) {
+        targets.push(npc.name);
+      }
+    });
+    
+    // Add mobs
+    roomOccupants.value.mobs.forEach((mob: any) => {
+      if (mob.name.toLowerCase().startsWith(targetPrefix)) {
+        targets.push(mob.name);
+      }
+    });
+    
+    // Add items from inventory if command is "use", "drop", or "equip"
+    if (['use', 'sử', 'dụng', 'drop', 'vứt', 'equip', 'trang'].includes(command.toLowerCase())) {
+      playerState.value.inventoryItems.forEach((item: any) => {
+        if (item && item.name && item.name.toLowerCase().startsWith(targetPrefix)) {
+          targets.push(item.name);
+        }
+      });
+    }
+    
+    // Remove duplicates and sort
+    tabCompletionMatches.value = [...new Set(targets)].sort();
+    tabCompletionIndex.value = 0;
+    tabCompletionPrefix.value = targetPrefix;
+  } else {
+    // Cycle to next match
+    tabCompletionIndex.value = (tabCompletionIndex.value + 1) % tabCompletionMatches.value.length;
+  }
+  
+  // Apply completion if we have matches
+  if (tabCompletionMatches.value.length > 0) {
+    const completedTarget = tabCompletionMatches.value[tabCompletionIndex.value];
+    // Replace the last word with the completed target
+    const commandParts = parts.slice(0, -1);
+    commandParts.push(completedTarget);
+    currentInput.value = commandParts.join(' ');
+  }
+};
+
+// Reset tab completion state when user types
+const resetTabCompletion = (event: Event) => {
+  // Don't reset if this is from tab completion itself
+  if ((event as InputEvent).inputType !== 'insertText' && (event as InputEvent).inputType !== 'deleteContentBackward') {
+    return;
+  }
+  
+  tabCompletionMatches.value = [];
+  tabCompletionIndex.value = -1;
+  tabCompletionPrefix.value = '';
 };
 
 // Handle chat command from chat panel
@@ -1441,15 +1578,36 @@ const handleChatCommand = (command: string) => {
 
 // Send command via WebSocket
 const sendCommand = async () => {
-  const input = currentInput.value.trim();
+  let input = currentInput.value.trim();
   if (!input) return;
 
-  // Add to command history
-  commandHistory.value.push(input);
-  historyIndex.value = -1;
+  // Apply custom aliases before processing
+  const firstWord = input.split(' ')[0];
+  if (playerCustomAliases.value[firstWord]) {
+    const remainder = input.slice(firstWord.length).trim();
+    input = remainder ? `${playerCustomAliases.value[firstWord]} ${remainder}` : playerCustomAliases.value[firstWord];
+  }
 
-  // Echo command
-  addMessage(`> ${input}`, 'system');
+  // Add to command history (store original command, not alias-expanded)
+  const originalInput = currentInput.value.trim();
+  if (commandHistory.value[commandHistory.value.length - 1] !== originalInput) {
+    commandHistory.value.push(originalInput);
+    // Limit history size
+    if (commandHistory.value.length > MAX_COMMAND_HISTORY) {
+      commandHistory.value = commandHistory.value.slice(-MAX_COMMAND_HISTORY);
+    }
+    // Save to localStorage
+    saveCommandHistoryToStorage();
+  }
+  historyIndex.value = -1;
+  tempInput.value = '';
+
+  // Echo command (show expanded version if alias was used)
+  if (input !== originalInput) {
+    addMessage(`> ${originalInput} → ${input}`, 'system');
+  } else {
+    addMessage(`> ${input}`, 'system');
+  }
 
   // Handle quit command
   if (input.toLowerCase() === 'quit') {
@@ -1860,6 +2018,9 @@ onMounted(() => {
   
   // Load chat history from localStorage
   loadChatFromStorage();
+  
+  // Load command history from localStorage
+  loadCommandHistoryFromStorage();
   
   // Load player settings
   loadPlayerSettings();
