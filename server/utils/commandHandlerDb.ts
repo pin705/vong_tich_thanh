@@ -18,7 +18,7 @@ import { formatRoomDescription } from './roomUtils';
 import { deduplicateItemsById } from './itemDeduplication';
 import { BUILT_IN_COMMANDS } from './commandParser';
 import { transferItem, transferGold, addItemToPlayer, removeItemFromPlayer } from './inventoryService';
-import { findItemOnGround, findItemInInventory } from './entityFinder';
+import { findItemOnGround, findItemInInventory, findTargetInRoom } from './entityFinder';
 
 // Command routing configuration
 const MOVEMENT_COMMANDS = ['go', 'n', 's', 'e', 'w', 'u', 'd', 
@@ -207,65 +207,54 @@ export async function handleCommandDb(command: Command, playerId: string): Promi
           const roomDesc = await formatRoomDescription(room, player);
           responses.push(...roomDesc);
         } else {
-          // Look at specific target
-          const targetLower = target.toLowerCase();
+          // Look at specific target using entity finder
+          const foundTarget = await findTargetInRoom(room, target);
           
-          // Check agents
-          if (room.agents && room.agents.length > 0) {
-            const agents = await AgentSchema.find({ _id: { $in: room.agents } }).populate('loot');
-            const agent = agents.find((a: any) => 
-              a.name.toLowerCase().includes(targetLower)
-            );
-            if (agent) {
-              responses.push(agent.description);
-              responses.push('');
+          if (foundTarget && foundTarget.type === 'agent') {
+            const agent = foundTarget.entity;
+            responses.push(agent.description);
+            responses.push('');
+            
+            // Show rewards for mobs
+            if (agent.type === 'mob') {
+              responses.push('--- Phần Thưởng (Dự Kiến) ---');
+              responses.push(`EXP: ${agent.experience}`);
               
-              // Show rewards for mobs
-              if (agent.type === 'mob') {
-                responses.push('--- Phần Thưởng (Dự Kiến) ---');
-                responses.push(`EXP: ${agent.experience}`);
-                
-                // Gold is not directly stored, but can be assumed from level
-                const estimatedGold = Math.floor(agent.level * 2);
-                responses.push(`Vàng: ~${estimatedGold}`);
-                
-                // Show loot items
-                if (agent.loot && agent.loot.length > 0) {
-                  const lootNames = agent.loot.map((item: any) => `[${item.name}]`).join(', ');
+              // Gold is not directly stored, but can be assumed from level
+              const estimatedGold = Math.floor(agent.level * 2);
+              responses.push(`Vàng: ~${estimatedGold}`);
+              
+              // Show loot items
+              if (agent.loot && agent.loot.length > 0) {
+                // Populate loot items if not already populated
+                const populatedAgent = await AgentSchema.findById(agent._id).populate('loot');
+                if (populatedAgent && populatedAgent.loot) {
+                  const lootNames = populatedAgent.loot.map((item: any) => `[${item.name}]`).join(', ');
                   responses.push(`Vật phẩm: ${lootNames}`);
                 }
-                responses.push('');
               }
-              
-              // Phase 25: Show vendor info
-              if (agent.isVendor) {
-                responses.push('💰 CỬA HÀNG AVAILABLE - Gõ \'list\' để xem hàng hóa.');
-                responses.push('');
-              }
-              
-              break;
+              responses.push('');
             }
+            
+            // Phase 25: Show vendor info
+            if (agent.isVendor) {
+              responses.push('💰 CỬA HÀNG AVAILABLE - Gõ \'list\' để xem hàng hóa.');
+              responses.push('');
+            }
+            
+            break;
           }
           
-          // Check items
-          if (room.items && room.items.length > 0) {
-            const items = await ItemSchema.find({ _id: { $in: room.items } });
-            const item = items.find((i: any) => 
-              i.name.toLowerCase().includes(targetLower)
-            );
-            if (item) {
-              responses.push(item.description);
-              break;
-            }
-          }
-          
-          // Check other players
-          const playersInRoom = gameState.getPlayersInRoom(room._id.toString());
-          const otherPlayer = playersInRoom.find(p => 
-            p.username.toLowerCase().includes(targetLower) && p.id !== playerId
-          );
-          if (otherPlayer) {
+          if (foundTarget && foundTarget.type === 'player') {
+            const otherPlayer = foundTarget.entity;
             responses.push(`[${otherPlayer.username}] đang đứng ở đây, trông có vẻ đang suy nghĩ về điều gì đó.`);
+            break;
+          }
+          
+          // Check items on ground
+          const foundItem = await findItemOnGround(room, target);
+          if (foundItem) {
+            responses.push(foundItem.description);
             break;
           }
           
@@ -281,21 +270,20 @@ export async function handleCommandDb(command: Command, playerId: string): Promi
         }
 
         const talkRoom = await RoomSchema.findById(player.currentRoomId);
-        if (!talkRoom || !talkRoom.agents || talkRoom.agents.length === 0) {
+        if (!talkRoom) {
           responses.push(`Bạn không thấy "${target}" ở đây để nói chuyện.`);
           break;
         }
 
-        const talkAgents = await AgentSchema.find({ _id: { $in: talkRoom.agents } });
-        const talkAgent = talkAgents.find((a: any) => 
-          a.name.toLowerCase().includes(target.toLowerCase())
-        );
-
-        if (!talkAgent) {
+        // Use entity finder to find the target agent
+        const talkTarget = await findTargetInRoom(talkRoom, target);
+        
+        if (!talkTarget || talkTarget.type !== 'agent') {
           responses.push(`Bạn không thấy "${target}" ở đây để nói chuyện.`);
           break;
         }
 
+        const talkAgent = talkTarget.entity;
         if (talkAgent.dialogue && talkAgent.dialogue.length > 0) {
           const randomDialogue = talkAgent.dialogue[Math.floor(Math.random() * talkAgent.dialogue.length)];
           responses.push(`[${talkAgent.name}] nói: "${randomDialogue}"`);
