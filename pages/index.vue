@@ -1339,11 +1339,6 @@ const handleOpenProfessionChoice = () => {
 };
 
 // Load merchant shop data
-// TODO: Create dedicated API endpoint for merchant shop data
-// Current workaround uses WebSocket "list" command which has limitations:
-// - Side effects from command execution
-// - No direct return of shop item data
-// - Coupling with WebSocket protocol
 const loadMerchantShop = async (merchantId: string, merchantName: string) => {
   tradingData.value = {
     merchantName,
@@ -1351,9 +1346,15 @@ const loadMerchantShop = async (merchantId: string, merchantName: string) => {
     merchantItems: [] // Will be populated via WebSocket response
   };
   
-  // Temporary: Send list command via WebSocket
-  // Future: Replace with: const items = await $fetch(`/api/merchant/${merchantId}/shop`)
-  currentInput.value = 'list';
+  // Send WebSocket message to get shop data
+  if (ws.value && ws.value.readyState === WebSocket.OPEN) {
+    ws.value.send(JSON.stringify({
+      type: 'get_shop',
+      payload: {
+        vendorId: merchantId
+      }
+    }));
+  }
 };
 
 // Handle buy item

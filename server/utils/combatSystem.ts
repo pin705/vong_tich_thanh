@@ -2,6 +2,7 @@ import { PlayerSchema } from '../../models/Player';
 import { AgentSchema } from '../../models/Agent';
 import { ItemSchema } from '../../models/Item';
 import { RoomSchema } from '../../models/Room';
+import { PlayerQuestSchema } from '../../models/PlayerQuest';
 import { gameState } from './gameState';
 import { partyService } from './partyService';
 import { scheduleAgentRespawn } from './npcAI';
@@ -237,10 +238,8 @@ async function checkLevelUp(player: any): Promise<string[]> {
     player.maxHp += HP_GAIN_PER_LEVEL;
     player.hp = player.maxHp; // Full heal on level up
     
-    // Grant talent point if level >= 10
-    if (player.level >= 10) {
-      player.talentPoints = (player.talentPoints || 0) + 1;
-    }
+    // Grant talent point on every level up (changed from level 10+ only)
+    player.talentPoints = (player.talentPoints || 0) + 1;
     
     // Phase 29: Grant skill points on level up
     player.skillPoints = (player.skillPoints || 0) + 1;
@@ -251,9 +250,7 @@ async function checkLevelUp(player: any): Promise<string[]> {
     messages.push(`    HP tối đa tăng thêm ${HP_GAIN_PER_LEVEL}!`);
     messages.push(`    HP đã được hồi phục đầy!`);
     messages.push(`    [*] Bạn nhận được 1 điểm kỹ năng!`);
-    if (player.level >= 10) {
-      messages.push(`    [*] Bạn nhận được 1 điểm thiên phú!`);
-    }
+    messages.push(`    [*] Bạn nhận được 1 điểm thiên phú!`);
     messages.push('═══════════════════════════════════');
   }
   
@@ -473,6 +470,10 @@ export async function executeCombatTick(playerId: string, agentId: string): Prom
       // Drop loot
       const lootMessages = await dropLoot(agent, player.currentRoomId.toString());
       messages.push(...lootMessages);
+      
+      // Update quest progress for killing this mob
+      const questMessages = await updateQuestProgress(playerId, 'kill', agent.name);
+      messages.push(...questMessages);
       
       // Notify about loot turn if in party
       const killerParty = partyService.getPlayerParty(playerId);
@@ -1032,6 +1033,61 @@ export async function startPvPCombat(attackerId: string, targetId: string): Prom
   } catch (error) {
     console.error('Error starting PvP combat:', error);
     messages.push('Lỗi khi bắt đầu chiến đấu PvP.');
+  }
+  
+  return messages;
+}
+
+// Update quest progress when player performs an action
+async function updateQuestProgress(playerId: string, actionType: string, target: string): Promise<string[]> {
+  const messages: string[] = [];
+  
+  try {
+    // Find active quests for this player
+    const activeQuests = await PlayerQuestSchema.find({
+      playerId,
+      status: 'active'
+    });
+    
+    if (activeQuests.length === 0) {
+      return messages;
+    }
+    
+    // Update progress for matching objectives
+    for (const quest of activeQuests) {
+      let questUpdated = false;
+      
+      for (const objective of quest.objectives) {
+        // Check if objective matches the action
+        if (objective.type === actionType && objective.target.toLowerCase() === target.toLowerCase()) {
+          if (objective.progress < objective.count) {
+            objective.progress += 1;
+            questUpdated = true;
+            
+            // Check if objective is now complete
+            if (objective.progress >= objective.count) {
+              messages.push(`[Quest] Objective completed: ${objective.target} (${objective.progress}/${objective.count})`);
+            } else {
+              messages.push(`[Quest] Progress: ${objective.target} (${objective.progress}/${objective.count})`);
+            }
+          }
+        }
+      }
+      
+      if (questUpdated) {
+        // Check if all objectives are complete
+        const allComplete = quest.objectives.every((obj: any) => obj.progress >= obj.count);
+        if (allComplete) {
+          messages.push('');
+          messages.push(`[!] Quest "${quest.questId}" ready to complete!`);
+          messages.push('Return to the quest giver to claim your reward.');
+        }
+        
+        await quest.save();
+      }
+    }
+  } catch (error) {
+    console.error('Error updating quest progress:', error);
   }
   
   return messages;

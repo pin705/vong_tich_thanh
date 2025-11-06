@@ -113,6 +113,9 @@ const categories: Category[] = [
   { id: 'inventory', name: 'Túi đồ' },
   { id: 'social', name: 'Xã hội' },
   { id: 'guild', name: 'Bang hội' },
+  { id: 'party', name: 'Nhóm' },
+  { id: 'quest', name: 'Nhiệm vụ' },
+  { id: 'advanced', name: 'Nâng cao' },
 ];
 
 const allCommands: Command[] = [
@@ -338,6 +341,107 @@ const allCommands: Command[] = [
     category: 'basic',
     usage: ['quit'],
     examples: ['quit']
+  },
+  {
+    name: 'skills',
+    shortDesc: 'Xem kỹ năng',
+    description: 'Hiển thị danh sách kỹ năng và phân bổ điểm kỹ năng',
+    category: 'advanced',
+    aliases: ['sk'],
+    usage: ['skills'],
+    examples: ['skills', 'sk']
+  },
+  {
+    name: 'talents',
+    shortDesc: 'Xem thiên phú',
+    description: 'Hiển thị cây thiên phú và phân bổ điểm thiên phú',
+    category: 'advanced',
+    aliases: ['thienphu'],
+    usage: ['talents'],
+    examples: ['talents', 'thienphu']
+  },
+  {
+    name: 'goto',
+    shortDesc: 'Dịch chuyển nhanh',
+    description: 'Dịch chuyển nhanh đến một địa điểm đã biết',
+    category: 'movement',
+    usage: ['goto [tên địa điểm]'],
+    examples: ['goto Quảng Trường Trung Tâm', 'goto Khu Rừng']
+  },
+  {
+    name: 'party',
+    shortDesc: 'Quản lý nhóm',
+    description: 'Mời người chơi vào nhóm, chấp nhận lời mời, hoặc rời khỏi nhóm',
+    category: 'party',
+    aliases: ['p', 'moi', 'roi'],
+    usage: [
+      'party invite [tên người chơi] - Mời vào nhóm',
+      'party accept - Chấp nhận lời mời',
+      'party decline - Từ chối lời mời',
+      'party leave - Rời khỏi nhóm',
+      'party kick [tên người chơi] - Đuổi khỏi nhóm (chỉ trưởng nhóm)',
+      'party promote [tên người chơi] - Chuyển trưởng nhóm',
+      'party loot [free-for-all|round-robin|leader-only] - Đặt quy tắc nhặt đồ'
+    ],
+    examples: ['party invite John', 'party accept', 'party leave', 'party loot round-robin']
+  },
+  {
+    name: 'guild',
+    shortDesc: 'Quản lý bang hội',
+    description: 'Tương tác với hệ thống bang hội',
+    category: 'guild',
+    aliases: ['g'],
+    usage: [
+      'guild deposit [số vàng] - Gửi vàng vào kho bang',
+      'guild withdraw [số vàng] - Rút vàng từ kho bang'
+    ],
+    examples: ['guild deposit 1000', 'guild withdraw 500']
+  },
+  {
+    name: 'world',
+    shortDesc: 'Chat toàn server',
+    description: 'Gửi tin nhắn đến tất cả người chơi trên server',
+    category: 'social',
+    aliases: ['w'],
+    usage: ['world [tin nhắn]'],
+    examples: ['world Có ai muốn đi đánh boss không?', 'w Xin chào mọi người!']
+  },
+  {
+    name: 'trade',
+    shortDesc: 'Giao dịch với người chơi',
+    description: 'Mở giao dịch trực tiếp với người chơi khác để trao đổi vật phẩm và vàng',
+    category: 'social',
+    usage: [
+      'trade invite [tên người chơi] - Mời giao dịch',
+      'trade accept - Chấp nhận giao dịch',
+      'trade decline - Từ chối giao dịch',
+      'trade add [vật phẩm] - Thêm vật phẩm vào giao dịch',
+      'trade gold [số vàng] - Thêm vàng vào giao dịch',
+      'trade lock - Khóa giao dịch',
+      'trade confirm - Xác nhận giao dịch',
+      'trade cancel - Hủy giao dịch'
+    ],
+    examples: ['trade invite John', 'trade add Kiếm Thép', 'trade gold 100', 'trade confirm']
+  },
+  {
+    name: 'pvp',
+    shortDesc: 'Chiến đấu PvP',
+    description: 'Thách đấu người chơi khác (đang phát triển)',
+    category: 'combat',
+    usage: ['pvp [tên người chơi]'],
+    examples: ['pvp John']
+  },
+  {
+    name: 'alias',
+    shortDesc: 'Tạo lệnh tắt',
+    description: 'Tạo lệnh tắt tùy chỉnh cho các lệnh thường dùng',
+    category: 'advanced',
+    usage: [
+      'alias add [tên tắt] [lệnh] - Tạo lệnh tắt mới',
+      'alias remove [tên tắt] - Xóa lệnh tắt',
+      'alias list - Xem danh sách lệnh tắt'
+    ],
+    examples: ['alias add atk attack Goblin', 'alias remove atk', 'alias list']
   }
 ];
 
