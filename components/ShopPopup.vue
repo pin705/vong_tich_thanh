@@ -27,7 +27,7 @@
         <div class="popup-body">
           <div class="currency-display">
             <span class="currency-label">
-              {{ shopType === 'premium' ? 'Cổ Thạch 💎:' : 'Vàng 💰:' }}
+              {{ shopType === 'premium' ? 'Cổ Thạch [G]:' : 'Vàng [V]:' }}
             </span>
             <span class="currency-value">
               {{ shopType === 'premium' ? playerPremiumCurrency : playerGold }}
@@ -45,7 +45,9 @@
             </div>
 
             <div v-else-if="shopItems.length === 0" class="empty-message">
-              Cửa hàng hiện không có sản phẩm.
+              <div class="empty-icon">[ ? ]</div>
+              <p>Cửa hàng hiện không có sản phẩm.</p>
+              <p class="empty-hint">Thử nói chuyện với người bán hàng hoặc sử dụng lệnh "list" để xem hàng hóa.</p>
             </div>
 
             <div v-else class="items-grid">
@@ -74,7 +76,7 @@
                 </div>
                 <div class="item-footer">
                   <span class="item-price">
-                    {{ getItemPrice(item) }} {{ shopType === 'premium' ? '💎' : '💰' }}
+                    {{ getItemPrice(item) }} {{ shopType === 'premium' ? '[G]' : '[V]' }}
                   </span>
                   <button
                     class="buy-button"
@@ -109,7 +111,7 @@
                 <div class="item-description">{{ item.description }}</div>
                 <div class="item-footer">
                   <span class="item-price">
-                    {{ getSellValue(item) }} 💰
+                    {{ getSellValue(item) }} [V]
                   </span>
                   <button
                     class="sell-button"
@@ -369,6 +371,25 @@ defineExpose({
   font-size: 18px;
 }
 
+.empty-message {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.empty-icon {
+  font-size: 48px;
+  margin-bottom: 0.5rem;
+}
+
+.empty-hint {
+  color: var(--text-cyan);
+  font-size: 14px;
+  font-style: italic;
+  margin-top: 0.5rem;
+}
+
 .error-message {
   color: var(--text-danger);
 }
@@ -492,12 +513,35 @@ defineExpose({
     max-height: 90vh;
   }
 
+  .popup-header {
+    padding: 0.75rem;
+  }
+
   .popup-title {
     font-size: 18px;
   }
 
+  .popup-body {
+    padding: 0.5rem;
+  }
+
+  .currency-display {
+    padding: 0.5rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .currency-label,
+  .currency-value {
+    font-size: 16px;
+  }
+
   .items-grid {
     grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+
+  .item-card {
+    padding: 0.75rem;
   }
 
   .tab-button {

@@ -96,11 +96,11 @@ const emit = defineEmits<{
 }>();
 
 const equipmentSlots = [
-  { key: 'helmet', name: 'Mũ', icon: '⛑️' },
-  { key: 'chest', name: 'Áo', icon: '🎽' },
-  { key: 'legs', name: 'Quần', icon: '👖' },
-  { key: 'boots', name: 'Giày', icon: '👢' },
-  { key: 'weapon', name: 'Vũ Khí', icon: '⚔️' }
+  { key: 'helmet', name: 'Mũ', icon: '[H]' },
+  { key: 'chest', name: 'Áo', icon: '[A]' },
+  { key: 'legs', name: 'Quần', icon: '[Q]' },
+  { key: 'boots', name: 'Giày', icon: '[G]' },
+  { key: 'weapon', name: 'Vũ Khí', icon: '[W]' }
 ];
 
 function getEquippedItem(slot: string): any {

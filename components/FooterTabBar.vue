@@ -33,7 +33,6 @@ const tabs: Tab[] = [
   { id: 'map', label: '[Bản Đồ]' },
   { id: 'occupants', label: '[Xung Quanh]' },
   { id: 'character', label: '[Nhân Vật]' },
-  { id: 'inventory', label: '[Túi Đồ]' },
   { id: 'party', label: '[Nhóm]' },
   { id: 'guild', label: '[Bang Hội]' },
   { id: 'mail', label: '[Thư]' },
@@ -64,10 +63,32 @@ const handleTabClick = (tabId: string) => {
   width: 100%;
   border-top: 1px solid rgba(0, 136, 0, 0.5);
   background-color: var(--bg-black);
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: thin;
+}
+
+/* Hide scrollbar for cleaner look but keep functionality */
+.footer-tab-bar::-webkit-scrollbar {
+  height: 4px;
+}
+
+.footer-tab-bar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.footer-tab-bar::-webkit-scrollbar-thumb {
+  background: rgba(0, 136, 0, 0.3);
+  border-radius: 2px;
+}
+
+.footer-tab-bar::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 136, 0, 0.5);
 }
 
 .tab-button {
-  flex: 1;
+  flex: 1 0 auto;
+  min-width: fit-content;
   padding: 0.75rem 0.5rem;
   background: transparent;
   color: var(--text-bright);
@@ -78,6 +99,7 @@ const handleTabClick = (tabId: string) => {
   font-size: 16px;
   transition: all 0.2s;
   text-align: center;
+  white-space: nowrap;
 }
 
 .tab-button:last-child {
@@ -111,6 +133,15 @@ const handleTabClick = (tabId: string) => {
   .tab-button {
     font-size: 14px;
     padding: 0.6rem 0.3rem;
+    min-width: 80px;
+  }
+}
+
+/* Tablet responsiveness */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .tab-button {
+    font-size: 15px;
+    padding: 0.7rem 0.4rem;
   }
 }
 </style>

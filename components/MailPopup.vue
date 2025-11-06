@@ -45,13 +45,13 @@
           <div class="attachment-title">Phần thưởng đính kèm:</div>
           <div class="attachment-list">
             <div v-if="selectedMail.attachedGold > 0" class="attachment-item">
-              💰 {{ selectedMail.attachedGold }} Vàng
+              [V] {{ selectedMail.attachedGold }} Vàng
             </div>
             <div v-if="selectedMail.attachedPremium > 0" class="attachment-item">
-              💎 {{ selectedMail.attachedPremium }} Kim Cương
+              [G] {{ selectedMail.attachedPremium }} Kim Cương
             </div>
             <div v-for="item in selectedMail.attachedItems" :key="item.id" class="attachment-item">
-              📦 {{ item.name }} x{{ item.quantity }}
+              [I] {{ item.name }} x{{ item.quantity }}
             </div>
           </div>
           <button class="claim-button" @click="claimRewards">

@@ -108,7 +108,7 @@
                 class="action-button track"
                 @click="trackQuest(selectedQuest)"
               >
-                [📍] THEO DÕI NHIỆM VỤ
+                [*] THEO DÕI NHIỆM VỤ
               </button>
               <button
                 v-if="selectedQuest.status === 'completed' && selectedQuest.isRepeatable"
