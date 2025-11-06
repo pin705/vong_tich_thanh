@@ -1009,7 +1009,7 @@ export async function initializeWorld() {
       agents: []
     });
 
-    // Phase 22: Zone 2 - Hầm Ngầm Bỏ Hoang (Abandoned Sewers) - 25 rooms
+    // Phase 22: Zone 2 - Hầm Ngầm Bỏ Hoang (Abandoned Sewers) - 7 rooms total
     const loiVaoHamNgam = await RoomSchema.create({
       name: 'Lối Vào Hầm Ngầm',
       description: 'Lối xuống tối tăm với các bậc đá ẩm ướt. Mùi hôi thối nồng nặc thoát lên từ bên dưới.',
@@ -1042,9 +1042,9 @@ export async function initializeWorld() {
       agents: []
     });
 
-    // Simplified: Create 19 more sewer rooms with variation (bulk insert)
+    // Simplified: Create 3 more sewer rooms with variation (bulk insert)
     const sewerRoomDocs = [];
-    for (let i = 5; i <= 23; i++) {
+    for (let i = 5; i <= 7; i++) {
       sewerRoomDocs.push({
         name: `Hầm Ngầm Khu ${i}`,
         description: `Khu vực hầm ngầm tối tăm, nước bẩn chảy ào ạt. ${i % 3 === 0 ? 'Có tiếng động lạ phía trước.' : i % 3 === 1 ? 'Mùi hôi thối nồng nặc.' : 'Tường phủ đầy rêu độc.'}`,
@@ -1055,7 +1055,7 @@ export async function initializeWorld() {
     }
     const sewerRooms = await RoomSchema.insertMany(sewerRoomDocs);
 
-    // Phase 22: Zone 3 - Nhà Máy Lắp Ráp Cũ (Old Assembly Plant) - 30 rooms
+    // Phase 22: Zone 3 - Nhà Máy Lắp Ráp Cũ (Old Assembly Plant) - 9 rooms total
     const loiVaoNhaMay = await RoomSchema.create({
       name: 'Cổng Nhà Máy',
       description: 'Cổng sắt khổng lồ đã rỉ sét nửa mở. Biển báo "Nguy Hiểm - Cấm Vào" đã phai màu.',
@@ -1088,9 +1088,9 @@ export async function initializeWorld() {
       agents: []
     });
 
-    // Simplified: Create 25 more factory rooms (bulk insert)
+    // Simplified: Create 5 more factory rooms (bulk insert)
     const factoryRoomDocs = [];
-    for (let i = 4; i <= 28; i++) {
+    for (let i = 4; i <= 8; i++) {
       factoryRoomDocs.push({
         name: `Khu Vực Nhà Máy ${i}`,
         description: `${i % 4 === 0 ? 'Phân xưởng' : i % 4 === 1 ? 'Kho chứa' : i % 4 === 2 ? 'Hành lang' : 'Phòng kỹ thuật'} số ${i}. ${i % 2 === 0 ? 'Máy móc rỉ sét nằm la liệt.' : 'Có dấu hiệu hoạt động gần đây.'}`,
@@ -1101,7 +1101,7 @@ export async function initializeWorld() {
     }
     const factoryRooms = await RoomSchema.insertMany(factoryRoomDocs);
 
-    // Phase 22: Zone 4 - Phòng Thí Nghiệm Bị Chôn Vùi (Sunken Laboratory) - 35 rooms
+    // Phase 22: Zone 4 - Phòng Thí Nghiệm Bị Chôn Vùi (Sunken Laboratory) - 9 rooms total
     const loiVaoPhongLab = await RoomSchema.create({
       name: 'Lối Vào Phòng Lab',
       description: 'Lối vào bị ngập nước. Cửa kim loại dày bị cong vênh. Cảnh báo sinh học phát sáng đỏ.',
@@ -1134,9 +1134,9 @@ export async function initializeWorld() {
       agents: []
     });
 
-    // Simplified: Create 31 more lab rooms (bulk insert)
+    // Simplified: Create 5 more lab rooms (bulk insert)
     const labRoomDocs = [];
-    for (let i = 3; i <= 33; i++) {
+    for (let i = 3; i <= 7; i++) {
       labRoomDocs.push({
         name: `Phòng Lab Khu ${i}`,
         description: `${i % 5 === 0 ? 'Phòng thí nghiệm' : i % 5 === 1 ? 'Kho mẫu vật' : i % 5 === 2 ? 'Phòng quan sát' : i % 5 === 3 ? 'Phòng khử trùng' : 'Hành lang lab'} số ${i}. Ngập nước và tối tăm.`,
@@ -1147,7 +1147,7 @@ export async function initializeWorld() {
     }
     const labRooms = await RoomSchema.insertMany(labRoomDocs);
 
-    // Phase 22: Zone 5 - Trung Tâm Vong Tích Thành (Citadel Core) - 30 elite rooms
+    // Phase 22: Zone 5 - Trung Tâm Vong Tích Thành (Citadel Core) - 8 elite rooms total
     const loiVaoTrungTam = await RoomSchema.create({
       name: 'Cổng Vào Trung Tâm',
       description: 'Cổng khổng lồ bằng kim loại cổ đại. Các ký tự phát sáng xanh lam. Năng lượng dày đặc trong không khí.',
@@ -1180,9 +1180,9 @@ export async function initializeWorld() {
       agents: []
     });
 
-    // Simplified: Create 26 more citadel rooms (bulk insert)
+    // Simplified: Create 4 more citadel rooms (bulk insert)
     const citadelRoomDocs = [];
-    for (let i = 3; i <= 28; i++) {
+    for (let i = 3; i <= 6; i++) {
       citadelRoomDocs.push({
         name: `Trung Tâm Khu ${i}`,
         description: `${i % 4 === 0 ? 'Phòng nghi lễ' : i % 4 === 1 ? 'Hành lang cổ đại' : i % 4 === 2 ? 'Phòng bảo vật' : 'Đền thờ nhỏ'} trong Citadel Core. Năng lượng cổ ngữ bao trùm.`,
