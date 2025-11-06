@@ -40,10 +40,12 @@ export const GuildSchema = defineMongooseModel({
       itemId: {
         type: Schema.Types.ObjectId,
         ref: 'Item',
+        required: true,
       },
       quantity: {
         type: Number,
         default: 1,
+        min: 1,
       },
     }],
     currency: {

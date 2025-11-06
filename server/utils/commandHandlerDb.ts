@@ -129,7 +129,7 @@ export async function handleCommandDb(command: Command, playerId: string): Promi
         responses.push('  guild                    - Xem lệnh bang hội');
         responses.push('  guild invite [tên]       - Mời người chơi vào bang');
         responses.push('  guild deposit gold [số]  - Gửi vàng vào kho bang');
-        responses.push('  guild withdraw gold [số] - Rút vàng từ kho (chỉ lãnh đạo)');
+        responses.push('  guild withdraw gold [số] - Rút vàng (lãnh đạo và sĩ quan)');
         responses.push('  g [tin nhắn]             - Chat với bang');
         responses.push('');
         responses.push('PvP:');
