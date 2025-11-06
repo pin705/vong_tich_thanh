@@ -85,7 +85,8 @@ export default defineEventHandler(async (event) => {
     }
 
     // Get current enhancement level (for now, we'll track it as a simple counter)
-    // In a real implementation, this would be stored in a player item instance
+    // TODO: In a full implementation, this should be stored in a player item instance
+    // with proper tracking using the IPlayerItem interface with instanceId
     const currentLevel = 0; // TODO: Get from item instance
 
     // Calculate gold cost based on enhancement level

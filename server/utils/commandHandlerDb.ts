@@ -31,6 +31,28 @@ const COMBAT_COMMANDS = ['attack', 'a', 'kill', 'flee', 'run'];
 const ITEM_COMMANDS = ['inventory', 'i', 'get', 'g', 'drop', 'use', 
                        'list', 'buy', 'sell'];
 
+// Helper function to get currency info for shop transactions
+function getCurrencyInfo(vendor: any, player: any) {
+  const isPremiumShop = vendor.shopType === 'premium';
+  const isDungeonShop = vendor.shopCurrency === 'dungeon_coin';
+  
+  let currencySymbol = '💰';
+  let playerCurrency = player.gold;
+  let currencyName = 'vàng';
+  
+  if (isPremiumShop) {
+    currencySymbol = '💎';
+    playerCurrency = player.premiumCurrency;
+    currencyName = 'Cổ Thạch';
+  } else if (isDungeonShop) {
+    currencySymbol = '🎫';
+    playerCurrency = player.dungeonCoin || 0;
+    currencyName = 'Xu Hầm Ngục';
+  }
+  
+  return { isPremiumShop, isDungeonShop, currencySymbol, playerCurrency, currencyName };
+}
+
 // Helper function to format trade status display
 async function formatTradeStatus(
   playerTrade: { tradeId: string; trade: any; isInitiator: boolean },
@@ -449,20 +471,8 @@ export async function handleCommandDb(command: Command, playerId: string): Promi
         }
 
         // Check price based on shop type and currency
-        const isPremiumShop = buyVendor.shopType === 'premium';
-        const isDungeonShop = buyVendor.shopCurrency === 'dungeon_coin';
-        const itemPrice = isPremiumShop ? (buyItem.premiumPrice ?? 0) : (buyItem.price ?? 0);
-        
-        let buyCurrencySymbol = '💰';
-        let playerCurrency = player.gold;
-        
-        if (isPremiumShop) {
-          buyCurrencySymbol = '💎';
-          playerCurrency = player.premiumCurrency;
-        } else if (isDungeonShop) {
-          buyCurrencySymbol = '🎫';
-          playerCurrency = player.dungeonCoin || 0;
-        }
+        const currencyInfo = getCurrencyInfo(buyVendor, player);
+        const itemPrice = currencyInfo.isPremiumShop ? (buyItem.premiumPrice ?? 0) : (buyItem.price ?? 0);
 
         // Validate that item has a valid price
         if (itemPrice <= 0) {
@@ -470,9 +480,8 @@ export async function handleCommandDb(command: Command, playerId: string): Promi
           break;
         }
 
-        if (playerCurrency < itemPrice) {
-          const currencyName = isPremiumShop ? 'Cổ Thạch' : isDungeonShop ? 'Xu Hầm Ngục' : 'vàng';
-          responses.push(`Bạn không có đủ ${currencyName} để mua [${buyItem.name}]. Cần ${itemPrice} ${buyCurrencySymbol}, bạn chỉ có ${playerCurrency} ${buyCurrencySymbol}.`);
+        if (currencyInfo.playerCurrency < itemPrice) {
+          responses.push(`Bạn không có đủ ${currencyInfo.currencyName} để mua [${buyItem.name}]. Cần ${itemPrice} ${currencyInfo.currencySymbol}, bạn chỉ có ${currencyInfo.playerCurrency} ${currencyInfo.currencySymbol}.`);
           break;
         }
 
@@ -498,9 +507,9 @@ export async function handleCommandDb(command: Command, playerId: string): Promi
         });
 
         // Deduct currency
-        if (isPremiumShop) {
+        if (currencyInfo.isPremiumShop) {
           player.premiumCurrency -= itemPrice;
-        } else if (isDungeonShop) {
+        } else if (currencyInfo.isDungeonShop) {
           player.dungeonCoin = (player.dungeonCoin || 0) - itemPrice;
         } else {
           player.gold -= itemPrice;
@@ -509,13 +518,13 @@ export async function handleCommandDb(command: Command, playerId: string): Promi
         player.inventory.push(newBuyItem._id);
         await player.save();
 
-        responses.push(`Bạn đã mua [${buyItem.name}] với giá ${itemPrice} ${buyCurrencySymbol}!`);
-        if (isPremiumShop) {
-          responses.push(`Cổ Thạch còn lại: ${player.premiumCurrency} ${buyCurrencySymbol}`);
-        } else if (isDungeonShop) {
-          responses.push(`Xu Hầm Ngục còn lại: ${player.dungeonCoin || 0} ${buyCurrencySymbol}`);
+        responses.push(`Bạn đã mua [${buyItem.name}] với giá ${itemPrice} ${currencyInfo.currencySymbol}!`);
+        if (currencyInfo.isPremiumShop) {
+          responses.push(`${currencyInfo.currencyName} còn lại: ${player.premiumCurrency} ${currencyInfo.currencySymbol}`);
+        } else if (currencyInfo.isDungeonShop) {
+          responses.push(`${currencyInfo.currencyName} còn lại: ${player.dungeonCoin || 0} ${currencyInfo.currencySymbol}`);
         } else {
-          responses.push(`Vàng còn lại: ${player.gold} ${buyCurrencySymbol}`);
+          responses.push(`${currencyInfo.currencyName} còn lại: ${player.gold} ${currencyInfo.currencySymbol}`);
         }
         break;
 

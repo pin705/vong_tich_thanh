@@ -3,6 +3,12 @@ import { resetDungeonProgress } from '../utils/dungeonService';
 /**
  * Scheduler Plugin - Handle periodic tasks
  * Runs weekly dungeon reset on Sundays at 00:00
+ * 
+ * NOTE: This implementation uses setTimeout which will be lost on server restart.
+ * For production, consider using:
+ * - node-cron for persistent scheduling
+ * - A job queue like Bull or Agenda
+ * - External cron service
  */
 export default defineNitroPlugin((nitroApp) => {
   console.log('[Scheduler] Starting scheduler plugin...');
