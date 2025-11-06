@@ -470,6 +470,10 @@ export async function executeCombatTick(playerId: string, agentId: string): Prom
       const lootMessages = await dropLoot(agent, player.currentRoomId.toString());
       messages.push(...lootMessages);
       
+      // Update quest progress for killing this mob
+      const questMessages = await updateQuestProgress(playerId, 'kill', agent.name);
+      messages.push(...questMessages);
+      
       // Notify about loot turn if in party
       const killerParty = partyService.getPlayerParty(playerId);
       if (killerParty) {
@@ -1028,6 +1032,63 @@ export async function startPvPCombat(attackerId: string, targetId: string): Prom
   } catch (error) {
     console.error('Error starting PvP combat:', error);
     messages.push('Lỗi khi bắt đầu chiến đấu PvP.');
+  }
+  
+  return messages;
+}
+
+// Update quest progress when player performs an action
+async function updateQuestProgress(playerId: string, actionType: string, target: string): Promise<string[]> {
+  const messages: string[] = [];
+  
+  try {
+    const { PlayerQuestSchema } = await import('../../models/PlayerQuest');
+    
+    // Find active quests for this player
+    const activeQuests = await PlayerQuestSchema.find({
+      playerId,
+      status: 'active'
+    });
+    
+    if (activeQuests.length === 0) {
+      return messages;
+    }
+    
+    // Update progress for matching objectives
+    for (const quest of activeQuests) {
+      let questUpdated = false;
+      
+      for (const objective of quest.objectives) {
+        // Check if objective matches the action
+        if (objective.type === actionType && objective.target.toLowerCase() === target.toLowerCase()) {
+          if (objective.progress < objective.count) {
+            objective.progress += 1;
+            questUpdated = true;
+            
+            // Check if objective is now complete
+            if (objective.progress >= objective.count) {
+              messages.push(`[Quest] Objective completed: ${objective.target} (${objective.progress}/${objective.count})`);
+            } else {
+              messages.push(`[Quest] Progress: ${objective.target} (${objective.progress}/${objective.count})`);
+            }
+          }
+        }
+      }
+      
+      if (questUpdated) {
+        // Check if all objectives are complete
+        const allComplete = quest.objectives.every((obj: any) => obj.progress >= obj.count);
+        if (allComplete) {
+          messages.push('');
+          messages.push(`[!] Quest "${quest.questId}" ready to complete!`);
+          messages.push('Return to the quest giver to claim your reward.');
+        }
+        
+        await quest.save();
+      }
+    }
+  } catch (error) {
+    console.error('Error updating quest progress:', error);
   }
   
   return messages;
