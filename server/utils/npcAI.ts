@@ -240,6 +240,7 @@ interface RespawnTimer {
 const respawnTimers: Map<string, RespawnTimer> = new Map();
 
 // Schedule agent respawn - uses room's respawnTimeSeconds or defaults to 5 minutes
+// Can spawn multiple instances based on maxInstances setting
 export async function scheduleAgentRespawn(agentData: any, roomId: string): Promise<void> {
   // Get room to check respawn time
   const room = await RoomSchema.findById(roomId);
@@ -248,6 +249,31 @@ export async function scheduleAgentRespawn(agentData: any, roomId: string): Prom
   
   const timer = setTimeout(async () => {
     try {
+      // Get max instances for this agent type (default to 3 for mobs, 1 for others)
+      const maxInstances = agentData.maxInstances || (agentData.type === 'mob' ? 3 : 1);
+      
+      // Count how many instances of this agent (by name and type) already exist in the room
+      const room = await RoomSchema.findById(roomId);
+      if (!room) {
+        console.error(`Room ${roomId} not found for respawn`);
+        return;
+      }
+      
+      const existingAgents = await AgentSchema.find({ 
+        _id: { $in: room.agents },
+        name: agentData.name,
+        type: agentData.type
+      });
+      
+      const currentCount = existingAgents.length;
+      
+      // Only spawn if below max instances
+      if (currentCount >= maxInstances) {
+        console.log(`Agent ${agentData.name} already at max instances (${currentCount}/${maxInstances}) in room ${roomId}`);
+        respawnTimers.delete(agentData._id.toString());
+        return;
+      }
+      
       // Create new agent with same data
       const newAgent = await AgentSchema.create({
         name: agentData.name,
@@ -271,6 +297,7 @@ export async function scheduleAgentRespawn(agentData: any, roomId: string): Prom
         isVendor: agentData.isVendor,
         shopInventory: agentData.shopInventory,
         shopType: agentData.shopType,
+        maxInstances: agentData.maxInstances,
         inCombat: false
       });
 

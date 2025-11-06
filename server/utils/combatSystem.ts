@@ -526,7 +526,8 @@ export async function executeCombatTick(playerId: string, agentId: string): Prom
         faction: agent.faction,
         isVendor: agent.isVendor,
         shopInventory: agent.shopInventory,
-        shopType: agent.shopType
+        shopType: agent.shopType,
+        maxInstances: agent.maxInstances
       };
       
       if (room) {
