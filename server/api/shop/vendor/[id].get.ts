@@ -1,4 +1,5 @@
 import { AgentSchema } from '~/models/Agent';
+import { deduplicateItemsById } from '~/server/utils/itemDeduplication';
 
 export default defineEventHandler(async (event) => {
   try {
@@ -41,9 +42,7 @@ export default defineEventHandler(async (event) => {
     
     // Merge both arrays and remove duplicates based on _id
     const allItems = [...shopInventory, ...shopItems];
-    const uniqueItems = allItems.filter((item, index, self) =>
-      index === self.findIndex((t) => t._id.toString() === item._id.toString())
-    );
+    const uniqueItems = deduplicateItemsById(allItems);
 
     return {
       success: true,

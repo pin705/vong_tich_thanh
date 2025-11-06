@@ -7,6 +7,7 @@ import { partyService } from '../utils/partyService';
 import { PlayerSchema } from '../../models/Player';
 import { RoomSchema } from '../../models/Room';
 import { AgentSchema } from '../../models/Agent';
+import { deduplicateItemsById } from '../utils/itemDeduplication';
 
 // Store peer to player mapping
 const peerToPlayer = new Map<string, string>();
@@ -143,9 +144,7 @@ async function sendVendorShop(peer: Peer, vendorId: string) {
     
     // Merge both arrays and remove duplicates based on _id
     const allItems = [...shopInventory, ...shopItems];
-    const uniqueItems = allItems.filter((item, index, self) =>
-      index === self.findIndex((t) => t._id.toString() === item._id.toString())
-    );
+    const uniqueItems = deduplicateItemsById(allItems);
 
     peer.send(JSON.stringify({
       type: 'shop_data',

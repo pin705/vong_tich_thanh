@@ -6,6 +6,7 @@ import { AgentSchema } from '../../models/Agent';
 import { BuffSchema } from '../../models/Buff';
 import { gameState } from '../utils/gameState';
 import { partyService } from '../utils/partyService';
+import { deduplicateItemsById } from '../utils/itemDeduplication';
 
 /**
  * Handle item-related commands (get, drop, use, inventory, list, buy, sell)
@@ -309,9 +310,7 @@ export async function handleItemCommand(command: Command, playerId: string): Pro
         const shopInventory = vendor.shopInventory || [];
         const shopItems = vendor.shopItems || [];
         const allItems = [...shopInventory, ...shopItems];
-        const uniqueItems = allItems.filter((item, index, self) =>
-          index === self.findIndex((t) => t._id.toString() === item._id.toString())
-        );
+        const uniqueItems = deduplicateItemsById(allItems);
 
         if (uniqueItems.length === 0) {
           responses.push(`[${vendor.name}] không có gì để bán.`);
@@ -357,9 +356,7 @@ export async function handleItemCommand(command: Command, playerId: string): Pro
         const shopInventory = vendor.shopInventory || [];
         const shopItems = vendor.shopItems || [];
         const allItems = [...shopInventory, ...shopItems];
-        const uniqueItems = allItems.filter((item, index, self) =>
-          index === self.findIndex((t) => t._id.toString() === item._id.toString())
-        );
+        const uniqueItems = deduplicateItemsById(allItems);
         const item = uniqueItems.find((i: any) => 
           i.name.toLowerCase().includes(target.toLowerCase())
         );

@@ -13,6 +13,7 @@ import { handleMovementCommand, handleGotoCommand } from '../commands/movement';
 import { handleCombatCommand } from '../commands/combat';
 import { handleItemCommand } from '../commands/item';
 import { formatRoomDescription } from './roomUtils';
+import { deduplicateItemsById } from './itemDeduplication';
 
 // Command routing configuration
 const MOVEMENT_COMMANDS = ['go', 'n', 's', 'e', 'w', 'u', 'd', 
@@ -411,9 +412,7 @@ export async function handleCommandDb(command: Command, playerId: string): Promi
         const shopInventory = vendor.shopInventory || [];
         const shopItems = vendor.shopItems || [];
         const allItems = [...shopInventory, ...shopItems];
-        const uniqueItems = allItems.filter((item, index, self) =>
-          index === self.findIndex((t) => t._id.toString() === item._id.toString())
-        );
+        const uniqueItems = deduplicateItemsById(allItems);
 
         if (uniqueItems.length === 0) {
           responses.push(`[${vendor.name}] không có gì để bán.`);
@@ -459,9 +458,7 @@ export async function handleCommandDb(command: Command, playerId: string): Promi
         const buyShopInventory = buyVendor.shopInventory || [];
         const buyShopItems = buyVendor.shopItems || [];
         const buyAllItems = [...buyShopInventory, ...buyShopItems];
-        const buyUniqueItems = buyAllItems.filter((item, index, self) =>
-          index === self.findIndex((t) => t._id.toString() === item._id.toString())
-        );
+        const buyUniqueItems = deduplicateItemsById(buyAllItems);
         const buyItem = buyUniqueItems.find((i: any) => 
           i.name.toLowerCase().includes(target.toLowerCase())
         );
