@@ -262,10 +262,14 @@ export async function scheduleAgentRespawn(agentData: any, roomId: string): Prom
         dialogue: agentData.dialogue,
         shopItems: agentData.shopItems,
         loot: agentData.loot,
+        lootTable: agentData.lootTable,
         experience: agentData.experience,
         agentType: agentData.agentType,
         mechanics: agentData.mechanics,
         faction: agentData.faction,
+        isVendor: agentData.isVendor,
+        shopInventory: agentData.shopInventory,
+        shopType: agentData.shopType,
         inCombat: false
       });
 
@@ -283,6 +287,10 @@ export async function scheduleAgentRespawn(agentData: any, roomId: string): Prom
             message: `[${newAgent.name}] xuất hiện!`
           }
         );
+        
+        // Update room occupants for all players in the room
+        const { broadcastRoomOccupants } = await import('../routes/ws');
+        await broadcastRoomOccupants(room._id.toString());
         
         // If boss, send world alert
         if (agentData.agentType === 'boss') {

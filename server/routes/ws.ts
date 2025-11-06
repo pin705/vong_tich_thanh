@@ -104,7 +104,7 @@ async function sendRoomOccupants(peer: Peer, roomId: string, currentPlayerId: st
 }
 
 // Helper function to broadcast room occupants to all players in a room
-async function broadcastRoomOccupants(roomId: string) {
+export async function broadcastRoomOccupants(roomId: string) {
   const room = await RoomSchema.findById(roomId);
   if (!room) return;
 

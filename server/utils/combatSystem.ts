@@ -464,10 +464,14 @@ export async function executeCombatTick(playerId: string, agentId: string): Prom
         dialogue: agent.dialogue,
         shopItems: agent.shopItems,
         loot: agent.loot,
+        lootTable: agent.lootTable,
         experience: agent.experience,
         agentType: agent.agentType,
         mechanics: agent.mechanics,
-        faction: agent.faction
+        faction: agent.faction,
+        isVendor: agent.isVendor,
+        shopInventory: agent.shopInventory,
+        shopType: agent.shopType
       };
       
       if (room) {
@@ -522,6 +526,10 @@ export async function executeCombatTick(playerId: string, agentId: string): Prom
           },
           playerId
         );
+        
+        // Update room occupants for all players in the room
+        const { broadcastRoomOccupants } = await import('../routes/ws');
+        await broadcastRoomOccupants(room._id.toString());
       }
       
       return;
