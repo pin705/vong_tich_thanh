@@ -128,13 +128,72 @@ onUnmounted(() => {
   max-height: 95vh;
 }
 
+/* Tablet responsiveness */
+@media (max-width: 1024px) {
+  .overlay-content-small {
+    width: 92%;
+    max-width: 420px;
+  }
+  
+  .overlay-content-medium {
+    width: 92%;
+    max-width: 650px;
+  }
+  
+  .overlay-content-large {
+    width: 92%;
+    max-width: 85vw;
+    max-height: 88vh;
+  }
+  
+  .overlay-content-fullscreen {
+    width: 96vw;
+    height: 96vh;
+    max-height: 96vh;
+  }
+}
+
 /* Mobile responsiveness */
 @media (max-width: 768px) {
+  .overlay-content-small {
+    width: 96%;
+    max-width: none;
+    max-height: 400px;
+  }
+  
+  .overlay-content-medium {
+    width: 96%;
+    max-width: none;
+    max-height: 600px;
+  }
+  
   .overlay-content-large,
   .overlay-content-fullscreen {
-    width: 95vw;
-    height: 90vh;
-    max-height: 90vh;
+    width: 98vw;
+    height: 94vh;
+    max-height: 94vh;
+  }
+}
+
+/* Small mobile responsiveness */
+@media (max-width: 480px) {
+  .overlay-content-small {
+    width: 98%;
+    max-height: 450px;
+  }
+  
+  .overlay-content-medium {
+    width: 98%;
+    max-height: 650px;
+  }
+  
+  .overlay-content-large,
+  .overlay-content-fullscreen {
+    width: 100vw;
+    height: 96vh;
+    max-height: 96vh;
+    border-left: none;
+    border-right: none;
   }
 }
 
@@ -147,11 +206,42 @@ onUnmounted(() => {
   background-color: rgba(0, 136, 0, 0.05);
 }
 
+/* Mobile & Tablet optimizations for overlay-header */
+@media (max-width: 1024px) {
+  .overlay-header {
+    padding: 0.875rem 1.25rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .overlay-header {
+    padding: 0.75rem 1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .overlay-header {
+    padding: 0.625rem 0.75rem;
+  }
+}
+
 .overlay-title {
   color: var(--text-accent);
   font-size: 24px;
   font-weight: bold;
   text-transform: uppercase;
+}
+
+@media (max-width: 768px) {
+  .overlay-title {
+    font-size: 20px;
+  }
+}
+
+@media (max-width: 480px) {
+  .overlay-title {
+    font-size: 18px;
+  }
 }
 
 .overlay-close {
@@ -162,6 +252,20 @@ onUnmounted(() => {
   cursor: pointer;
   font-size: 18px;
   transition: all 0.2s;
+}
+
+@media (max-width: 768px) {
+  .overlay-close {
+    padding: 0.375rem 0.75rem;
+    font-size: 16px;
+  }
+}
+
+@media (max-width: 480px) {
+  .overlay-close {
+    padding: 0.25rem 0.5rem;
+    font-size: 14px;
+  }
 }
 
 .overlay-close:hover {
@@ -178,10 +282,48 @@ onUnmounted(() => {
   line-height: 1.6;
 }
 
+/* Mobile & Tablet optimizations for overlay-body */
+@media (max-width: 1024px) {
+  .overlay-body {
+    padding: 1rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .overlay-body {
+    padding: 0.75rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .overlay-body {
+    padding: 0.5rem;
+  }
+}
+
 .overlay-footer {
   padding: 1rem 1.5rem;
   border-top: 1px solid var(--text-dim);
   background-color: rgba(0, 136, 0, 0.05);
+}
+
+/* Mobile & Tablet optimizations for overlay-footer */
+@media (max-width: 1024px) {
+  .overlay-footer {
+    padding: 0.875rem 1.25rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .overlay-footer {
+    padding: 0.75rem 1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .overlay-footer {
+    padding: 0.625rem 0.75rem;
+  }
 }
 
 /* Custom scrollbar */
