@@ -6,7 +6,7 @@ import { AgentSchema } from '../../models/Agent';
 import { BuffSchema } from '../../models/Buff';
 import { gameState } from './gameState';
 import { DEV_FEATURE_MESSAGE, SMALL_POTION_HEALING } from './constants';
-import { startCombat, fleeCombat } from './combatSystem';
+import { startCombat, fleeCombat, updateQuestProgress } from './combatSystem';
 import { partyService } from './partyService';
 import { tradeService } from './tradeService';
 import { handleMovementCommand, handleGotoCommand } from '../commands/movement';
@@ -246,6 +246,10 @@ export async function handleCommandDb(command: Command, playerId: string): Promi
         } else {
           responses.push(`[${talkAgent.name}] không có gì để nói với bạn.`);
         }
+        
+        // Update quest progress for talk objectives
+        const questMessages = await updateQuestProgress(playerId, 'talk', talkAgent.name);
+        responses.push(...questMessages);
         break;
 
       case 'say':
