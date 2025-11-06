@@ -276,14 +276,14 @@ export async function scheduleAgentRespawn(agentData: any, roomId: string): Prom
       const maxInstances = agentData.maxInstances || (agentData.type === 'mob' ? DEFAULT_MOB_MAX_INSTANCES : DEFAULT_AGENT_MAX_INSTANCES);
       
       // Count how many instances of this agent (by name and type) already exist in the room
-      const room = await RoomSchema.findById(roomId);
-      if (!room) {
+      const targetRoom = await RoomSchema.findById(roomId);
+      if (!targetRoom) {
         console.error(`Room ${roomId} not found for respawn`);
         return;
       }
       
       const existingAgents = await AgentSchema.find({ 
-        _id: { $in: room.agents },
+        _id: { $in: targetRoom.agents },
         name: agentData.name,
         type: agentData.type
       });
@@ -324,14 +324,15 @@ export async function scheduleAgentRespawn(agentData: any, roomId: string): Prom
         inCombat: false
       });
 
-      // Add to current room
-      if (room) {
-        room.agents.push(newAgent._id);
-        await room.save();
+      // Add to room
+      const respawnRoom = await RoomSchema.findById(roomId);
+      if (respawnRoom) {
+        respawnRoom.agents.push(newAgent._id);
+        await respawnRoom.save();
 
         // Broadcast respawn message
         gameState.broadcastToRoom(
-          room._id.toString(),
+          respawnRoom._id.toString(),
           {
             type: 'accent',
             message: `[${newAgent.name}] xuất hiện!`
@@ -339,12 +340,12 @@ export async function scheduleAgentRespawn(agentData: any, roomId: string): Prom
         );
         
         // Update room occupants for all players in the room
-        await broadcastRoomOccupants(room._id.toString());
+        await broadcastRoomOccupants(respawnRoom._id.toString());
         
         // If boss, send world alert
         if (agentData.agentType === 'boss') {
           const { broadcastService } = await import('./broadcastService');
-          broadcastService.sendWorldAlert(`*** [${newAgent.name}] đã xuất hiện tại [${room.name}]! ***`);
+          broadcastService.sendWorldAlert(`*** [${newAgent.name}] đã xuất hiện tại [${respawnRoom.name}]! ***`);
         }
       }
 
