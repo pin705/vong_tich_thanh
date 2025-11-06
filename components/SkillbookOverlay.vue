@@ -135,7 +135,7 @@ interface Props {
 }
 
 const props = defineProps<Props>();
-  const emit = defineEmits(['close', 'assignSkill']);
+const emit = defineEmits(['close', 'assignSkill']);
 
 const activeTab = ref<'active' | 'passive'>('active');
 const selectedSkill = ref<Skill | null>(null);
