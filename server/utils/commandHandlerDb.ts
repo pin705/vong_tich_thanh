@@ -126,12 +126,10 @@ export async function handleCommandDb(command: Command, playerId: string): Promi
         responses.push('  p [tin nhắn]             - Chat với nhóm');
         responses.push('');
         responses.push('BANG HỘI (GUILD):');
-        responses.push('  guild info               - Xem thông tin bang');
+        responses.push('  guild                    - Xem lệnh bang hội');
         responses.push('  guild invite [tên]       - Mời người chơi vào bang');
-        responses.push('  guild leave              - Rời bang');
-        responses.push('  guild kick [tên]         - Đuổi thành viên');
-        responses.push('  guild promote [tên]      - Thăng chức sĩ quan');
-        responses.push('  guild demote [tên]       - Giáng chức thành viên');
+        responses.push('  guild deposit gold [số]  - Gửi vàng vào kho bang');
+        responses.push('  guild withdraw gold [số] - Rút vàng từ kho (chỉ lãnh đạo)');
         responses.push('  g [tin nhắn]             - Chat với bang');
         responses.push('');
         responses.push('PvP:');
@@ -1443,6 +1441,133 @@ export async function handleCommandDb(command: Command, playerId: string): Promi
         });
         
         // Don't add to responses - it will be shown via chat system
+        break;
+      }
+
+      case 'guild': {
+        // Guild management commands
+        const subCommand = target?.toLowerCase();
+        const subTarget = args?.[0];
+        const amount = args?.[1];
+
+        if (!subCommand) {
+          responses.push('═══════════════════════════════════════════════════');
+          responses.push('            LỆNH BANG HỘI                          ');
+          responses.push('═══════════════════════════════════════════════════');
+          responses.push('guild create [tên] [tag]  - Tạo bang mới');
+          responses.push('guild invite [tên]        - Mời người chơi');
+          responses.push('guild leave               - Rời bang');
+          responses.push('guild kick [tên]          - Đuổi thành viên');
+          responses.push('guild promote [tên]       - Thăng chức thành viên');
+          responses.push('guild demote [tên]        - Giáng chức sĩ quan');
+          responses.push('guild deposit gold [số]   - Gửi vàng vào kho');
+          responses.push('guild withdraw gold [số]  - Rút vàng từ kho');
+          responses.push('g [message]               - Chat trong bang');
+          break;
+        }
+
+        switch (subCommand) {
+          case 'deposit': {
+            if (!player.guild) {
+              responses.push('Bạn không có bang hội.');
+              break;
+            }
+
+            const depositType = subTarget?.toLowerCase();
+            
+            if (depositType === 'gold') {
+              const goldAmount = parseInt(amount || '0');
+              
+              if (!goldAmount || goldAmount <= 0) {
+                responses.push('Cú pháp: guild deposit gold [số lượng]');
+                break;
+              }
+              
+              if (player.gold < goldAmount) {
+                responses.push(`Bạn không đủ vàng. Hiện có: ${player.gold} vàng.`);
+                break;
+              }
+              
+              const { GuildSchema } = await import('../../models/Guild');
+              const guild = await GuildSchema.findById(player.guild);
+              
+              if (!guild) {
+                responses.push('Không tìm thấy bang hội.');
+                break;
+              }
+              
+              // Transfer gold
+              player.gold -= goldAmount;
+              guild.currency = (guild.currency || 0) + goldAmount;
+              
+              await player.save();
+              await guild.save();
+              
+              responses.push(`Đã gửi ${goldAmount} vàng vào kho bang hội.`);
+              responses.push(`Kho bang hiện có: ${guild.currency} vàng.`);
+            } else {
+              responses.push('Hiện tại chỉ hỗ trợ: guild deposit gold [số lượng]');
+            }
+            break;
+          }
+
+          case 'withdraw': {
+            if (!player.guild) {
+              responses.push('Bạn không có bang hội.');
+              break;
+            }
+
+            const { GuildSchema } = await import('../../models/Guild');
+            const guild = await GuildSchema.findById(player.guild);
+            
+            if (!guild) {
+              responses.push('Không tìm thấy bang hội.');
+              break;
+            }
+
+            // Check if player is leader or officer
+            const isLeader = guild.leader.toString() === player._id.toString();
+            const isOfficer = guild.officers.some((o: any) => o.toString() === player._id.toString());
+            
+            if (!isLeader && !isOfficer) {
+              responses.push('Chỉ bang chủ và sĩ quan mới có thể rút từ kho.');
+              break;
+            }
+
+            const withdrawType = subTarget?.toLowerCase();
+            
+            if (withdrawType === 'gold') {
+              const goldAmount = parseInt(amount || '0');
+              
+              if (!goldAmount || goldAmount <= 0) {
+                responses.push('Cú pháp: guild withdraw gold [số lượng]');
+                break;
+              }
+              
+              if ((guild.currency || 0) < goldAmount) {
+                responses.push(`Kho bang không đủ vàng. Hiện có: ${guild.currency || 0} vàng.`);
+                break;
+              }
+              
+              // Transfer gold
+              guild.currency = (guild.currency || 0) - goldAmount;
+              player.gold += goldAmount;
+              
+              await guild.save();
+              await player.save();
+              
+              responses.push(`Đã rút ${goldAmount} vàng từ kho bang hội.`);
+              responses.push(`Kho bang còn lại: ${guild.currency} vàng.`);
+            } else {
+              responses.push('Hiện tại chỉ hỗ trợ: guild withdraw gold [số lượng]');
+            }
+            break;
+          }
+
+          default:
+            responses.push('Lệnh không hợp lệ. Gõ "guild" để xem danh sách lệnh.');
+            break;
+        }
         break;
       }
 
