@@ -54,6 +54,8 @@ export async function handleMovementCommand(command: Command, playerId: string):
     const nextRoom = await RoomSchema.findById(nextRoomId);
     if (!nextRoom) {
       responses.push('Lỗi: Không tìm thấy phòng đích.');
+      // Log the error for debugging
+      console.error(`Room exit error: Room ${currentRoom._id} (${currentRoom.name}) has exit ${direction} pointing to non-existent room ${nextRoomId}`);
       return responses;
     }
 

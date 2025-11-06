@@ -339,7 +339,12 @@ export async function executeCombatTick(playerId: string, agentId: string): Prom
     agent.hp = Math.max(0, agent.hp - playerDamage);
     await agent.save();
     
-    messages.push(`Bạn tấn công [${agent.name}], gây ${playerDamage} sát thương.`);
+    // Enhanced combat narrative - vary attack descriptions
+    const attackVerbs = ['tấn công', 'đánh trúng', 'ra đòn', 'tung đòn', 'giáng đòn'];
+    const attackVerb = attackVerbs[Math.floor(Math.random() * attackVerbs.length)];
+    const damageDesc = playerDamage > playerBaseDamage * 1.1 ? ' (Chí mạng!)' : 
+                       playerDamage < playerBaseDamage * 0.9 ? ' (Trượt phớt)' : '';
+    messages.push(`Bạn ${attackVerb} [${agent.name}], gây ${playerDamage} sát thương${damageDesc}. (HP còn lại: ${agent.hp}/${agent.maxHp})`);
     
     // Check if agent died
     if (agent.hp <= 0) {
@@ -526,10 +531,13 @@ export async function executeCombatTick(playerId: string, agentId: string): Prom
     player.hp = Math.max(0, player.hp - actualDamage);
     await player.save();
     
+    // Enhanced enemy attack narrative
+    const enemyAttackVerbs = ['tấn công', 'lao vào', 'đánh trả', 'phản công', 'tấn công ngược'];
+    const enemyAttackVerb = enemyAttackVerbs[Math.floor(Math.random() * enemyAttackVerbs.length)];
     if (playerDefense > 0) {
-      messages.push(`[${agent.name}] tấn công bạn, gây ${agentDamage} sát thương (giảm ${playerDefense} bởi giáp).`);
+      messages.push(`[${agent.name}] ${enemyAttackVerb} bạn! Gây ${agentDamage} sát thương, nhưng giáp của bạn giảm ${playerDefense} sát thương. (HP còn lại: ${player.hp}/${player.maxHp})`);
     } else {
-      messages.push(`[${agent.name}] tấn công bạn, gây ${actualDamage} sát thương.`);
+      messages.push(`[${agent.name}] ${enemyAttackVerb} bạn, gây ${actualDamage} sát thương! (HP còn lại: ${player.hp}/${player.maxHp})`);
     }
     
     // Check if player died
@@ -679,8 +687,27 @@ export async function startCombat(playerId: string, agentId: string): Promise<st
     agent.combatTarget = player._id as any;
     await agent.save();
     
-    messages.push(`Bạn lao vào tấn công [${agent.name}]!`);
-    messages.push(`HP: ${player.hp}/${player.maxHp} | [${agent.name}] HP: ${agent.hp}/${agent.maxHp}`);
+    // Enhanced combat start narrative
+    const combatStartMessages = [
+      `Bạn rút vũ khí và lao vào tấn công [${agent.name}]!`,
+      `Bạn nhào tới đánh [${agent.name}] với quyết tâm chiến đấu!`,
+      `Bạn chuẩn bị tư thế và bắt đầu giao tranh với [${agent.name}]!`,
+      `Bạn lao vào tấn công [${agent.name}]!`
+    ];
+    const startMessage = combatStartMessages[Math.floor(Math.random() * combatStartMessages.length)];
+    messages.push(startMessage);
+    
+    // Add agent reaction based on behavior
+    if (agent.behavior === 'aggressive') {
+      messages.push(`[${agent.name}] gầm lên dữ dội và sẵn sàng chiến đấu!`);
+    } else if (agent.behavior === 'wander') {
+      messages.push(`[${agent.name}] quay lại và đối mặt với bạn!`);
+    } else {
+      messages.push(`[${agent.name}] chuẩn bị chiến đấu!`);
+    }
+    
+    messages.push('');
+    messages.push(`Trận chiến bắt đầu! HP: ${player.hp}/${player.maxHp} | [${agent.name}] HP: ${agent.hp}/${agent.maxHp}`);
     
     // Broadcast to room
     const room = await RoomSchema.findById(player.currentRoomId);

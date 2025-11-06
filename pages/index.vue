@@ -356,6 +356,10 @@ const chatUnread = ref(false);
 const CHAT_STORAGE_KEY = 'vong-tich-thanh-chat-log';
 const MAX_CHAT_MESSAGES = 200; // Limit stored messages to prevent localStorage overflow
 
+// Message limits to prevent accumulation
+const MAX_MAIN_LOG_MESSAGES = 500; // Keep last 500 messages in main log
+const MAX_COMBAT_LOG_MESSAGES = 300; // Keep last 300 messages in combat log
+
 // Load chat messages from localStorage
 const loadChatFromStorage = () => {
   if (typeof window === 'undefined') return;
@@ -597,12 +601,20 @@ const addMessage = (text: string, type: Message['type'] = 'normal', user?: strin
   // Route to appropriate log based on channel
   if (channel === 'combat') {
     combatLog.value.push(message);
+    // Trim combat log if it exceeds limit
+    if (combatLog.value.length > MAX_COMBAT_LOG_MESSAGES) {
+      combatLog.value = combatLog.value.slice(-MAX_COMBAT_LOG_MESSAGES);
+    }
     // Set unread indicator if not on combat tab
     if (currentChannel.value !== 'combat') {
       combatUnread.value = true;
     }
   } else if (channel === 'chat' || type === 'chat_log') {
     chatLog.value.push(message);
+    // Trim chat log if it exceeds limit
+    if (chatLog.value.length > MAX_CHAT_MESSAGES) {
+      chatLog.value = chatLog.value.slice(-MAX_CHAT_MESSAGES);
+    }
     // Save chat to localStorage
     saveChatToStorage();
     // Set unread indicator if not on chat tab
@@ -612,6 +624,10 @@ const addMessage = (text: string, type: Message['type'] = 'normal', user?: strin
   } else {
     // Default to main channel
     mainLog.value.push(message);
+    // Trim main log if it exceeds limit
+    if (mainLog.value.length > MAX_MAIN_LOG_MESSAGES) {
+      mainLog.value = mainLog.value.slice(-MAX_MAIN_LOG_MESSAGES);
+    }
     // Set unread indicator if not on main tab
     if (currentChannel.value !== 'main') {
       mainUnread.value = true;

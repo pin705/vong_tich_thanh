@@ -2010,24 +2010,219 @@ export async function initializeWorld() {
     hamNgam2.agents.push(nhenDotBien._id);
     hamNgam4.agents.push(nguoiCongNgam._id);
     hamNgamBoss.agents.push(robotQuanLyCong._id);
+    
+    // Populate sewer rooms with monsters
+    for (let i = 0; i < sewerRooms.length; i++) {
+      // Add Nhện Đột Biến and Người Cống Ngầm to sewer rooms
+      if (i % 2 === 0) {
+        // Create Nhện Đột Biến instance
+        const spider = await AgentSchema.create({
+          name: 'Nhện Đột Biến',
+          description: 'Nhện khổng lồ với nhiều mắt đỏ rực. Nọc độc nhỏ giọt từ nanh.',
+          type: 'mob',
+          currentRoomId: sewerRooms[i]._id,
+          hp: 120,
+          maxHp: 120,
+          level: 12,
+          damage: 15,
+          behavior: 'aggressive',
+          loot: [],
+          experience: 80,
+          agentType: 'mob',
+          lootTable: [
+            { itemId: voNhenCung._id, dropChance: 0.6 },
+            { itemId: loiNangLuongYeu._id, dropChance: 0.3 }
+          ]
+        });
+        sewerRooms[i].agents.push(spider._id);
+      } else {
+        // Create Người Cống Ngầm instance
+        const sewerperson = await AgentSchema.create({
+          name: 'Người Cống Ngầm',
+          description: 'Sinh vật nhân hình biến dạng sống trong hầm ngầm. Da xanh nhợt nhạt.',
+          type: 'mob',
+          currentRoomId: sewerRooms[i]._id,
+          hp: 150,
+          maxHp: 150,
+          level: 16,
+          damage: 20,
+          behavior: 'aggressive',
+          loot: [],
+          experience: 120,
+          agentType: 'mob',
+          lootTable: [
+            { itemId: voNhenCung._id, dropChance: 0.5 },
+            { itemId: loiNangLuongYeu._id, dropChance: 0.4 }
+          ]
+        });
+        sewerRooms[i].agents.push(sewerperson._id);
+      }
+      await sewerRooms[i].save();
+    }
 
     // Zone 3
     loiVaoNhaMay.agents.push(kySuTruongCu._id);
     nhaMay2.agents.push(robotBaoVeRiSet._id);
     nhaMay3.agents.push(congNhanBienDi._id);
     nhaMayBoss.agents.push(robotSatThuMau01._id);
+    
+    // Populate factory rooms with monsters
+    for (let i = 0; i < factoryRooms.length; i++) {
+      if (i % 2 === 0) {
+        // Create Robot Bảo Vệ Rỉ Sét instance
+        const robot = await AgentSchema.create({
+          name: 'Robot Bảo Vệ Rỉ Sét',
+          description: 'Robot bảo vệ cũ kỹ, rỉ sét nhưng vẫn hoạt động. Vũ khí đã lỗi thời.',
+          type: 'mob',
+          currentRoomId: factoryRooms[i]._id,
+          hp: 180,
+          maxHp: 180,
+          level: 22,
+          damage: 25,
+          behavior: 'patrol',
+          patrolRoute: [factoryRooms[i]._id],
+          loot: [],
+          experience: 150,
+          agentType: 'mob',
+          lootTable: [
+            { itemId: banhRangRiSet._id, dropChance: 0.7 },
+            { itemId: loiNangLuongYeu._id, dropChance: 0.4 }
+          ]
+        });
+        factoryRooms[i].agents.push(robot._id);
+      } else {
+        // Create Công Nhân Biến Dị instance
+        const mutantWorker = await AgentSchema.create({
+          name: 'Công Nhân Biến Dị',
+          description: 'Công nhân bị đột biến bởi hóa chất. Thân hình biến dạng, mắt trống rỗng.',
+          type: 'mob',
+          currentRoomId: factoryRooms[i]._id,
+          hp: 220,
+          maxHp: 220,
+          level: 26,
+          damage: 30,
+          behavior: 'wander',
+          loot: [],
+          experience: 180,
+          agentType: 'mob',
+          lootTable: [
+            { itemId: moDotBienNho._id, dropChance: 0.7 },
+            { itemId: banhRangRiSet._id, dropChance: 0.3 }
+          ]
+        });
+        factoryRooms[i].agents.push(mutantWorker._id);
+      }
+      await factoryRooms[i].save();
+    }
 
     // Zone 4
     loiVaoPhongLab.agents.push(giaoSuBiAn._id);
     phongLab1.agents.push(bongMaKhoaHocGia._id);
     phongLab2.agents.push(sinhVatThiNghiemLoi._id);
     phongLabBoss.agents.push(quaiVatMe._id);
+    
+    // Populate lab rooms with monsters
+    for (let i = 0; i < labRooms.length; i++) {
+      if (i % 2 === 0) {
+        // Create Sinh Vật Thí Nghiệm Lỗi instance
+        const experiment = await AgentSchema.create({
+          name: 'Sinh Vật Thí Nghiệm Lỗi',
+          description: 'Sinh vật lai tạo thất bại. Nhiều chi, nhiều đầu, di chuyển kỳ dị.',
+          type: 'mob',
+          currentRoomId: labRooms[i]._id,
+          hp: 280,
+          maxHp: 280,
+          level: 32,
+          damage: 38,
+          behavior: 'aggressive',
+          loot: [],
+          experience: 240,
+          agentType: 'mob',
+          lootTable: [
+            { itemId: moDotBienLon._id, dropChance: 0.7 },
+            { itemId: tinhTheNangLuong._id, dropChance: 0.3 }
+          ]
+        });
+        labRooms[i].agents.push(experiment._id);
+      } else {
+        // Create Bóng Ma Khoa Học Gia instance
+        const ghost = await AgentSchema.create({
+          name: 'Bóng Ma Khoa Học Gia',
+          description: 'Linh hồn khoa học gia chết trong thảm họa. Phát sáng xanh lạnh, xuyên qua vật thể.',
+          type: 'mob',
+          currentRoomId: labRooms[i]._id,
+          hp: 250,
+          maxHp: 250,
+          level: 37,
+          damage: 42,
+          behavior: 'wander',
+          loot: [],
+          experience: 280,
+          agentType: 'mob',
+          lootTable: [
+            { itemId: tinhTheNangLuong._id, dropChance: 0.6 },
+            { itemId: moDotBienLon._id, dropChance: 0.4 }
+          ]
+        });
+        labRooms[i].agents.push(ghost._id);
+      }
+      await labRooms[i].save();
+    }
 
     // Zone 5
     loiVaoTrungTam.agents.push(thaySuCoNgu._id);
     trungTam1.agents.push(veBinhCoNgu._id);
     trungTam2.agents.push(phapSuVongTich._id);
     trungTamBoss.agents.push(keCaiQuanCoNgu._id);
+    
+    // Populate citadel rooms with elite monsters
+    for (let i = 0; i < citadelRooms.length; i++) {
+      if (i % 2 === 0) {
+        // Create Vệ Binh Cổ Ngữ instance
+        const guardian = await AgentSchema.create({
+          name: 'Vệ Binh Cổ Ngữ',
+          description: 'Chiến binh cổ đại bằng năng lượng tinh khiết. Giáp phát sáng, kiếm năng lượng sắc bén.',
+          type: 'mob',
+          currentRoomId: citadelRooms[i]._id,
+          hp: 400,
+          maxHp: 400,
+          level: 43,
+          damage: 55,
+          behavior: 'patrol',
+          patrolRoute: [citadelRooms[i]._id],
+          loot: [],
+          experience: 380,
+          agentType: 'elite',
+          lootTable: [
+            { itemId: nangLuongTinhKhiet._id, dropChance: 0.7 },
+            { itemId: loiHoVeCoDai._id, dropChance: 0.1 }
+          ]
+        });
+        citadelRooms[i].agents.push(guardian._id);
+      } else {
+        // Create Pháp Sư Vong Tích instance
+        const mage = await AgentSchema.create({
+          name: 'Pháp Sư Vong Tích',
+          description: 'Pháp sư cổ đại với sức mạnh phép thuật khủng khiếp. Tay cầm quyển sách cổ phát sáng.',
+          type: 'mob',
+          currentRoomId: citadelRooms[i]._id,
+          hp: 350,
+          maxHp: 350,
+          level: 47,
+          damage: 70,
+          behavior: 'aggressive',
+          loot: [],
+          experience: 420,
+          agentType: 'elite',
+          lootTable: [
+            { itemId: nangLuongTinhKhiet._id, dropChance: 0.8 },
+            { itemId: loiHoVeCoDai._id, dropChance: 0.15 }
+          ]
+        });
+        citadelRooms[i].agents.push(mage._id);
+      }
+      await citadelRooms[i].save();
+    }
 
     // Save all rooms with agents
     await cổngThành.save();
