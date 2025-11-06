@@ -5,13 +5,23 @@
         v-for="(item, index) in items"
         :key="item ? item.id : `empty-${index}`"
         class="inventory-slot"
-        :class="{ 'has-item': item, 'equipped': item?.equipped, 'clickable': clickable }"
+        :class="{ 
+          'has-item': item, 
+          'equipped': item?.equipped, 
+          'clickable': clickable,
+          [getQualityClass(item?.quality)]: item?.quality
+        }"
         @click="item && clickable && handleItemClick(item, $event)"
       >
         <div v-if="item" class="item-icon">
           {{ getItemIcon(item.type) }}
         </div>
-        <div v-if="item" class="item-name">{{ truncateName(item.name) }}</div>
+        <div v-if="item" class="item-name" :class="getQualityClass(item.quality)">
+          {{ truncateName(item.name) }}
+        </div>
+        <div v-if="item?.quality" class="item-quality-icon" :class="getQualityClass(item.quality)">
+          {{ getQualityIcon(item.quality) }}
+        </div>
         <div v-if="item && showPrice" class="item-price">{{ item.value }}g</div>
       </div>
     </div>
@@ -24,6 +34,10 @@
       width="350px"
     >
       <div v-if="selectedItem" class="item-details">
+        <div v-if="selectedItem.quality" class="item-quality" :class="getQualityClass(selectedItem.quality)">
+          {{ getQualityIcon(selectedItem.quality) }} {{ selectedItem.quality }}
+        </div>
+        
         <div class="item-description">{{ selectedItem.description }}</div>
         
         <div class="item-stats" v-if="selectedItem.stats">
@@ -48,6 +62,13 @@
           </div>
           <div v-if="selectedItem.stats.dodge" class="stat-line">
             + {{ selectedItem.stats.dodge }}% Né tránh
+          </div>
+        </div>
+
+        <div v-if="selectedItem.setName" class="item-set-info">
+          <div class="set-title">[ Bộ Đồ: {{ selectedItem.setName }} ]</div>
+          <div v-if="selectedItem.setBonus" class="set-bonus-desc">
+            {{ selectedItem.setBonus }}
           </div>
         </div>
 
@@ -99,6 +120,21 @@ interface InventoryItem {
   stats?: ItemStats;
   levelRequirement?: number;
   equipped?: boolean;
+  /** 
+   * Item quality tier affecting stats and rarity
+   * Values: Thô (Poor/Gray), Thường (Common/Green), Tốt (Good/Bright Green), 
+   * Hiếm (Rare/Blue), Sử Thi (Epic/Purple)
+   */
+  quality?: string;
+  /** 
+   * Equipment set name for set bonus (e.g., "Set Chiến Binh")
+   */
+  setName?: string;
+  /** 
+   * Description of set bonuses when multiple pieces are equipped
+   * Format: "(2 món): +10 HP, (4 món): +15 Damage"
+   */
+  setBonus?: string;
 }
 
 interface ItemAction {
@@ -130,6 +166,23 @@ const emit = defineEmits<{
 const popoverOpen = ref(false);
 const selectedItem = ref<InventoryItem | null>(null);
 
+// Quality mapping constants
+const QUALITY_MAP = {
+  'Thô': 'quality-poor',
+  'Thường': 'quality-common',
+  'Tốt': 'quality-good',
+  'Hiếm': 'quality-rare',
+  'Sử Thi': 'quality-epic'
+} as const;
+
+const QUALITY_ICONS = {
+  'Thô': '●',
+  'Thường': '●',
+  'Tốt': '◆',
+  'Hiếm': '★',
+  'Sử Thi': '⬟'
+} as const;
+
 const getItemIcon = (type: string): string => {
   const icons: Record<string, string> = {
     weapon: '[/]',
@@ -158,6 +211,14 @@ const getTypeName = (type: string): string => {
     misc: 'Khác'
   };
   return typeNames[type] || type;
+};
+
+const getQualityClass = (quality?: string): string => {
+  return quality ? QUALITY_MAP[quality as keyof typeof QUALITY_MAP] || '' : '';
+};
+
+const getQualityIcon = (quality?: string): string => {
+  return quality ? QUALITY_ICONS[quality as keyof typeof QUALITY_ICONS] || '' : '';
 };
 
 const handleItemClick = (item: InventoryItem, event: MouseEvent) => {
@@ -261,9 +322,67 @@ const executeAction = (actionId: string) => {
   right: 4px;
 }
 
+.item-quality-icon {
+  position: absolute;
+  top: 2px;
+  right: 4px;
+  font-size: 12px;
+}
+
+/* Quality colors */
+.quality-poor {
+  color: #9d9d9d !important;
+}
+
+.quality-common {
+  color: var(--text-bright) !important;
+}
+
+.quality-good {
+  color: #00ff00 !important;
+}
+
+.quality-rare {
+  color: #0099ff !important;
+}
+
+.quality-epic {
+  color: #ff00ff !important;
+}
+
+/* Slot border colors by quality */
+.inventory-slot.quality-poor {
+  border-color: #9d9d9d;
+}
+
+.inventory-slot.quality-common {
+  border-color: var(--text-bright);
+}
+
+.inventory-slot.quality-good {
+  border-color: #00ff00;
+}
+
+.inventory-slot.quality-rare {
+  border-color: #0099ff;
+}
+
+.inventory-slot.quality-epic {
+  border-color: #ff00ff;
+}
+
 /* Popover Item Details */
 .item-details {
   color: var(--text-dim);
+}
+
+.item-quality {
+  font-size: 16px;
+  font-weight: bold;
+  margin-bottom: 0.75rem;
+  padding: 0.5rem;
+  background-color: rgba(0, 136, 0, 0.1);
+  border-left: 3px solid currentColor;
 }
 
 .item-description {
@@ -288,6 +407,27 @@ const executeAction = (actionId: string) => {
 .stat-line {
   color: var(--text-bright);
   margin-bottom: 0.25rem;
+}
+
+.item-set-info {
+  margin-bottom: 1rem;
+  padding: 0.75rem;
+  background-color: rgba(0, 255, 255, 0.1);
+  border: 1px solid var(--text-cyan);
+}
+
+.set-title {
+  color: var(--text-cyan);
+  font-weight: bold;
+  font-size: 15px;
+  margin-bottom: 0.5rem;
+}
+
+.set-bonus-desc {
+  color: var(--text-bright);
+  font-size: 13px;
+  line-height: 1.5;
+  font-style: italic;
 }
 
 .item-info {
