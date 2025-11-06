@@ -1,0 +1,485 @@
+import type { Command } from '~/types';
+import { PlayerSchema } from '../../models/Player';
+import { RoomSchema } from '../../models/Room';
+import { ItemSchema } from '../../models/Item';
+import { AgentSchema } from '../../models/Agent';
+import { BuffSchema } from '../../models/Buff';
+import { gameState } from '../utils/gameState';
+import { partyService } from '../utils/partyService';
+
+/**
+ * Handle item-related commands (get, drop, use, inventory, list, buy, sell)
+ */
+export async function handleItemCommand(command: Command, playerId: string): Promise<string[]> {
+  const { action, target } = command;
+  const responses: string[] = [];
+
+  try {
+    const player = await PlayerSchema.findById(playerId).populate('inventory');
+    if (!player) {
+      responses.push('Lỗi: Không tìm thấy thông tin người chơi.');
+      return responses;
+    }
+
+    switch (action) {
+      case 'inventory':
+      case 'i': {
+        if (!player.inventory || player.inventory.length === 0) {
+          responses.push('Túi đồ của bạn trống.');
+          break;
+        }
+
+        responses.push('═══════════════════════════════════');
+        responses.push('           TÚI ĐỒ                  ');
+        responses.push('═══════════════════════════════════');
+        const items = await ItemSchema.find({ _id: { $in: player.inventory } });
+        items.forEach((item: any, index: number) => {
+          responses.push(`${index + 1}. [${item.name}]`);
+          if (item.description) {
+            responses.push(`   ${item.description}`);
+          }
+        });
+        responses.push('═══════════════════════════════════');
+        break;
+      }
+
+      case 'get':
+      case 'g': {
+        if (!target) {
+          responses.push('Bạn muốn nhặt gì?');
+          break;
+        }
+
+        // Check party loot rules
+        const lootCheck = partyService.canLoot(playerId);
+        if (!lootCheck.canLoot) {
+          responses.push(lootCheck.reason || 'Bạn không thể nhặt đồ lúc này.');
+          break;
+        }
+
+        const room = await RoomSchema.findById(player.currentRoomId);
+        if (!room || !room.items || room.items.length === 0) {
+          responses.push(`Không có "${target}" ở đây để nhặt.`);
+          break;
+        }
+
+        const items = await ItemSchema.find({ _id: { $in: room.items } });
+        const item = items.find((i: any) => 
+          i.name.toLowerCase().includes(target.toLowerCase())
+        );
+
+        if (!item) {
+          responses.push(`Không có "${target}" ở đây để nhặt.`);
+          break;
+        }
+
+        // Remove from room, add to player inventory
+        room.items = room.items.filter((id: any) => id.toString() !== item._id.toString());
+        await room.save();
+
+        player.inventory.push(item._id);
+        await player.save();
+
+        responses.push(`Bạn nhặt [${item.name}].`);
+        
+        // Advance loot turn if in party with round-robin
+        const playerParty = partyService.getPlayerParty(playerId);
+        if (playerParty && playerParty.party.lootRule === 'round-robin') {
+          partyService.advanceLootTurn(playerParty.partyId);
+          
+          // Notify next looter
+          const nextLooter = partyService.getNextLooter(playerParty.partyId);
+          if (nextLooter) {
+            const nextLooterPlayer = gameState.getPlayer(nextLooter);
+            if (nextLooterPlayer?.ws) {
+              nextLooterPlayer.ws.send(JSON.stringify({
+                type: 'system',
+                category: 'loot',
+                message: 'Đến lượt bạn nhặt đồ.'
+              }));
+            }
+          }
+        }
+        
+        // Broadcast to room
+        gameState.broadcastToRoom(
+          room._id.toString(),
+          {
+            type: 'normal',
+            message: `[${player.username}] nhặt [${item.name}].`
+          },
+          playerId
+        );
+        break;
+      }
+
+      case 'drop': {
+        if (!target) {
+          responses.push('Bạn muốn thả gì?');
+          break;
+        }
+
+        const items = await ItemSchema.find({ _id: { $in: player.inventory } });
+        const item = items.find((i: any) => 
+          i.name.toLowerCase().includes(target.toLowerCase())
+        );
+
+        if (!item) {
+          responses.push(`Bạn không có "${target}" trong túi đồ.`);
+          break;
+        }
+
+        const room = await RoomSchema.findById(player.currentRoomId);
+        if (!room) {
+          responses.push('Lỗi: Không tìm thấy phòng hiện tại.');
+          break;
+        }
+
+        // Remove from player, add to room
+        player.inventory = player.inventory.filter((id: any) => id.toString() !== item._id.toString());
+        await player.save();
+
+        room.items.push(item._id);
+        await room.save();
+
+        responses.push(`Bạn thả [${item.name}] xuống đất.`);
+        
+        // Broadcast to room
+        gameState.broadcastToRoom(
+          room._id.toString(),
+          {
+            type: 'normal',
+            message: `[${player.username}] thả [${item.name}] xuống đất.`
+          },
+          playerId
+        );
+        break;
+      }
+
+      case 'use': {
+        if (!target) {
+          responses.push('Bạn muốn sử dụng gì?');
+          break;
+        }
+        
+        const items = await ItemSchema.find({ _id: { $in: player.inventory } });
+        const item = items.find((i: any) => 
+          i.name.toLowerCase().includes(target.toLowerCase())
+        );
+
+        if (!item) {
+          responses.push(`Bạn không có "${target}" trong túi đồ.`);
+          break;
+        }
+
+        // Handle Recipe items - learn the recipe
+        if (item.type === 'Recipe') {
+          // Check if player already knows this recipe
+          if (player.knownRecipes && player.knownRecipes.some((r: any) => r.toString() === item._id.toString())) {
+            responses.push(`Bạn đã biết công thức [${item.name}] rồi!`);
+            break;
+          }
+          
+          // Add recipe to known recipes
+          if (!player.knownRecipes) {
+            player.knownRecipes = [];
+          }
+          player.knownRecipes.push(item._id);
+          
+          // Remove recipe item from inventory
+          player.inventory = player.inventory.filter((id: any) => id.toString() !== item._id.toString());
+          await player.save();
+          
+          responses.push(`[+] Bạn đã học công thức [${item.name}]!`);
+          responses.push('Bạn có thể chế tạo vật phẩm này từ menu [Chế Tạo].');
+          break;
+        }
+        // Handle consumable items
+        else if (item.type === 'consumable') {
+          // Handle healing items
+          if (item.stats?.healing) {
+            const healAmount = item.stats.healing;
+            const oldHp = player.hp;
+            player.hp = Math.min(player.maxHp, player.hp + healAmount);
+            const actualHeal = player.hp - oldHp;
+            
+            // Remove item from inventory
+            player.inventory = player.inventory.filter((id: any) => id.toString() !== item._id.toString());
+            await player.save();
+            
+            // Delete the consumed item
+            await ItemSchema.findByIdAndDelete(item._id);
+            
+            responses.push(`Bạn sử dụng [${item.name}], hồi phục ${actualHeal} HP.`);
+            responses.push(`HP hiện tại: ${player.hp}/${player.maxHp}`);
+            
+            // Broadcast to room
+            const room = await RoomSchema.findById(player.currentRoomId);
+            if (room) {
+              gameState.broadcastToRoom(
+                room._id.toString(),
+                {
+                  type: 'normal',
+                  message: `[${player.username}] sử dụng [${item.name}].`
+                },
+                playerId
+              );
+            }
+          } 
+          // Handle buff items (like EXP boost)
+          else if (item.effects && item.effects.buff) {
+            const buffType = item.effects.buff;
+            const multiplier = item.effects.multiplier || 1;
+            const durationMinutes = item.effects.duration_minutes || 60;
+            
+            // Calculate expiration time
+            const expiresAt = new Date(Date.now() + durationMinutes * 60 * 1000);
+            
+            // Check if player already has this buff active
+            const existingBuff = await BuffSchema.findOne({
+              playerId: player._id,
+              type: buffType,
+              expiresAt: { $gt: new Date() }
+            });
+            
+            if (existingBuff) {
+              responses.push(`Bạn đã có buff [${buffType}] đang hoạt động!`);
+              responses.push(`Thời gian còn lại: ${Math.ceil((existingBuff.expiresAt.getTime() - Date.now()) / 60000)} phút.`);
+              break;
+            }
+            
+            // Create buff
+            await BuffSchema.create({
+              playerId: player._id,
+              type: buffType,
+              multiplier,
+              expiresAt
+            });
+            
+            // Remove item from inventory
+            player.inventory = player.inventory.filter((id: any) => id.toString() !== item._id.toString());
+            await player.save();
+            
+            // Delete the consumed item
+            await ItemSchema.findByIdAndDelete(item._id);
+            
+            responses.push(`[+] Bạn đã kích hoạt [${item.name}]!`);
+            responses.push(`[+] Bạn sẽ nhận được ${multiplier}x EXP trong ${durationMinutes} phút!`);
+            
+            // Broadcast to room
+            const room = await RoomSchema.findById(player.currentRoomId);
+            if (room) {
+              gameState.broadcastToRoom(
+                room._id.toString(),
+                {
+                  type: 'normal',
+                  message: `[+] [${player.username}] đã kích hoạt [${item.name}]!`
+                },
+                playerId
+              );
+            }
+          } else {
+            responses.push(`Bạn không thể sử dụng [${item.name}] ngay bây giờ.`);
+          }
+        } else {
+          responses.push(`[${item.name}] không phải là vật phẩm có thể sử dụng.`);
+        }
+        break;
+      }
+
+      case 'list': {
+        const room = await RoomSchema.findById(player.currentRoomId);
+        if (!room || !room.agents || room.agents.length === 0) {
+          responses.push('Không có ai ở đây để bán hàng.');
+          break;
+        }
+
+        const vendors = await AgentSchema.find({ 
+          _id: { $in: room.agents },
+          isVendor: true
+        }).populate('shopInventory');
+
+        if (vendors.length === 0) {
+          responses.push('Không có ai ở đây để bán hàng.');
+          break;
+        }
+
+        const vendor = vendors[0];
+        const shopInventory = vendor.shopInventory || [];
+
+        if (shopInventory.length === 0) {
+          responses.push(`[${vendor.name}] không có gì để bán.`);
+          break;
+        }
+
+        const currencySymbol = vendor.shopType === 'premium' ? '💎' : '💰';
+        responses.push(`════════ HÀNG CỦA ${vendor.name.toUpperCase()} ════════`);
+        shopInventory.forEach((item: any, index: number) => {
+          const itemPrice = vendor.shopType === 'premium' ? (item.premiumPrice ?? 0) : (item.price ?? 0);
+          const spaces = ' '.repeat(Math.max(20 - item.name.length, 1));
+          responses.push(`${index + 1}. [${item.name}]${spaces}- ${itemPrice} ${currencySymbol}`);
+        });
+        responses.push('═══════════════════════════════════════');
+        responses.push('Gõ \'buy [tên vật phẩm]\' để mua.');
+        break;
+      }
+
+      case 'buy': {
+        if (!target) {
+          responses.push('Bạn muốn mua gì?');
+          break;
+        }
+
+        const room = await RoomSchema.findById(player.currentRoomId);
+        if (!room || !room.agents || room.agents.length === 0) {
+          responses.push('Không có ai ở đây để bán hàng.');
+          break;
+        }
+
+        const vendors = await AgentSchema.find({ 
+          _id: { $in: room.agents },
+          isVendor: true
+        }).populate('shopInventory');
+
+        if (vendors.length === 0) {
+          responses.push('Không có ai ở đây để bán hàng.');
+          break;
+        }
+
+        const vendor = vendors[0];
+        const shopInventory = vendor.shopInventory || [];
+        const item = shopInventory.find((i: any) => 
+          i.name.toLowerCase().includes(target.toLowerCase())
+        );
+
+        if (!item) {
+          responses.push(`[${vendor.name}] không bán "${target}".`);
+          break;
+        }
+
+        // Check price based on shop type
+        const isPremiumShop = vendor.shopType === 'premium';
+        const itemPrice = isPremiumShop ? (item.premiumPrice ?? 0) : (item.price ?? 0);
+        const currencySymbol = isPremiumShop ? '💎' : '💰';
+
+        // Validate that item has a valid price
+        if (itemPrice <= 0) {
+          responses.push(`[${item.name}] không có giá bán.`);
+          break;
+        }
+
+        if (isPremiumShop) {
+          if (player.premiumCurrency < itemPrice) {
+            responses.push(`Bạn không có đủ Cổ Thạch để mua [${item.name}]. Cần ${itemPrice} ${currencySymbol}, bạn chỉ có ${player.premiumCurrency} ${currencySymbol}.`);
+            break;
+          }
+        } else {
+          if (player.gold < itemPrice) {
+            responses.push(`Bạn không có đủ vàng để mua [${item.name}]. Cần ${itemPrice} ${currencySymbol}, bạn chỉ có ${player.gold} ${currencySymbol}.`);
+            break;
+          }
+        }
+
+        // Create a new item instance for the player
+        const newItem = await ItemSchema.create({
+          name: item.name,
+          description: item.description,
+          type: item.type,
+          value: item.value,
+          price: item.price,
+          sellValue: item.sellValue,
+          premiumPrice: item.premiumPrice,
+          stats: item.stats,
+          effects: item.effects,
+          quality: item.quality,
+          rarity: item.rarity,
+          slot: item.slot,
+          requiredLevel: item.requiredLevel,
+          recipe: item.recipe,
+          resultItem: item.resultItem
+        });
+
+        // Deduct currency
+        if (isPremiumShop) {
+          player.premiumCurrency -= itemPrice;
+        } else {
+          player.gold -= itemPrice;
+        }
+        
+        player.inventory.push(newItem._id);
+        await player.save();
+
+        responses.push(`Bạn đã mua [${item.name}] với giá ${itemPrice} ${currencySymbol}!`);
+        if (isPremiumShop) {
+          responses.push(`Cổ Thạch còn lại: ${player.premiumCurrency} ${currencySymbol}`);
+        } else {
+          responses.push(`Vàng còn lại: ${player.gold} ${currencySymbol}`);
+        }
+        break;
+      }
+
+      case 'sell': {
+        if (!target) {
+          responses.push('Bạn muốn bán gì?');
+          break;
+        }
+
+        const room = await RoomSchema.findById(player.currentRoomId);
+        if (!room || !room.agents || room.agents.length === 0) {
+          responses.push('Không có ai ở đây để mua hàng.');
+          break;
+        }
+
+        // Check for vendors (only gold shops buy items)
+        const vendors = await AgentSchema.find({ 
+          _id: { $in: room.agents },
+          isVendor: true,
+          shopType: 'gold'
+        });
+
+        if (vendors.length === 0) {
+          responses.push('Không có ai ở đây để mua hàng.');
+          break;
+        }
+
+        const items = await ItemSchema.find({ _id: { $in: player.inventory } });
+        const item = items.find((i: any) => 
+          i.name.toLowerCase().includes(target.toLowerCase())
+        );
+
+        if (!item) {
+          responses.push(`Bạn không có "${target}" trong túi đồ.`);
+          break;
+        }
+
+        // Use sellValue field or fallback to 50% of value
+        const sellValue = (item.sellValue ?? 0) > 0 ? item.sellValue : Math.floor((item.value ?? 0) * 0.5);
+
+        if (sellValue <= 0) {
+          responses.push(`Không thể bán [${item.name}]. Vật phẩm này không có giá trị bán.`);
+          break;
+        }
+
+        player.gold += sellValue;
+        player.inventory = player.inventory.filter((id: any) => id.toString() !== item._id.toString());
+        await player.save();
+
+        // Delete the sold item
+        await ItemSchema.findByIdAndDelete(item._id);
+
+        responses.push(`Bạn đã bán [${item.name}] nhận được ${sellValue} 💰 Vàng.`);
+        responses.push(`Vàng hiện có: ${player.gold}`);
+        break;
+      }
+
+      default:
+        responses.push('Lệnh không hợp lệ.');
+    }
+
+  } catch (error) {
+    console.error('Error in item command:', error);
+    responses.push('Lỗi khi xử lý lệnh vật phẩm.');
+  }
+
+  return responses;
+}

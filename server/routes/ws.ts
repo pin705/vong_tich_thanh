@@ -295,59 +295,67 @@ export default defineWebSocketHandler({
             return;
           }
 
-          const command = parseCommand(payload.input);
-          console.log('[WS] Command:', command, 'from player:', playerIdForCmd);
-          
-          // Process command with database integration
-          const responses = await handleCommandDb(command, playerIdForCmd);
-          
-          // Send responses
-          for (const response of responses) {
-            if (response === '') {
-              peer.send(JSON.stringify({
-                type: 'normal',
-                message: ''
-              }));
-            } else if (response.includes('[') && response.includes(']')) {
-              // Messages with brackets are accents (names, rooms, etc)
-              peer.send(JSON.stringify({
-                type: 'accent',
-                message: response
-              }));
-            } else if (response.startsWith('Bạn')) {
-              // Actions by the player
-              peer.send(JSON.stringify({
-                type: 'action',
-                message: response
-              }));
-            } else if (response.includes('Lệnh không hợp lệ') || response.includes('không thể') || response.includes('Lỗi')) {
-              // Errors
-              peer.send(JSON.stringify({
-                type: 'error',
-                message: response
-              }));
-            } else if (response.includes('═')) {
-              // System messages (boxes, separators)
-              peer.send(JSON.stringify({
-                type: 'system',
-                message: response
-              }));
-            } else {
-              // Normal text
-              peer.send(JSON.stringify({
-                type: 'normal',
-                message: response
-              }));
+          try {
+            const command = parseCommand(payload.input);
+            console.log('[WS] Command:', command, 'from player:', playerIdForCmd);
+            
+            // Process command with database integration
+            const responses = await handleCommandDb(command, playerIdForCmd);
+            
+            // Send responses
+            for (const response of responses) {
+              if (response === '') {
+                peer.send(JSON.stringify({
+                  type: 'normal',
+                  message: ''
+                }));
+              } else if (response.includes('[') && response.includes(']')) {
+                // Messages with brackets are accents (names, rooms, etc)
+                peer.send(JSON.stringify({
+                  type: 'accent',
+                  message: response
+                }));
+              } else if (response.startsWith('Bạn')) {
+                // Actions by the player
+                peer.send(JSON.stringify({
+                  type: 'action',
+                  message: response
+                }));
+              } else if (response.includes('Lệnh không hợp lệ') || response.includes('không thể') || response.includes('Lỗi')) {
+                // Errors
+                peer.send(JSON.stringify({
+                  type: 'error',
+                  message: response
+                }));
+              } else if (response.includes('═')) {
+                // System messages (boxes, separators)
+                peer.send(JSON.stringify({
+                  type: 'system',
+                  message: response
+                }));
+              } else {
+                // Normal text
+                peer.send(JSON.stringify({
+                  type: 'normal',
+                  message: response
+                }));
+              }
             }
-          }
-          
-          // Send updated player state, exits, room occupants, and party state after command
-          const playerAfterCmd = await PlayerSchema.findById(playerIdForCmd);
-          if (playerAfterCmd) {
-            await sendPlayerState(peer, playerIdForCmd);
-            await sendExits(peer, playerAfterCmd.currentRoomId.toString());
-            await sendRoomOccupants(peer, playerAfterCmd.currentRoomId.toString(), playerIdForCmd);
-            await sendPartyState(peer, playerIdForCmd);
+            
+            // Send updated player state, exits, room occupants, and party state after command
+            const playerAfterCmd = await PlayerSchema.findById(playerIdForCmd);
+            if (playerAfterCmd) {
+              await sendPlayerState(peer, playerIdForCmd);
+              await sendExits(peer, playerAfterCmd.currentRoomId.toString());
+              await sendRoomOccupants(peer, playerAfterCmd.currentRoomId.toString(), playerIdForCmd);
+              await sendPartyState(peer, playerIdForCmd);
+            }
+          } catch (cmdError) {
+            console.error('[WS] Error processing command:', cmdError);
+            peer.send(JSON.stringify({
+              type: 'error',
+              message: 'Lỗi hệ thống. Lệnh của bạn không thể thực thi.'
+            }));
           }
           break;
 

@@ -9,63 +9,20 @@ import { DEV_FEATURE_MESSAGE, SMALL_POTION_HEALING } from './constants';
 import { startCombat, fleeCombat } from './combatSystem';
 import { partyService } from './partyService';
 import { tradeService } from './tradeService';
+import { handleMovementCommand, handleGotoCommand } from '../commands/movement';
+import { handleCombatCommand } from '../commands/combat';
+import { handleItemCommand } from '../commands/item';
+import { formatRoomDescription } from './roomUtils';
 
-// Helper function to format room description
-async function formatRoomDescription(room: any, player: any): Promise<string[]> {
-  const responses: string[] = [];
-  
-  // Room name
-  responses.push(`[${room.name}]`);
-  
-  // Room description
-  responses.push(room.description);
-  responses.push('');
-  
-  // Exits
-  const exits = [];
-  if (room.exits.north) exits.push('bắc');
-  if (room.exits.south) exits.push('nam');
-  if (room.exits.east) exits.push('đông');
-  if (room.exits.west) exits.push('tây');
-  if (room.exits.up) exits.push('lên');
-  if (room.exits.down) exits.push('xuống');
-  
-  if (exits.length > 0) {
-    responses.push(`Lối ra: [${exits.join(', ')}]`);
-  } else {
-    responses.push('Không có lối ra rõ ràng.');
-  }
-  
-  // Items in room
-  if (room.items && room.items.length > 0) {
-    const items = await ItemSchema.find({ _id: { $in: room.items } });
-    if (items.length > 0) {
-      responses.push('Bạn thấy:');
-      items.forEach((item: any) => {
-        responses.push(`  - [${item.name}]`);
-      });
-    }
-  }
-  
-  // Agents in room
-  if (room.agents && room.agents.length > 0) {
-    const agents = await AgentSchema.find({ _id: { $in: room.agents } });
-    agents.forEach((agent: any) => {
-      responses.push(`Một [${agent.name}] đang đứng đây.`);
-    });
-  }
-  
-  // Other players in room
-  const playersInRoom = gameState.getPlayersInRoom(room._id.toString());
-  const otherPlayers = playersInRoom.filter(p => p.id !== player._id.toString());
-  if (otherPlayers.length > 0) {
-    otherPlayers.forEach(p => {
-      responses.push(`[${p.username}] đang ở đây.`);
-    });
-  }
-  
-  return responses;
-}
+// Command routing configuration
+const MOVEMENT_COMMANDS = ['go', 'n', 's', 'e', 'w', 'u', 'd', 
+                           'north', 'south', 'east', 'west', 'up', 'down',
+                           'bắc', 'nam', 'đông', 'tây', 'lên', 'xuống'];
+
+const COMBAT_COMMANDS = ['attack', 'a', 'kill', 'flee', 'run'];
+
+const ITEM_COMMANDS = ['inventory', 'i', 'get', 'g', 'drop', 'use', 
+                       'list', 'buy', 'sell'];
 
 // Main command handler with database integration
 export async function handleCommandDb(command: Command, playerId: string): Promise<string[]> {
@@ -73,7 +30,29 @@ export async function handleCommandDb(command: Command, playerId: string): Promi
   const responses: string[] = [];
 
   try {
-    // Get player from database
+    // Route to specialized command handlers first
+    
+    // Movement commands
+    if (MOVEMENT_COMMANDS.includes(action)) {
+      return await handleMovementCommand(command, playerId);
+    }
+
+    // Goto command
+    if (action === 'goto') {
+      return await handleGotoCommand(command, playerId);
+    }
+
+    // Combat commands
+    if (COMBAT_COMMANDS.includes(action)) {
+      return await handleCombatCommand(command, playerId);
+    }
+
+    // Item commands
+    if (ITEM_COMMANDS.includes(action)) {
+      return await handleItemCommand(command, playerId);
+    }
+
+    // Get player from database for remaining commands
     const player = await PlayerSchema.findById(playerId).populate('inventory');
     if (!player) {
       responses.push('Lỗi: Không tìm thấy thông tin người chơi.');
@@ -219,107 +198,6 @@ export async function handleCommandDb(command: Command, playerId: string): Promi
           
           responses.push(`Bạn không thấy "${target}" ở đây.`);
         }
-        break;
-
-      case 'go':
-      case 'n':
-      case 's':
-      case 'e':
-      case 'w':
-      case 'u':
-      case 'd':
-      case 'north':
-      case 'south':
-      case 'east':
-      case 'west':
-      case 'up':
-      case 'down':
-      case 'bắc':
-      case 'nam':
-      case 'đông':
-      case 'tây':
-      case 'lên':
-      case 'xuống':
-        let direction = target || action;
-        if (!direction || direction === 'go') {
-          responses.push('Bạn muốn đi hướng nào? (bắc/nam/đông/tây/lên/xuống)');
-          break;
-        }
-
-        // Normalize direction
-        const directionMap: { [key: string]: string } = {
-          'n': 'north', 'north': 'north', 'bắc': 'north',
-          's': 'south', 'south': 'south', 'nam': 'south',
-          'e': 'east', 'east': 'east', 'đông': 'east',
-          'w': 'west', 'west': 'west', 'tây': 'west',
-          'u': 'up', 'up': 'up', 'lên': 'up',
-          'd': 'down', 'down': 'down', 'xuống': 'down',
-        };
-        
-        const normalizedDir = directionMap[direction.toLowerCase()];
-        if (!normalizedDir) {
-          responses.push(`Hướng "${direction}" không hợp lệ.`);
-          break;
-        }
-
-        const currentRoom = await RoomSchema.findById(player.currentRoomId);
-        if (!currentRoom) {
-          responses.push('Lỗi: Không tìm thấy phòng hiện tại.');
-          break;
-        }
-
-        const nextRoomId = (currentRoom.exits as any)[normalizedDir];
-        if (!nextRoomId) {
-          responses.push('Bạn không thể đi theo hướng đó.');
-          break;
-        }
-
-        const nextRoom = await RoomSchema.findById(nextRoomId);
-        if (!nextRoom) {
-          responses.push('Lỗi: Không tìm thấy phòng đích.');
-          break;
-        }
-
-        // Check if player is in combat
-        if (player.inCombat) {
-          responses.push('Bạn không thể di chuyển khi đang trong chiến đấu! Hãy dùng lệnh "flee" để bỏ chạy.');
-          break;
-        }
-
-        // Broadcast to old room
-        const directionNames: { [key: string]: string } = {
-          'north': 'bắc', 'south': 'nam', 'east': 'đông',
-          'west': 'tây', 'up': 'lên', 'down': 'xuống'
-        };
-        gameState.broadcastToRoom(
-          player.currentRoomId.toString(),
-          {
-            type: 'normal',
-            message: `[${player.username}] đi về phía ${directionNames[normalizedDir]}.`
-          },
-          playerId
-        );
-
-        // Update player location
-        player.currentRoomId = nextRoom._id;
-        await player.save();
-        gameState.updatePlayerRoom(playerId, nextRoom._id.toString());
-
-        // Broadcast to new room
-        gameState.broadcastToRoom(
-          nextRoom._id.toString(),
-          {
-            type: 'normal',
-            message: `[${player.username}] đi vào từ phía ${directionNames[normalizedDir]}.`
-          },
-          playerId
-        );
-
-        // Show new room
-        responses.push(`Bạn đi về phía ${directionNames[normalizedDir]}...`);
-        responses.push('');
-        const newRoomDesc = await formatRoomDescription(nextRoom, player);
-        responses.push(...newRoomDesc);
         break;
 
       case 'talk':
