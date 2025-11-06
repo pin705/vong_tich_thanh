@@ -1111,6 +1111,8 @@ const handleAssignSkill = (skill: Skill) => {
 
 // Handle talent allocation
 const handleAllocateTalent = async (talentId: string) => {
+  isLoading.value = true;
+  loadingText.value = 'Đang cộng điểm thiên phú...';
   try {
     const response = await $fetch('/api/player/talents', {
       method: 'POST',
@@ -1128,6 +1130,8 @@ const handleAllocateTalent = async (talentId: string) => {
     console.error('Error allocating talent:', error);
     const errorMsg = error.data?.message || 'Không thể cộng điểm thiên phú.';
     addMessage(errorMsg, 'error');
+  } finally {
+    isLoading.value = false;
   }
 };
 
@@ -1192,6 +1196,8 @@ const loadCraftingRecipes = async () => {
 
 // Handle crafting
 const handleCraft = async (recipeId: string) => {
+  isLoading.value = true;
+  loadingText.value = 'Đang chế tạo...';
   try {
     const response = await $fetch('/api/player/crafting/craft', {
       method: 'POST',
@@ -1210,11 +1216,15 @@ const handleCraft = async (recipeId: string) => {
     console.error('Error crafting:', error);
     const errorMsg = error?.data?.message || error?.message || 'Không thể chế tạo vật phẩm.';
     addMessage(errorMsg, 'error');
+  } finally {
+    isLoading.value = false;
   }
 };
 
 // Handle quest completion
 const handleCompleteQuest = async (questId: string) => {
+  isLoading.value = true;
+  loadingText.value = 'Đang hoàn thành nhiệm vụ...';
   try {
     const response = await $fetch('/api/player/quests/complete', {
       method: 'POST',
@@ -1229,11 +1239,15 @@ const handleCompleteQuest = async (questId: string) => {
     console.error('Error completing quest:', error);
     const errorMsg = error.data?.message || 'Không thể hoàn thành nhiệm vụ.';
     addMessage(errorMsg, 'error');
+  } finally {
+    isLoading.value = false;
   }
 };
 
 // Handle quest abandonment
 const handleAbandonQuest = async (questId: string) => {
+  isLoading.value = true;
+  loadingText.value = 'Đang hủy nhiệm vụ...';
   try {
     const response = await $fetch('/api/player/quests/abandon', {
       method: 'POST',
@@ -1248,11 +1262,15 @@ const handleAbandonQuest = async (questId: string) => {
     console.error('Error abandoning quest:', error);
     const errorMsg = error.data?.message || 'Không thể hủy bỏ nhiệm vụ.';
     addMessage(errorMsg, 'error');
+  } finally {
+    isLoading.value = false;
   }
 };
 
 // Handle repeating quest
 const handleRepeatQuest = async (questId: string) => {
+  isLoading.value = true;
+  loadingText.value = 'Đang nhận nhiệm vụ...';
   try {
     const response = await $fetch('/api/player/quests/repeat', {
       method: 'POST',
@@ -1267,6 +1285,8 @@ const handleRepeatQuest = async (questId: string) => {
     console.error('Error repeating quest:', error);
     const errorMsg = error.data?.message || 'Không thể nhận lại nhiệm vụ.';
     addMessage(errorMsg, 'error');
+  } finally {
+    isLoading.value = false;
   }
 };
 
@@ -1277,6 +1297,8 @@ const handleTrackQuest = (questId: string) => {
 
 // Handle profession choice
 const handleChooseProfession = async (professionId: string) => {
+  isLoading.value = true;
+  loadingText.value = 'Đang chọn nghề nghiệp...';
   try {
     const response = await $fetch('/api/player/profession', {
       method: 'POST',
@@ -1295,6 +1317,8 @@ const handleChooseProfession = async (professionId: string) => {
     console.error('Error choosing profession:', error);
     const errorMsg = error.data?.message || 'Không thể chọn nghề nghiệp.';
     addMessage(errorMsg, 'error');
+  } finally {
+    isLoading.value = false;
   }
 };
 
@@ -1723,6 +1747,8 @@ const declinePartyInvitation = () => {
 };
 
 const acceptGuildInvitation = async () => {
+  isLoading.value = true;
+  loadingText.value = 'Đang xử lý...';
   try {
     const response = await $fetch('/api/guild/accept', {
       method: 'POST',
@@ -1735,10 +1761,14 @@ const acceptGuildInvitation = async () => {
   } catch (error: any) {
     console.error('Failed to accept guild invitation:', error);
     addMessage(error.data?.statusMessage || 'Lỗi khi chấp nhận lời mời.', 'error');
+  } finally {
+    isLoading.value = false;
   }
 };
 
 const declineGuildInvitation = async () => {
+  isLoading.value = true;
+  loadingText.value = 'Đang xử lý...';
   try {
     await $fetch('/api/guild/decline', {
       method: 'POST',
@@ -1747,6 +1777,8 @@ const declineGuildInvitation = async () => {
   } catch (error) {
     console.error('Failed to decline guild invitation:', error);
     guildInvitationPopupOpen.value = false;
+  } finally {
+    isLoading.value = false;
   }
 };
 
