@@ -10,13 +10,20 @@
       :premiumCurrency="playerState.premiumCurrency"
     />
 
-    <!-- Main Output Area (85-90%) -->
+    <!-- Main Output Area with Channel Tabs (85-90%) -->
     <div class="main-output-pane">
-      <div ref="outputArea" class="output-area">
-        <div v-for="message in mainMessages" :key="message.id" :class="getMessageClass(message)">
-          <span v-if="message.type === 'loot'" v-html="renderClickableItems(message.text)"></span>
-          <template v-else>{{ message.text }}</template>
-        </div>
+      <!-- Tab Selector -->
+      <TabSelector
+        :tabs="channelTabs"
+        :currentTab="currentChannel"
+        @tabChange="handleChannelChange"
+      />
+      
+      <!-- Content Area for Active Tab -->
+      <div class="channel-content">
+        <MainLogPane v-if="currentChannel === 'main'" :messages="mainLog" />
+        <CombatLogPane v-else-if="currentChannel === 'combat'" :messages="combatLog" />
+        <ChatLogPane v-else-if="currentChannel === 'chat'" :messages="chatLog" />
       </div>
     </div>
 
@@ -286,6 +293,10 @@ import TradingPopup from '~/components/TradingPopup.vue';
 import PremiumShopPopup from '~/components/PremiumShopPopup.vue';
 import ShopPopup from '~/components/ShopPopup.vue';
 import MailPopup from '~/components/MailPopup.vue';
+import TabSelector from '~/components/TabSelector.vue';
+import MainLogPane from '~/components/MainLogPane.vue';
+import CombatLogPane from '~/components/CombatLogPane.vue';
+import ChatLogPane from '~/components/ChatLogPane.vue';
 
 definePageMeta({
   middleware: 'auth'
@@ -306,6 +317,36 @@ const updateDeviceType = () => {
     isMobile.value = width < 768;
     isTablet.value = width >= 768 && width < 1024;
     isDesktop.value = width >= 1024;
+  }
+};
+
+// Channel tabs state (Phase 27)
+const currentChannel = ref<'main' | 'combat' | 'chat'>('main');
+const mainLog = ref<Message[]>([]);
+const combatLog = ref<Message[]>([]);
+const chatLog = ref<Message[]>([]);
+const mainUnread = ref(false);
+const combatUnread = ref(false);
+const chatUnread = ref(false);
+
+// Channel tabs configuration
+const channelTabs = computed(() => [
+  { id: 'main', label: 'Chính', hasUnread: mainUnread.value },
+  { id: 'combat', label: 'Chiến Đấu', hasUnread: combatUnread.value },
+  { id: 'chat', label: 'Chat', hasUnread: chatUnread.value }
+]);
+
+// Handle channel tab change
+const handleChannelChange = (channelId: string) => {
+  currentChannel.value = channelId as 'main' | 'combat' | 'chat';
+  
+  // Clear unread indicator for the selected channel
+  if (channelId === 'main') {
+    mainUnread.value = false;
+  } else if (channelId === 'combat') {
+    combatUnread.value = false;
+  } else if (channelId === 'chat') {
+    chatUnread.value = false;
   }
 };
 
@@ -479,41 +520,45 @@ const worldRooms = ref<any[]>([]);
 // Quest state
 const playerQuests = ref<any[]>([]);
 
-// Separate main output messages (room descriptions, combat, etc.) from chat
-const mainMessages = computed(() => {
-  return messages.value.filter(m => m.type !== 'chat_log');
-});
-
 // Generate unique message ID
 const generateId = () => `msg-${Date.now()}-${Math.random()}`;
 
-// Add message to appropriate output
-const addMessage = (text: string, type: Message['type'] = 'normal', user?: string) => {
-  if (type === 'chat_log') {
-    // Add to chat pane
-    chatMessages.value.push({
-      id: generateId(),
-      user,
-      text,
-      timestamp: new Date(),
-    });
+// Add message to appropriate channel
+const addMessage = (text: string, type: Message['type'] = 'normal', user?: string, channel?: 'main' | 'combat' | 'chat', category?: string) => {
+  const message: Message = {
+    id: generateId(),
+    text,
+    type,
+    timestamp: new Date(),
+    user,
+    channel,
+    category
+  };
+  
+  // Route to appropriate log based on channel
+  if (channel === 'combat') {
+    combatLog.value.push(message);
+    // Set unread indicator if not on combat tab
+    if (currentChannel.value !== 'combat') {
+      combatUnread.value = true;
+    }
+  } else if (channel === 'chat' || type === 'chat_log') {
+    chatLog.value.push(message);
+    // Set unread indicator if not on chat tab
+    if (currentChannel.value !== 'chat') {
+      chatUnread.value = true;
+    }
   } else {
-    // Add to main output
-    messages.value.push({
-      id: generateId(),
-      text,
-      type,
-      timestamp: new Date(),
-      user
-    });
+    // Default to main channel
+    mainLog.value.push(message);
+    // Set unread indicator if not on main tab
+    if (currentChannel.value !== 'main') {
+      mainUnread.value = true;
+    }
   }
   
-  // Auto-scroll to bottom
-  nextTick(() => {
-    if (outputArea.value) {
-      outputArea.value.scrollTop = outputArea.value.scrollHeight;
-    }
-  });
+  // Keep legacy messages array for backward compatibility
+  messages.value.push(message);
 };
 
 // Get CSS class for message type
@@ -1174,37 +1219,37 @@ const connectWebSocket = () => {
   ws.value.onmessage = (event) => {
     try {
       const data = JSON.parse(event.data);
-      const { type, message, payload } = data;
+      const { type, message, payload, channel, category } = data;
 
       switch (type) {
         case 'normal':
-          addMessage(message || payload, 'normal');
+          addMessage(message || payload, 'normal', undefined, channel || 'main', category);
           break;
         case 'action':
-          addMessage(message || payload, 'action');
+          addMessage(message || payload, 'action', undefined, channel || 'main', category);
           break;
         case 'accent':
-          addMessage(message || payload, 'accent');
+          addMessage(message || payload, 'accent', undefined, channel || 'main', category);
           break;
         case 'error':
-          addMessage(message || payload, 'error');
+          addMessage(message || payload, 'error', undefined, channel || 'main', category);
           break;
         case 'system':
-          addMessage(message || payload, 'system');
+          addMessage(message || payload, 'system', undefined, channel || 'main', category);
           break;
         case 'combat_log':
-          addMessage(message || payload, 'combat_log');
+          addMessage(message || payload, 'combat_log', undefined, 'combat', category);
           break;
         case 'chat_log':
-          addMessage(message || payload.message, 'chat_log', payload.user);
+          addMessage(message || payload.message, 'chat_log', payload.user, 'chat', category);
           break;
         case 'room':
           if (payload.name) {
-            addMessage('', 'normal');
-            addMessage(`[${payload.name}]`, 'accent');
+            addMessage('', 'normal', undefined, 'main', 'room-description');
+            addMessage(`[${payload.name}]`, 'accent', undefined, 'main', 'room-description');
           }
           if (payload.description) {
-            addMessage(payload.description, 'normal');
+            addMessage(payload.description, 'normal', undefined, 'main', 'room-description');
           }
           // Update exits if provided
           if (payload.exits) {
@@ -1325,17 +1370,11 @@ const connectWebSocket = () => {
         case 'new_mail':
           // Handle new mail notification
           playerState.value.hasUnreadMail = true;
-          addMessage('📬 Bạn có thư mới!', 'system');
+          addMessage('📬 Bạn có thư mới!', 'system', undefined, 'main', 'system');
           break;
         case 'chat':
-          // Handle chat messages with categories
-          if (data.category === 'party') {
-            // Party chat - display in main output with special formatting
-            addMessage(`[Nhóm][${data.user}]: ${data.message}`, 'party_chat');
-          } else {
-            // Other chat types
-            addMessage(data.message || payload, 'chat_log', data.user);
-          }
+          // Handle chat messages with categories - route to chat channel
+          addMessage(data.message || payload, 'chat_log', data.user, 'chat', data.category || 'say');
           break;
         default:
           console.log('Unknown message type:', type);
@@ -1523,91 +1562,18 @@ watch(messages, () => {
   flex: 1;
   display: flex;
   flex-direction: column;
-  background-color: rgba(0, 136, 0, 0.03);
   border: 1px solid rgba(0, 136, 0, 0.3);
   overflow: hidden;
   margin: 0.5rem;
   margin-bottom: 0;
 }
 
-.output-area {
+.channel-content {
   flex: 1;
-  overflow-y: auto;
-  padding: 1rem;
-  padding-bottom: 0.5rem;
-  white-space: pre-wrap;
-  word-wrap: break-word;
-}
-
-.message {
-  margin-bottom: 0.1rem;
-  font-family: 'VT323', 'Source Code Pro', monospace;
-  font-size: 18px;
-  line-height: 1.4;
-}
-
-.message-normal {
-  color: var(--text-dim);
-}
-
-.message-action {
-  color: var(--text-bright);
-}
-
-.message-accent {
-  color: var(--text-accent);
-}
-
-.message-error {
-  color: var(--theme-text-error);
-}
-
-.message-system {
-  color: var(--theme-text-system);
-}
-
-.message-combat_log {
-  color: var(--text-bright);
-}
-
-.message-party_chat {
-  color: #4da6ff; /* Light blue for party chat */
-}
-
-/* Semantic Message Types (Phase 15) */
-.message-damage_in {
-  color: var(--theme-text-damage-in);
-  font-weight: bold;
-}
-
-.message-damage_out {
-  color: var(--theme-text-damage-out);
-}
-
-.message-heal {
-  color: var(--theme-text-heal);
-}
-
-.message-loot {
-  color: var(--theme-text-loot);
-}
-
-.message-xp {
-  color: var(--theme-text-xp);
-}
-
-.message-critical {
-  color: var(--theme-text-critical);
-  font-weight: bold;
-  text-shadow: 0 0 5px currentColor;
-}
-
-.message-chat_say {
-  color: var(--theme-text-chat-say);
-}
-
-.message-chat_guild {
-  color: var(--theme-text-chat-guild);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  background-color: rgba(0, 136, 0, 0.03);
 }
 
 /* Clickable items in loot messages */
