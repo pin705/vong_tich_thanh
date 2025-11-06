@@ -1,4 +1,4 @@
-import { ref, onMounted, onUnmounted, Ref } from 'vue';
+import { ref, onMounted, onUnmounted, Ref, computed } from 'vue';
 
 /**
  * Lazy load images when they enter viewport
@@ -242,8 +242,6 @@ export const useVirtualScroll = <T>(
     onScroll
   };
 };
-
-import { computed } from 'vue';
 
 /**
  * Detect if user prefers reduced motion

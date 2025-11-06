@@ -86,13 +86,23 @@ export const emojiShortcuts: Record<string, string> = {
   ':100:': '💯'
 };
 
+// Pre-compile regex patterns for emoji shortcuts
+const emojiRegexCache = new Map<string, RegExp>();
+Object.entries(emojiShortcuts).forEach(([shortcut]) => {
+  const escaped = shortcut.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  emojiRegexCache.set(shortcut, new RegExp(escaped, 'g'));
+});
+
 /**
  * Replace emoji shortcuts with actual emojis
  */
 export const replaceEmojiShortcuts = (text: string): string => {
   let result = text;
   Object.entries(emojiShortcuts).forEach(([shortcut, emoji]) => {
-    result = result.replace(new RegExp(shortcut.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'), emoji);
+    const regex = emojiRegexCache.get(shortcut);
+    if (regex) {
+      result = result.replace(regex, emoji);
+    }
   });
   return result;
 };

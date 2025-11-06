@@ -235,9 +235,11 @@ const checkTutorialState = (): boolean => {
 };
 
 // Auto-start if enabled and not completed
-if (props.autoStart && !checkTutorialState()) {
-  setTimeout(() => start(), 1000);
-}
+onMounted(() => {
+  if (props.autoStart && !checkTutorialState()) {
+    setTimeout(() => start(), 1000);
+  }
+});
 
 defineExpose({
   start,
