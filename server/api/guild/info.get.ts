@@ -34,7 +34,8 @@ export default defineEventHandler(async (event) => {
   const guild = await GuildSchema.findById(player.guild)
     .populate('leader', 'username level')
     .populate('officers', 'username level')
-    .populate('members', 'username level hp maxHp');
+    .populate('members', 'username level hp maxHp')
+    .populate('bank.itemId', 'name');
 
   if (!guild) {
     // Guild was deleted, clean up player reference
@@ -48,6 +49,12 @@ export default defineEventHandler(async (event) => {
     };
   }
 
+  // Format bank items
+  const bankItems = guild.bank.map((item: any) => ({
+    name: item.itemId?.name || 'Unknown Item',
+    quantity: item.quantity || 1,
+  }));
+
   return {
     success: true,
     hasGuild: true,
@@ -60,8 +67,8 @@ export default defineEventHandler(async (event) => {
       leader: guild.leader,
       officers: guild.officers,
       members: guild.members,
-      bankGold: guild.bank.gold,
-      bankItemCount: guild.bank.items?.length || 0,
+      currency: guild.currency || 0,
+      bankItems: bankItems,
       createdAt: guild.createdAt,
       announcements: guild.announcements?.slice(-5) || [], // Last 5 announcements
       isLeader: guild.leader._id.toString() === playerId,

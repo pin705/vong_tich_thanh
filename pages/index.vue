@@ -206,6 +206,22 @@
       />
     </Popover>
 
+    <!-- Guild Invitation Popup -->
+    <Popover
+      :isOpen="guildInvitationPopupOpen"
+      title="Lời Mời Bang Hội"
+      width="450px"
+      @close="declineGuildInvitation"
+    >
+      <GuildInvitationPopup
+        :guildName="guildInvitationData.guildName"
+        :guildTag="guildInvitationData.guildTag"
+        :inviterName="guildInvitationData.inviterName"
+        @accept="acceptGuildInvitation"
+        @decline="declineGuildInvitation"
+      />
+    </Popover>
+
     <!-- Auction House Popup -->
     <Popover
       :isOpen="auctionHousePopupOpen"
@@ -382,6 +398,22 @@ const partyInvitationData = ref<{
   inviterName: '',
   inviterClass: 'mutant_warrior',
   partyId: ''
+});
+
+// Guild invitation data
+const guildInvitationPopupOpen = ref(false);
+const guildInvitationData = ref<{
+  guildId: string;
+  guildName: string;
+  guildTag: string;
+  inviterId: string;
+  inviterName: string;
+}>({
+  guildId: '',
+  guildName: '',
+  guildTag: '',
+  inviterId: '',
+  inviterName: ''
 });
 
 // Skills and talents state
@@ -1253,6 +1285,19 @@ const connectWebSocket = () => {
             partyInvitationPopupOpen.value = true;
           }
           break;
+        case 'guild_invitation':
+          // Received guild invitation
+          if (payload) {
+            guildInvitationData.value = {
+              guildId: payload.guildId,
+              guildName: payload.guildName,
+              guildTag: payload.guildTag,
+              inviterId: payload.inviterId,
+              inviterName: payload.inviterName
+            };
+            guildInvitationPopupOpen.value = true;
+          }
+          break;
         case 'party_state':
           // Update party state
           if (payload) {
@@ -1362,6 +1407,11 @@ const handleLeaveParty = () => {
   partyPopupOpen.value = false;
 };
 
+const loadGuildInfo = async () => {
+  // This will be called when guild popup is opened or needs refresh
+  // The actual loading is done by the GuildOverlay component
+};
+
 const acceptPartyInvitation = () => {
   currentInput.value = 'party accept';
   sendCommand();
@@ -1372,6 +1422,34 @@ const declinePartyInvitation = () => {
   currentInput.value = 'party decline';
   sendCommand();
   partyInvitationPopupOpen.value = false;
+};
+
+const acceptGuildInvitation = async () => {
+  try {
+    const response = await $fetch('/api/guild/accept', {
+      method: 'POST',
+    });
+    if (response.success) {
+      guildInvitationPopupOpen.value = false;
+      addMessage('Bạn đã gia nhập bang hội!', 'system');
+      await loadGuildInfo();
+    }
+  } catch (error: any) {
+    console.error('Failed to accept guild invitation:', error);
+    addMessage(error.data?.statusMessage || 'Lỗi khi chấp nhận lời mời.', 'error');
+  }
+};
+
+const declineGuildInvitation = async () => {
+  try {
+    await $fetch('/api/guild/decline', {
+      method: 'POST',
+    });
+    guildInvitationPopupOpen.value = false;
+  } catch (error) {
+    console.error('Failed to decline guild invitation:', error);
+    guildInvitationPopupOpen.value = false;
+  }
 };
 
 // Lifecycle hooks

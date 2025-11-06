@@ -85,6 +85,26 @@ export default defineEventHandler(async (event) => {
     });
   }
 
+  // Store invitation in player document
+  targetPlayer.guildInvite = guild._id;
+  await targetPlayer.save();
+
+  // Send WebSocket notification to target player if online
+  const { gameState } = await import('../../utils/gameState');
+  const targetPlayerState = gameState.getPlayer(targetPlayerId);
+  if (targetPlayerState?.ws) {
+    targetPlayerState.ws.send(JSON.stringify({
+      type: 'guild_invitation',
+      payload: {
+        guildId: guild._id.toString(),
+        guildName: guild.name,
+        guildTag: guild.tag,
+        inviterId: inviterId,
+        inviterName: inviter.username
+      }
+    }));
+  }
+
   return {
     success: true,
     message: `Đã gửi lời mời vào bang [${guild.tag}] ${guild.name} cho ${targetPlayer.username}.`

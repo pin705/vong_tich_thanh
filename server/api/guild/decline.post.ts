@@ -1,3 +1,4 @@
+import { PlayerSchema } from '../../../models/Player';
 import { guildService } from '../../utils/guildService';
 
 export default defineEventHandler(async (event) => {
@@ -9,17 +10,26 @@ export default defineEventHandler(async (event) => {
     });
   }
 
-  const body = await readBody(event);
-  const { guildId } = body;
+  const playerId = user.user.id;
 
-  if (!guildId) {
+  // Get player
+  const player = await PlayerSchema.findById(playerId);
+  if (!player) {
     throw createError({
-      statusCode: 400,
-      statusMessage: 'Guild ID is required.'
+      statusCode: 404,
+      statusMessage: 'Không tìm thấy thông tin người chơi.'
     });
   }
 
-  const playerId = user.user.id;
+  // Check if player has pending invitation
+  if (!player.guildInvite) {
+    throw createError({
+      statusCode: 400,
+      statusMessage: 'Bạn không có lời mời bang hội nào.'
+    });
+  }
+
+  const guildId = player.guildInvite.toString();
 
   // Decline invitation via guild service
   const result = guildService.declineInvitation(playerId, guildId);
@@ -30,6 +40,10 @@ export default defineEventHandler(async (event) => {
       statusMessage: result.message
     });
   }
+
+  // Clear player's guild invitation
+  player.guildInvite = null;
+  await player.save();
 
   return {
     success: true,
