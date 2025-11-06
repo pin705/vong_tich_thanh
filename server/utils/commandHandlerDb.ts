@@ -31,6 +31,28 @@ const COMBAT_COMMANDS = ['attack', 'a', 'kill', 'flee', 'run'];
 const ITEM_COMMANDS = ['inventory', 'i', 'get', 'g', 'drop', 'use', 
                        'list', 'buy', 'sell'];
 
+// Helper function to get currency info for shop transactions
+function getCurrencyInfo(vendor: any, player: any) {
+  const isPremiumShop = vendor.shopType === 'premium';
+  const isDungeonShop = vendor.shopCurrency === 'dungeon_coin';
+  
+  let currencySymbol = '💰';
+  let playerCurrency = player.gold;
+  let currencyName = 'vàng';
+  
+  if (isPremiumShop) {
+    currencySymbol = '💎';
+    playerCurrency = player.premiumCurrency;
+    currencyName = 'Cổ Thạch';
+  } else if (isDungeonShop) {
+    currencySymbol = '🎫';
+    playerCurrency = player.dungeonCoin || 0;
+    currencyName = 'Xu Hầm Ngục';
+  }
+  
+  return { isPremiumShop, isDungeonShop, currencySymbol, playerCurrency, currencyName };
+}
+
 // Helper function to format trade status display
 async function formatTradeStatus(
   playerTrade: { tradeId: string; trade: any; isInitiator: boolean },
@@ -448,10 +470,9 @@ export async function handleCommandDb(command: Command, playerId: string): Promi
           break;
         }
 
-        // Check price based on shop type
-        const isPremiumShop = buyVendor.shopType === 'premium';
-        const itemPrice = isPremiumShop ? (buyItem.premiumPrice ?? 0) : (buyItem.price ?? 0);
-        const buyCurrencySymbol = isPremiumShop ? '💎' : '💰';
+        // Check price based on shop type and currency
+        const currencyInfo = getCurrencyInfo(buyVendor, player);
+        const itemPrice = currencyInfo.isPremiumShop ? (buyItem.premiumPrice ?? 0) : (buyItem.price ?? 0);
 
         // Validate that item has a valid price
         if (itemPrice <= 0) {
@@ -459,16 +480,9 @@ export async function handleCommandDb(command: Command, playerId: string): Promi
           break;
         }
 
-        if (isPremiumShop) {
-          if (player.premiumCurrency < itemPrice) {
-            responses.push(`Bạn không có đủ Cổ Thạch để mua [${buyItem.name}]. Cần ${itemPrice} ${buyCurrencySymbol}, bạn chỉ có ${player.premiumCurrency} ${buyCurrencySymbol}.`);
-            break;
-          }
-        } else {
-          if (player.gold < itemPrice) {
-            responses.push(`Bạn không có đủ vàng để mua [${buyItem.name}]. Cần ${itemPrice} ${buyCurrencySymbol}, bạn chỉ có ${player.gold} ${buyCurrencySymbol}.`);
-            break;
-          }
+        if (currencyInfo.playerCurrency < itemPrice) {
+          responses.push(`Bạn không có đủ ${currencyInfo.currencyName} để mua [${buyItem.name}]. Cần ${itemPrice} ${currencyInfo.currencySymbol}, bạn chỉ có ${currencyInfo.playerCurrency} ${currencyInfo.currencySymbol}.`);
+          break;
         }
 
         // Create a new item instance for the player
@@ -487,12 +501,16 @@ export async function handleCommandDb(command: Command, playerId: string): Promi
           slot: buyItem.slot,
           requiredLevel: buyItem.requiredLevel,
           recipe: buyItem.recipe,
-          resultItem: buyItem.resultItem
+          resultItem: buyItem.resultItem,
+          upgradeType: buyItem.upgradeType,
+          itemKey: buyItem.itemKey
         });
 
         // Deduct currency
-        if (isPremiumShop) {
+        if (currencyInfo.isPremiumShop) {
           player.premiumCurrency -= itemPrice;
+        } else if (currencyInfo.isDungeonShop) {
+          player.dungeonCoin = (player.dungeonCoin || 0) - itemPrice;
         } else {
           player.gold -= itemPrice;
         }
@@ -500,11 +518,13 @@ export async function handleCommandDb(command: Command, playerId: string): Promi
         player.inventory.push(newBuyItem._id);
         await player.save();
 
-        responses.push(`Bạn đã mua [${buyItem.name}] với giá ${itemPrice} ${buyCurrencySymbol}!`);
-        if (isPremiumShop) {
-          responses.push(`Cổ Thạch còn lại: ${player.premiumCurrency} ${buyCurrencySymbol}`);
+        responses.push(`Bạn đã mua [${buyItem.name}] với giá ${itemPrice} ${currencyInfo.currencySymbol}!`);
+        if (currencyInfo.isPremiumShop) {
+          responses.push(`${currencyInfo.currencyName} còn lại: ${player.premiumCurrency} ${currencyInfo.currencySymbol}`);
+        } else if (currencyInfo.isDungeonShop) {
+          responses.push(`${currencyInfo.currencyName} còn lại: ${player.dungeonCoin || 0} ${currencyInfo.currencySymbol}`);
         } else {
-          responses.push(`Vàng còn lại: ${player.gold} ${buyCurrencySymbol}`);
+          responses.push(`${currencyInfo.currencyName} còn lại: ${player.gold} ${currencyInfo.currencySymbol}`);
         }
         break;
 
@@ -1589,6 +1609,81 @@ export async function handleCommandDb(command: Command, playerId: string): Promi
           default:
             responses.push('Lệnh không hợp lệ. Sử dụng: alias [add/remove/list]');
             break;
+        }
+        break;
+      }
+
+      case 'dungeon': {
+        // Dungeon system commands
+        const subCommand = target?.toLowerCase();
+        const { getDungeonStatus, startChallenge } = await import('./dungeonService');
+
+        if (!subCommand || subCommand === 'status') {
+          // Show dungeon status
+          const statusResult = await getDungeonStatus(playerId);
+          if (statusResult.success) {
+            const { currentFloor, highestFloor, dungeonCoin, lastWeeklyReset } = statusResult.data;
+            responses.push('═══════════════════════════════════════════════════');
+            responses.push('            HẦM NGỤC                               ');
+            responses.push('═══════════════════════════════════════════════════');
+            responses.push(`Tầng hiện tại: ${currentFloor}`);
+            responses.push(`Tầng cao nhất: ${highestFloor}`);
+            responses.push(`Xu Hầm Ngục: ${dungeonCoin}`);
+            responses.push('');
+            responses.push('Lệnh:');
+            responses.push('  dungeon enter    - Bắt đầu thử thách');
+            responses.push('  dungeon status   - Xem trạng thái');
+          } else {
+            responses.push(statusResult.message);
+          }
+          break;
+        }
+
+        if (subCommand === 'enter') {
+          // Start dungeon challenge
+          const statusResult = await getDungeonStatus(playerId);
+          if (!statusResult.success) {
+            responses.push(statusResult.message);
+            break;
+          }
+
+          const currentFloor = statusResult.data.currentFloor;
+          const challengeResult = await startChallenge(playerId, currentFloor);
+          
+          if (challengeResult.success) {
+            responses.push(challengeResult.message);
+            responses.push('Sử dụng lệnh "attack" hoặc "a" để chiến đấu!');
+          } else {
+            responses.push(challengeResult.message);
+          }
+          break;
+        }
+
+        responses.push('Lệnh không hợp lệ. Sử dụng: dungeon [enter/status]');
+        break;
+      }
+
+      case 'tiếp':
+      case 'tiep':
+      case 'next': {
+        // Continue to next dungeon floor
+        const { getDungeonStatus, startChallenge } = await import('./dungeonService');
+        
+        // Check if player just completed a floor
+        const statusResult = await getDungeonStatus(playerId);
+        if (!statusResult.success) {
+          responses.push(statusResult.message);
+          break;
+        }
+
+        const currentFloor = statusResult.data.currentFloor;
+        const challengeResult = await startChallenge(playerId, currentFloor);
+        
+        if (challengeResult.success) {
+          responses.push(challengeResult.message);
+          responses.push('Sử dụng lệnh "attack" hoặc "a" để chiến đấu!');
+        } else {
+          responses.push(challengeResult.message);
         }
         break;
       }

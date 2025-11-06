@@ -496,6 +496,16 @@ export async function executeCombatTick(playerId: string, agentId: string): Prom
       const questMessages = await updateQuestProgress(playerId, 'kill', agent.name);
       messages.push(...questMessages);
       
+      // Dungeon System - Handle dungeon boss completion
+      if (agent.isDungeonBoss && agent.dungeonFloor) {
+        const { completeFloor } = await import('./dungeonService');
+        const dungeonResult = await completeFloor(playerId, agent.dungeonFloor);
+        if (dungeonResult.success) {
+          // Messages are sent via WebSocket in completeFloor
+          // Just mark that we handled this
+        }
+      }
+      
       // Notify about loot turn if in party
       const killerParty = partyService.getPlayerParty(playerId);
       if (killerParty) {

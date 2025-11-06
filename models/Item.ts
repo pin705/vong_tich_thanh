@@ -15,7 +15,7 @@ export const ItemSchema = defineMongooseModel({
     },
     type: {
       type: String,
-      enum: ['weapon', 'armor', 'consumable', 'misc', 'craftingMaterial', 'recipe', 'furniture', 'Equipment', 'Recipe', 'Material'],
+      enum: ['weapon', 'armor', 'consumable', 'misc', 'craftingMaterial', 'recipe', 'furniture', 'Equipment', 'Recipe', 'Material', 'upgrade_material'],
       required: true,
       index: true, // Index for filtering by type
     },
@@ -115,5 +115,17 @@ export const ItemSchema = defineMongooseModel({
         of: Number,
       },
     }],
+    // Enhancement System - Upgrade material type
+    upgradeType: {
+      type: String,
+      enum: ['enhancement', 'star', 'refine', null],
+      default: null,
+    },
+    itemKey: {
+      type: String,
+      unique: true,
+      sparse: true, // Allow null values and only enforce uniqueness on non-null values
+      index: true,
+    },
   },
 });

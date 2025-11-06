@@ -164,6 +164,16 @@ export interface Item {
   };
 }
 
+// Player Item Instance - for items in player inventory with enhancement data
+export interface IPlayerItem {
+  itemId: string; // Reference to Item template
+  quantity: number; // For stackable items
+  instanceId: string; // Unique ID for this item instance (uuidv4)
+  enhancementLevel?: number; // Enhancement level (+1, +2, etc.)
+  stars?: number; // Star rating
+  // Future: bonusStats, sockets, etc.
+}
+
 // Agent/NPC/Mob types
 export interface Agent {
   _id: string;
