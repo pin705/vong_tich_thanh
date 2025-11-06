@@ -22,6 +22,10 @@ const BOSS_GOLD_MULTIPLIER = 100;
 const CRITICAL_HIT_MULTIPLIER = 1.1;
 const GLANCING_BLOW_MULTIPLIER = 0.9;
 
+// Pet combat constants
+const PET_ATTACK_TARGET_CHANCE = 0.4; // 40% chance for agent to target pet instead of player
+const PET_EXP_SHARE = 0.5; // Pet receives 50% of kill EXP
+
 // Helper function to categorize combat messages for semantic highlighting
 function getCombatMessageType(message: string): string {
   if (message === '') return 'normal';
@@ -500,7 +504,7 @@ export async function executeCombatTick(playerId: string, agentId: string): Prom
         const petState = gameState.getPet(player.activePetId.toString());
         
         if (pet && petState && petState.currentStats.hp > 0) {
-          const petExpAmount = Math.floor(totalExp * 0.5); // Pet gets 50% of total EXP
+          const petExpAmount = Math.floor(totalExp * PET_EXP_SHARE);
           const petExpResult = await addPetExp(pet._id.toString(), petExpAmount);
           
           messages.push(`[${pet.nickname}] nhận được ${petExpAmount} EXP!`);
@@ -677,9 +681,9 @@ export async function executeCombatTick(playerId: string, agentId: string): Prom
     }
     
     // Agent attacks back
-    // Random chance to attack pet if available (40% chance)
+    // Random chance to attack pet if available
     const hasPet = player.activePetId !== null && player.activePetId !== undefined;
-    const shouldAttackPet = hasPet && Math.random() < 0.4;
+    const shouldAttackPet = hasPet && Math.random() < PET_ATTACK_TARGET_CHANCE;
     
     if (shouldAttackPet) {
       const pet = await PetSchema.findById(player.activePetId);

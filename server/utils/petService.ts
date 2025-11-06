@@ -18,14 +18,14 @@ export const QUALITY_GROWTH_MULTIPLIER = {
   LEGENDARY: 3.0,
 };
 
-// Quality determination chances
-const QUALITY_CHANCES = {
-  COMMON: 0.50,      // 50%
-  UNCOMMON: 0.30,    // 30%
-  RARE: 0.15,        // 15%
-  EPIC: 0.04,        // 4%
-  LEGENDARY: 0.01,   // 1%
-};
+// Quality determination chances (ordered from common to rare)
+const QUALITY_CHANCES = [
+  { quality: 'LEGENDARY', chance: 0.01 },  // 1%
+  { quality: 'EPIC', chance: 0.04 },       // 4%
+  { quality: 'RARE', chance: 0.15 },       // 15%
+  { quality: 'UNCOMMON', chance: 0.30 },   // 30%
+  { quality: 'COMMON', chance: 0.50 },     // 50%
+];
 
 /**
  * Determine random pet quality based on weighted chances
@@ -34,10 +34,10 @@ export function determinePetQuality(): string {
   const roll = Math.random();
   let cumulative = 0;
   
-  for (const [quality, chance] of Object.entries(QUALITY_CHANCES)) {
-    cumulative += chance;
+  for (const entry of QUALITY_CHANCES) {
+    cumulative += entry.chance;
     if (roll < cumulative) {
-      return quality;
+      return entry.quality;
     }
   }
   
