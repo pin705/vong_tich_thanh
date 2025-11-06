@@ -118,6 +118,62 @@ async function broadcastRoomOccupants(roomId: string) {
   }
 }
 
+// Helper function to send vendor shop data
+async function sendVendorShop(peer: Peer, vendorId: string) {
+  try {
+    const vendor = await AgentSchema.findById(vendorId)
+      .populate('shopInventory')
+      .lean();
+
+    if (!vendor || !vendor.isVendor) {
+      peer.send(JSON.stringify({
+        type: 'shop_data',
+        payload: {
+          success: false,
+          message: 'This agent is not a vendor'
+        }
+      }));
+      return;
+    }
+
+    const shopInventory = vendor.shopInventory || [];
+
+    peer.send(JSON.stringify({
+      type: 'shop_data',
+      payload: {
+        success: true,
+        vendor: {
+          id: vendor._id,
+          name: vendor.name,
+          shopType: vendor.shopType || 'gold'
+        },
+        items: shopInventory.map((item: any) => ({
+          _id: item._id,
+          name: item.name,
+          description: item.description,
+          type: item.type,
+          price: item.price,
+          sellValue: item.sellValue,
+          premiumPrice: item.premiumPrice,
+          quality: item.quality,
+          requiredLevel: item.requiredLevel,
+          effects: item.effects,
+          stats: item.stats
+        }))
+      }
+    }));
+  } catch (error) {
+    console.error('Error sending vendor shop:', error);
+    peer.send(JSON.stringify({
+      type: 'shop_data',
+      payload: {
+        success: false,
+        message: 'Failed to load shop data'
+      }
+    }));
+  }
+}
+
 // Helper function to send party state
 async function sendPartyState(peer: Peer, playerId: string) {
   const playerParty = partyService.getPlayerParty(playerId);
@@ -357,6 +413,36 @@ export default defineWebSocketHandler({
             peer.send(JSON.stringify({
               type: 'error',
               message: 'Lỗi hệ thống. Lệnh của bạn không thể thực thi.'
+            }));
+          }
+          break;
+
+        case 'get_shop':
+          const playerIdForShop = peerToPlayer.get(peer.id);
+          if (!playerIdForShop) {
+            peer.send(JSON.stringify({
+              type: 'error',
+              message: 'Bạn chưa đăng nhập.'
+            }));
+            return;
+          }
+
+          try {
+            const vendorId = payload.vendorId;
+            if (!vendorId) {
+              peer.send(JSON.stringify({
+                type: 'error',
+                message: 'Vendor ID is required'
+              }));
+              return;
+            }
+
+            await sendVendorShop(peer, vendorId);
+          } catch (shopError) {
+            console.error('[WS] Error getting shop:', shopError);
+            peer.send(JSON.stringify({
+              type: 'error',
+              message: 'Lỗi khi tải cửa hàng.'
             }));
           }
           break;
