@@ -25,8 +25,39 @@ export async function handleCombatCommand(command: Command, playerId: string): P
         return responses;
       }
 
+      // Phase 29: Auto-targeting when no target specified
       if (!target) {
-        responses.push('Tấn công ai? Cú pháp: attack [tên]');
+        // Find a valid target automatically
+        const room = await RoomSchema.findById(player.currentRoomId);
+        if (!room) {
+          responses.push('Lỗi: Không tìm thấy phòng hiện tại.');
+          return responses;
+        }
+
+        const agents = await AgentSchema.find({ _id: { $in: room.agents } });
+        const hostileAgents = agents.filter((a: any) => a.type === 'mob');
+
+        if (hostileAgents.length === 0) {
+          responses.push('Không có mục tiêu để tấn công. Cú pháp: attack [tên]');
+          return responses;
+        }
+
+        // Priority: agents attacking player > aggressive agents > nearest agent
+        let targetAgent = hostileAgents.find((a: any) => 
+          a.combatTarget && a.combatTarget.toString() === playerId
+        );
+
+        if (!targetAgent) {
+          targetAgent = hostileAgents.find((a: any) => a.behavior === 'aggressive');
+        }
+
+        if (!targetAgent) {
+          targetAgent = hostileAgents[0];
+        }
+
+        responses.push(`[Auto-Target] Mục tiêu: [${targetAgent.name}]`);
+        const combatMessages = await startCombat(playerId, targetAgent._id.toString());
+        responses.push(...combatMessages);
         return responses;
       }
 

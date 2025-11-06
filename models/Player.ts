@@ -85,6 +85,37 @@ export const PlayerSchema = defineMongooseModel({
       ref: 'Skill',
       default: [],
     }],
+    // Phase 29: Skill system enhancements
+    skillPoints: {
+      type: Number,
+      default: 0,
+    },
+    learnedSkills: {
+      type: Map,
+      of: Number, // Skill ID -> Upgrade Level
+      default: {},
+    },
+    skillCooldowns: {
+      type: Map,
+      of: Date, // Skill ID -> Last Used Time
+      default: {},
+    },
+    // Auto-skill configuration
+    autoSkills: [{
+      skillId: {
+        type: Schema.Types.ObjectId,
+        ref: 'Skill',
+      },
+      priority: {
+        type: Number,
+        default: 0,
+      },
+      conditions: {
+        type: Map,
+        of: Schema.Types.Mixed,
+        default: {},
+      },
+    }],
     // Profession system
     profession: {
       type: String,
@@ -99,6 +130,14 @@ export const PlayerSchema = defineMongooseModel({
       type: Number,
       default: 0,
     },
+    // Phase 29: Advanced profession system
+    professionTier: {
+      type: Number,
+      default: 1,
+    },
+    completedProfessionQuests: [{
+      type: String,
+    }],
     // Phase 17: Guild System
     guild: {
       type: Schema.Types.ObjectId,

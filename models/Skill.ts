@@ -47,5 +47,40 @@ export const SkillSchema = defineMongooseModel({
       type: Number,
       default: 1,
     },
+    // Phase 29: Advanced skill properties
+    targetType: {
+      type: String,
+      enum: ['self', 'single', 'area', 'cone', 'line'],
+      default: 'single',
+    },
+    range: {
+      type: Number,
+      default: 1,
+    },
+    animationEffect: {
+      type: String,
+      default: '',
+    },
+    maxUpgradeLevel: {
+      type: Number,
+      default: 1,
+    },
+    prerequisiteSkills: [{
+      type: Schema.Types.ObjectId,
+      ref: 'Skill',
+    }],
+    skillPointCost: {
+      type: Number,
+      default: 1,
+    },
+    professionRequirement: {
+      type: String,
+      enum: ['blacksmith', 'alchemist', 'enchanter', 'hunter', 'miner', 'herbalist', null],
+      default: null,
+    },
+    tier: {
+      type: Number,
+      default: 1,
+    },
   },
 });
