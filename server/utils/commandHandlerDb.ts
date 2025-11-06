@@ -399,7 +399,7 @@ export async function handleCommandDb(command: Command, playerId: string): Promi
         const vendors = await AgentSchema.find({ 
           _id: { $in: listRoom.agents },
           isVendor: true
-        }).populate('shopInventory');
+        }).populate('shopInventory').populate('shopItems');
 
         if (vendors.length === 0) {
           responses.push('Không có ai ở đây để bán hàng.');
@@ -407,16 +407,22 @@ export async function handleCommandDb(command: Command, playerId: string): Promi
         }
 
         const vendor = vendors[0];
+        // Combine items from both shopInventory and shopItems (legacy field)
         const shopInventory = vendor.shopInventory || [];
+        const shopItems = vendor.shopItems || [];
+        const allItems = [...shopInventory, ...shopItems];
+        const uniqueItems = allItems.filter((item, index, self) =>
+          index === self.findIndex((t) => t._id.toString() === item._id.toString())
+        );
 
-        if (shopInventory.length === 0) {
+        if (uniqueItems.length === 0) {
           responses.push(`[${vendor.name}] không có gì để bán.`);
           break;
         }
 
         const currencySymbol = vendor.shopType === 'premium' ? '💎' : '💰';
         responses.push(`════════ HÀNG CỦA ${vendor.name.toUpperCase()} ════════`);
-        shopInventory.forEach((item: any, index: number) => {
+        uniqueItems.forEach((item: any, index: number) => {
           const itemPrice = vendor.shopType === 'premium' ? (item.premiumPrice ?? 0) : (item.price ?? 0);
           const spaces = ' '.repeat(Math.max(20 - item.name.length, 1));
           responses.push(`${index + 1}. [${item.name}]${spaces}- ${itemPrice} ${currencySymbol}`);
@@ -441,7 +447,7 @@ export async function handleCommandDb(command: Command, playerId: string): Promi
         const buyVendors = await AgentSchema.find({ 
           _id: { $in: buyRoom.agents },
           isVendor: true
-        }).populate('shopInventory');
+        }).populate('shopInventory').populate('shopItems');
 
         if (buyVendors.length === 0) {
           responses.push('Không có ai ở đây để bán hàng.');
@@ -449,8 +455,14 @@ export async function handleCommandDb(command: Command, playerId: string): Promi
         }
 
         const buyVendor = buyVendors[0];
+        // Combine items from both shopInventory and shopItems (legacy field)
         const buyShopInventory = buyVendor.shopInventory || [];
-        const buyItem = buyShopInventory.find((i: any) => 
+        const buyShopItems = buyVendor.shopItems || [];
+        const buyAllItems = [...buyShopInventory, ...buyShopItems];
+        const buyUniqueItems = buyAllItems.filter((item, index, self) =>
+          index === self.findIndex((t) => t._id.toString() === item._id.toString())
+        );
+        const buyItem = buyUniqueItems.find((i: any) => 
           i.name.toLowerCase().includes(target.toLowerCase())
         );
 
