@@ -13,6 +13,10 @@ import { COMBAT_TICK_INTERVAL, FLEE_SUCCESS_CHANCE, EXPERIENCE_PER_LEVEL, HP_GAI
 const BOSS_PREMIUM_CURRENCY_MULTIPLIER = 10;
 const BOSS_GOLD_MULTIPLIER = 100;
 
+// Combat narrative constants
+const CRITICAL_HIT_MULTIPLIER = 1.1;
+const GLANCING_BLOW_MULTIPLIER = 0.9;
+
 // Helper function to categorize combat messages for semantic highlighting
 function getCombatMessageType(message: string): string {
   if (message === '') return 'normal';
@@ -342,8 +346,8 @@ export async function executeCombatTick(playerId: string, agentId: string): Prom
     // Enhanced combat narrative - vary attack descriptions
     const attackVerbs = ['tấn công', 'đánh trúng', 'ra đòn', 'tung đòn', 'giáng đòn'];
     const attackVerb = attackVerbs[Math.floor(Math.random() * attackVerbs.length)];
-    const damageDesc = playerDamage > playerBaseDamage * 1.1 ? ' (Chí mạng!)' : 
-                       playerDamage < playerBaseDamage * 0.9 ? ' (Trượt phớt)' : '';
+    const damageDesc = playerDamage > playerBaseDamage * CRITICAL_HIT_MULTIPLIER ? ' (Chí mạng!)' : 
+                       playerDamage < playerBaseDamage * GLANCING_BLOW_MULTIPLIER ? ' (Trượt phớt)' : '';
     messages.push(`Bạn ${attackVerb} [${agent.name}], gây ${playerDamage} sát thương${damageDesc}. (HP còn lại: ${agent.hp}/${agent.maxHp})`);
     
     // Check if agent died
