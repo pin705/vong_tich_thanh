@@ -19,6 +19,7 @@ import { deduplicateItemsById } from './itemDeduplication';
 import { BUILT_IN_COMMANDS } from './commandParser';
 import { transferItem, transferGold, addItemToPlayer, removeItemFromPlayer } from './inventoryService';
 import { findItemOnGround, findItemInInventory, findTargetInRoom } from './entityFinder';
+import { getHelpText } from './helpSystem';
 
 // Command routing configuration
 const MOVEMENT_COMMANDS = ['go', 'n', 's', 'e', 'w', 'u', 'd', 
@@ -120,79 +121,12 @@ export async function handleCommandDb(command: Command, playerId: string): Promi
     }
 
     switch (action) {
-      case 'help':
-        responses.push('');
-        responses.push('═══════════════════════════════════════════════════');
-        responses.push('            DANH SÁCH LỆNH                         ');
-        responses.push('═══════════════════════════════════════════════════');
-        responses.push('');
-        responses.push('DI CHUYỂN:');
-        responses.push('  go [hướng] hoặc [n/s/e/w/u/d]');
-        responses.push('  Ví dụ: go bắc, n, s, e, w');
-        responses.push('');
-        responses.push('QUAN SÁT:');
-        responses.push('  look [đối tượng]    (l)  - Quan sát phòng/vật/người');
-        responses.push('  inventory           (i)  - Xem túi đồ');
-        responses.push('');
-        responses.push('TƯƠNG TÁC:');
-        responses.push('  talk [tên]          (t)  - Nói chuyện với NPC');
-        responses.push('  say [text]               - Nói với người chơi khác');
-        responses.push('  get [vật]           (g)  - Nhặt vật phẩm');
-        responses.push('  drop [vật]               - Thả vật phẩm');
-        responses.push('  use [vật]                - Sử dụng vật phẩm');
-        responses.push('');
-        responses.push('CHIẾN ĐẤU:');
-        responses.push('  attack [tên]        (a)  - Tấn công mục tiêu');
-        responses.push('  flee                     - Bỏ chạy khỏi chiến đấu');
-        responses.push('');
-        responses.push('MUA BÁN:');
-        responses.push('  list                     - Xem hàng hóa');
-        responses.push('  buy [vật]                - Mua vật phẩm');
-        responses.push('  sell [vật]               - Bán vật phẩm');
-        responses.push('');
-        responses.push('CLASS & THIÊN PHÚ:');
-        responses.push('  skills          (sk)     - Xem sổ kỹ năng');
-        responses.push('  talents    (thienphu)    - Xem bảng thiên phú');
-        responses.push('');
-        responses.push('TỔ ĐỘI (PARTY):');
-        responses.push('  party invite [tên]  (moi)- Mời người chơi vào nhóm');
-        responses.push('  party accept             - Chấp nhận lời mời');
-        responses.push('  party decline            - Từ chối lời mời');
-        responses.push('  party leave        (roi) - Rời nhóm');
-        responses.push('  party kick [tên]         - Đuổi thành viên (trưởng nhóm)');
-        responses.push('  party promote [tên]      - Trao quyền trưởng nhóm');
-        responses.push('  party loot [rule]        - Đặt quy tắc nhặt đồ');
-        responses.push('  p [tin nhắn]             - Chat với nhóm');
-        responses.push('');
-        responses.push('BANG HỘI (GUILD):');
-        responses.push('  guild                    - Xem lệnh bang hội');
-        responses.push('  guild invite [tên]       - Mời người chơi vào bang');
-        responses.push('  guild deposit gold [số]  - Gửi vàng vào kho bang');
-        responses.push('  guild withdraw gold [số] - Rút vàng (lãnh đạo và sĩ quan)');
-        responses.push('  g [tin nhắn]             - Chat với bang');
-        responses.push('');
-        responses.push('PvP:');
-        responses.push('  pvp [on/off]             - Bật/tắt chế độ PvP');
-        responses.push('  attack [tên người chơi]  - Tấn công người chơi (cần PvP)');
-        responses.push('');
-        responses.push('GIAO DỊCH:');
-        responses.push('  trade invite [tên]       - Mời người chơi giao dịch');
-        responses.push('  trade accept             - Chấp nhận lời mời giao dịch');
-        responses.push('  trade decline            - Từ chối lời mời giao dịch');
-        responses.push('  trade add [vật]          - Thêm vật phẩm vào giao dịch');
-        responses.push('  trade gold [số]          - Thêm vàng vào giao dịch');
-        responses.push('  trade lock               - Khóa giao dịch');
-        responses.push('  trade confirm            - Xác nhận giao dịch');
-        responses.push('  trade cancel             - Hủy giao dịch');
-        responses.push('');
-        responses.push('KHÁC:');
-        responses.push('  help                     - Hiển thị trợ giúp');
-        responses.push('  alias add [tên] [lệnh]   - Tạo lệnh tắt tùy chỉnh');
-        responses.push('  alias remove [tên]       - Xóa lệnh tắt');
-        responses.push('  alias list               - Xem danh sách lệnh tắt');
-        responses.push('  quit                     - Thoát game');
-        responses.push('');
+      case 'help': {
+        // Use the new help system with topic support
+        const helpResponses = getHelpText(target);
+        responses.push(...helpResponses);
         break;
+      }
 
       case 'look':
       case 'l':
