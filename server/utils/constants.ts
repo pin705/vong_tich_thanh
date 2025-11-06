@@ -27,3 +27,9 @@ export const BCRYPT_SALT_ROUNDS = 10;
 
 // Combat damage
 export const MINIMUM_DAMAGE = 1;
+
+// Guild system
+export const GUILD_CREATION_COST = 100000; // Cost in gold to create a guild
+export const GUILD_TAG_MIN_LENGTH = 3;
+export const GUILD_TAG_MAX_LENGTH = 5;
+export const GUILD_NAME_MAX_LENGTH = 30;

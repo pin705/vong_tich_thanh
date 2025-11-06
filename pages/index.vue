@@ -206,6 +206,22 @@
       />
     </Popover>
 
+    <!-- Guild Invitation Popup -->
+    <Popover
+      :isOpen="guildInvitationPopupOpen"
+      title="Lời Mời Bang Hội"
+      width="450px"
+      @close="declineGuildInvitation"
+    >
+      <GuildInvitationPopup
+        :guildName="guildInvitationData.guildName"
+        :guildTag="guildInvitationData.guildTag"
+        :inviterName="guildInvitationData.inviterName"
+        @accept="acceptGuildInvitation"
+        @decline="declineGuildInvitation"
+      />
+    </Popover>
+
     <!-- Auction House Popup -->
     <Popover
       :isOpen="auctionHousePopupOpen"
@@ -382,6 +398,22 @@ const partyInvitationData = ref<{
   inviterName: '',
   inviterClass: 'mutant_warrior',
   partyId: ''
+});
+
+// Guild invitation data
+const guildInvitationPopupOpen = ref(false);
+const guildInvitationData = ref<{
+  guildId: string;
+  guildName: string;
+  guildTag: string;
+  inviterId: string;
+  inviterName: string;
+}>({
+  guildId: '',
+  guildName: '',
+  guildTag: '',
+  inviterId: '',
+  inviterName: ''
 });
 
 // Skills and talents state
@@ -689,12 +721,24 @@ const getActionsForEntity = (type: 'player' | 'npc' | 'mob', name: string, entit
         { label: 'Xem Xét (Look)', command: `look ${name}`, disabled: false }
       ];
     case 'player':
-      return [
+      const playerActions = [
         { label: 'Nói Chuyện (Say)', command: `say Xin chào ${name}!`, disabled: false },
         { label: 'Xem Xét (Look)', command: `look ${name}`, disabled: false },
         { label: 'Giao Dịch (Trade)', command: `trade ${name}`, disabled: true },
         { label: 'Mời Vào Nhóm (Party)', command: `party invite ${name}`, disabled: false }
       ];
+      
+      // Add guild invite action if player is in a guild and has permission
+      // We'll need to check this from playerState
+      if (playerState.value.guild) {
+        playerActions.push({
+          label: 'Mời Vào Bang (Guild)',
+          command: `guild invite ${name}`,
+          disabled: false
+        });
+      }
+      
+      return playerActions;
     default:
       return [];
   }
@@ -1193,6 +1237,7 @@ const connectWebSocket = () => {
               profession: payload.profession ?? playerState.value.profession,
               inCombat: payload.inCombat ?? playerState.value.inCombat,
               hasUnreadMail: payload.hasUnreadMail ?? playerState.value.hasUnreadMail ?? false,
+              guild: payload.guild ?? playerState.value.guild,
               stats: payload.stats ? {
                 damage: payload.stats.damage ?? playerState.value.stats.damage,
                 defense: payload.stats.defense ?? playerState.value.stats.defense,
@@ -1251,6 +1296,19 @@ const connectWebSocket = () => {
               partyId: payload.partyId
             };
             partyInvitationPopupOpen.value = true;
+          }
+          break;
+        case 'guild_invitation':
+          // Received guild invitation
+          if (payload) {
+            guildInvitationData.value = {
+              guildId: payload.guildId,
+              guildName: payload.guildName,
+              guildTag: payload.guildTag,
+              inviterId: payload.inviterId,
+              inviterName: payload.inviterName
+            };
+            guildInvitationPopupOpen.value = true;
           }
           break;
         case 'party_state':
@@ -1372,6 +1430,34 @@ const declinePartyInvitation = () => {
   currentInput.value = 'party decline';
   sendCommand();
   partyInvitationPopupOpen.value = false;
+};
+
+const acceptGuildInvitation = async () => {
+  try {
+    const response = await $fetch('/api/guild/accept', {
+      method: 'POST',
+    });
+    if (response.success) {
+      guildInvitationPopupOpen.value = false;
+      addMessage('Bạn đã gia nhập bang hội!', 'system');
+      await loadGuildInfo();
+    }
+  } catch (error: any) {
+    console.error('Failed to accept guild invitation:', error);
+    addMessage(error.data?.statusMessage || 'Lỗi khi chấp nhận lời mời.', 'error');
+  }
+};
+
+const declineGuildInvitation = async () => {
+  try {
+    await $fetch('/api/guild/decline', {
+      method: 'POST',
+    });
+    guildInvitationPopupOpen.value = false;
+  } catch (error) {
+    console.error('Failed to decline guild invitation:', error);
+    guildInvitationPopupOpen.value = false;
+  }
 };
 
 // Lifecycle hooks

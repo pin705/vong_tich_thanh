@@ -28,7 +28,8 @@ async function sendPlayerState(peer: Peer, playerId: string) {
       currency: player.gold,
       premiumCurrency: player.premiumCurrency || 0,
       inCombat: player.inCombat,
-      hasUnreadMail: player.hasUnreadMail || false
+      hasUnreadMail: player.hasUnreadMail || false,
+      guild: player.guild ? player.guild.toString() : null
     }
   }));
 

@@ -1,7 +1,6 @@
 import { GuildSchema } from '../../../models/Guild';
 import { PlayerSchema } from '../../../models/Player';
-
-const GUILD_CREATION_COST = 1000; // Cost in gold to create a guild
+import { GUILD_CREATION_COST, GUILD_TAG_MIN_LENGTH, GUILD_TAG_MAX_LENGTH, GUILD_NAME_MAX_LENGTH } from '../../utils/constants';
 
 export default defineEventHandler(async (event) => {
   const user = await getUserSession(event);
@@ -23,10 +22,17 @@ export default defineEventHandler(async (event) => {
     });
   }
 
-  if (tag.length > 5) {
+  if (name.length > GUILD_NAME_MAX_LENGTH) {
     throw createError({
       statusCode: 400,
-      statusMessage: 'Tag không được dài quá 5 ký tự.'
+      statusMessage: `Tên bang không được dài quá ${GUILD_NAME_MAX_LENGTH} ký tự.`
+    });
+  }
+
+  if (tag.length < GUILD_TAG_MIN_LENGTH || tag.length > GUILD_TAG_MAX_LENGTH) {
+    throw createError({
+      statusCode: 400,
+      statusMessage: `Tag phải có từ ${GUILD_TAG_MIN_LENGTH} đến ${GUILD_TAG_MAX_LENGTH} ký tự.`
     });
   }
 
@@ -81,10 +87,8 @@ export default defineEventHandler(async (event) => {
     members: [playerId],
     level: 1,
     experience: 0,
-    bank: {
-      gold: 0,
-      items: []
-    }
+    bank: [],
+    currency: 0
   });
 
   // Update player

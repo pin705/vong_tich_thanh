@@ -36,15 +36,21 @@ export const GuildSchema = defineMongooseModel({
       type: Number,
       default: 0,
     },
-    bank: {
-      gold: {
-        type: Number,
-        default: 0,
-      },
-      items: [{
+    bank: [{
+      itemId: {
         type: Schema.Types.ObjectId,
         ref: 'Item',
-      }],
+        required: true,
+      },
+      quantity: {
+        type: Number,
+        default: 1,
+        min: 1,
+      },
+    }],
+    currency: {
+      type: Number,
+      default: 0,
     },
     createdAt: {
       type: Date,

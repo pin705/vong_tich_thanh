@@ -11,16 +11,6 @@ export default defineEventHandler(async (event) => {
     });
   }
 
-  const body = await readBody(event);
-  const { guildId } = body;
-
-  if (!guildId) {
-    throw createError({
-      statusCode: 400,
-      statusMessage: 'Guild ID is required.'
-    });
-  }
-
   const playerId = user.user.id;
   
   // Get player
@@ -31,6 +21,16 @@ export default defineEventHandler(async (event) => {
       statusMessage: 'Không tìm thấy thông tin người chơi.'
     });
   }
+
+  // Check if player has pending invitation
+  if (!player.guildInvite) {
+    throw createError({
+      statusCode: 400,
+      statusMessage: 'Bạn không có lời mời bang hội nào.'
+    });
+  }
+
+  const guildId = player.guildInvite.toString();
 
   // Check if player already in a guild
   if (player.guild) {
@@ -66,8 +66,9 @@ export default defineEventHandler(async (event) => {
     { new: true }
   );
 
-  // Update player's guild
+  // Update player's guild and clear invitation
   player.guild = guild._id;
+  player.guildInvite = null;
   await player.save();
 
   return {
