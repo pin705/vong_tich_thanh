@@ -1546,7 +1546,11 @@ export async function initializeWorld() {
         'Tôi đang tìm kiếm một cuốn sách bị mất.',
         'Hãy cẩn thận với những gì bạn không hiểu.'
       ],
-      shopItems: [binhMauLon._id, aoGiapNhe._id],
+      shopItems: [], // Legacy field - replaced by shopInventory
+      // Phase 25: Vendor System
+      isVendor: true,
+      shopInventory: [binhMauLon._id, aoGiapNhe._id],
+      shopType: 'gold',
       experience: 0
     });
 
@@ -1565,10 +1569,10 @@ export async function initializeWorld() {
         'Cổ Thạch là đồng tiền quý giá. Sử dụng khôn ngoan.',
         'Những vật phẩm của tôi có thể thay đổi vận mệnh của bạn.'
       ],
-      shopItems: [theExpX2._id, theExpX3._id],
+      shopItems: [], // Legacy field - replaced by shopInventory
       // Phase 25: Vendor System
       isVendor: true,
-      shopInventory: [theExpX2._id],
+      shopInventory: [theExpX2._id, theExpX3._id],
       shopType: 'premium',
       experience: 0
     });

@@ -7,6 +7,7 @@ import { partyService } from '../utils/partyService';
 import { PlayerSchema } from '../../models/Player';
 import { RoomSchema } from '../../models/Room';
 import { AgentSchema } from '../../models/Agent';
+import { deduplicateItemsById } from '../utils/itemDeduplication';
 
 // Store peer to player mapping
 const peerToPlayer = new Map<string, string>();
@@ -123,6 +124,7 @@ async function sendVendorShop(peer: Peer, vendorId: string) {
   try {
     const vendor = await AgentSchema.findById(vendorId)
       .populate('shopInventory')
+      .populate('shopItems')
       .lean();
 
     if (!vendor || !vendor.isVendor) {
@@ -136,7 +138,13 @@ async function sendVendorShop(peer: Peer, vendorId: string) {
       return;
     }
 
+    // Combine items from both shopInventory and shopItems (legacy field)
     const shopInventory = vendor.shopInventory || [];
+    const shopItems = vendor.shopItems || [];
+    
+    // Merge both arrays and remove duplicates based on _id
+    const allItems = [...shopInventory, ...shopItems];
+    const uniqueItems = deduplicateItemsById(allItems);
 
     peer.send(JSON.stringify({
       type: 'shop_data',
@@ -147,7 +155,7 @@ async function sendVendorShop(peer: Peer, vendorId: string) {
           name: vendor.name,
           shopType: vendor.shopType || 'gold'
         },
-        items: shopInventory.map((item: any) => ({
+        items: uniqueItems.map((item: any) => ({
           _id: item._id,
           name: item.name,
           description: item.description,

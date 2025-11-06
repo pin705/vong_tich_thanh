@@ -1,4 +1,5 @@
 import { AgentSchema } from '~/models/Agent';
+import { deduplicateItemsById } from '~/server/utils/itemDeduplication';
 
 export default defineEventHandler(async (event) => {
   try {
@@ -15,9 +16,10 @@ export default defineEventHandler(async (event) => {
       });
     }
 
-    // Get vendor/agent with populated shop inventory
+    // Get vendor/agent with populated shop inventory and legacy shopItems
     const vendor = await AgentSchema.findById(vendorId)
       .populate('shopInventory')
+      .populate('shopItems')
       .lean();
 
     if (!vendor) {
@@ -34,7 +36,13 @@ export default defineEventHandler(async (event) => {
       };
     }
 
+    // Combine items from both shopInventory and shopItems (legacy field)
     const shopInventory = vendor.shopInventory || [];
+    const shopItems = vendor.shopItems || [];
+    
+    // Merge both arrays and remove duplicates based on _id
+    const allItems = [...shopInventory, ...shopItems];
+    const uniqueItems = deduplicateItemsById(allItems);
 
     return {
       success: true,
@@ -43,7 +51,7 @@ export default defineEventHandler(async (event) => {
         name: vendor.name,
         shopType: vendor.shopType || 'gold'
       },
-      items: shopInventory.map((item: any) => ({
+      items: uniqueItems.map((item: any) => ({
         _id: item._id,
         name: item.name,
         description: item.description,
