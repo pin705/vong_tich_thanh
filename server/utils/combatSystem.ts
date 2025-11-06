@@ -723,7 +723,7 @@ export async function startCombat(playerId: string, agentId: string): Promise<st
     }
     
     messages.push('');
-    messages.push(`Trận chiến bắt đầu! HP: ${player.hp}/${player.maxHp} | [${agent.name}] HP: ${agent.hp}/${agent.maxHp}`);
+    messages.push(`Trận chiến bắt đầu! [${player?.name}] HP: ${player.hp}/${player.maxHp} | [${agent.name}] HP: ${agent.hp}/${agent.maxHp}`);
     
     // Broadcast to room
     const room = await RoomSchema.findById(player.currentRoomId);
