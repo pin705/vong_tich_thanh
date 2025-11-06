@@ -3,6 +3,7 @@ import { AgentSchema } from '../../models/Agent';
 import { ItemSchema } from '../../models/Item';
 import { RoomSchema } from '../../models/Room';
 import { PlayerQuestSchema } from '../../models/PlayerQuest';
+import { PetSchema } from '../../models/Pet';
 import { gameState } from './gameState';
 import { partyService } from './partyService';
 import { scheduleAgentRespawn } from './npcAI';
@@ -10,6 +11,7 @@ import { applyExpBuff } from './buffSystem';
 import { clearBossState } from './bossMechanics';
 import { broadcastRoomOccupants } from '../routes/ws';
 import { addGoldToPlayer, addPremiumCurrencyToPlayer } from './inventoryService';
+import { addExp as addPetExp, petDefeated } from './petService';
 import { COMBAT_TICK_INTERVAL, FLEE_SUCCESS_CHANCE, EXPERIENCE_PER_LEVEL, HP_GAIN_PER_LEVEL, MINIMUM_DAMAGE, TALENT_POINTS_PER_LEVEL, SKILL_POINTS_PER_LEVEL } from './constants';
 
 // Boss reward constants
@@ -19,6 +21,10 @@ const BOSS_GOLD_MULTIPLIER = 100;
 // Combat narrative constants
 const CRITICAL_HIT_MULTIPLIER = 1.1;
 const GLANCING_BLOW_MULTIPLIER = 0.9;
+
+// Pet combat constants
+const PET_ATTACK_TARGET_CHANCE = 0.4; // 40% chance for agent to target pet instead of player
+const PET_EXP_SHARE = 0.5; // Pet receives 50% of kill EXP
 
 // Helper function to categorize combat messages for semantic highlighting
 function getCombatMessageType(message: string): string {
@@ -409,6 +415,28 @@ export async function executeCombatTick(playerId: string, agentId: string): Prom
       messages.push(attackMessage);
     }
     
+    // Pet attacks (if player has active pet and agent is still alive)
+    if (player.activePetId && agent.hp > 0) {
+      const pet = await PetSchema.findById(player.activePetId);
+      const petState = gameState.getPet(player.activePetId.toString());
+      
+      if (pet && petState && petState.currentStats.hp > 0) {
+        const petBaseDamage = petState.currentStats.attack || 5;
+        const petDamage = calculateDamage(petBaseDamage);
+        agent.hp = Math.max(0, agent.hp - petDamage);
+        await agent.save();
+        
+        const petAttackMessages = [
+          `[${pet.nickname}] lao vào cắn [${agent.name}]!`,
+          `[${pet.nickname}] tấn công [${agent.name}] dữ dội!`,
+          `[${pet.nickname}] đánh úp [${agent.name}] từ bên sườn!`,
+          `[${pet.nickname}] nhảy lên và cào vào [${agent.name}]!`
+        ];
+        const petAttackMsg = petAttackMessages[Math.floor(Math.random() * petAttackMessages.length)];
+        messages.push(`${petAttackMsg} Gây ${petDamage} sát thương. (HP còn lại: ${agent.hp}/${agent.maxHp})`);
+      }
+    }
+    
     // Check if agent died
     if (agent.hp <= 0) {
       messages.push('');
@@ -469,6 +497,28 @@ export async function executeCombatTick(playerId: string, agentId: string): Prom
       // Handle EXP distribution (with party support)
       const expMessages = await distributeExperience(player, totalExp, room._id.toString());
       messages.push(...expMessages);
+      
+      // Give pet EXP if active
+      if (player.activePetId) {
+        const pet = await PetSchema.findById(player.activePetId);
+        const petState = gameState.getPet(player.activePetId.toString());
+        
+        if (pet && petState && petState.currentStats.hp > 0) {
+          const petExpAmount = Math.floor(totalExp * PET_EXP_SHARE);
+          const petExpResult = await addPetExp(pet._id.toString(), petExpAmount);
+          
+          messages.push(`[${pet.nickname}] nhận được ${petExpAmount} EXP!`);
+          
+          if (petExpResult.leveledUp && petExpResult.leveledUp.length > 0) {
+            for (const level of petExpResult.leveledUp) {
+              messages.push('═══════════════════════════════════');
+              messages.push(`[${pet.nickname}] ĐÃ LÊN CẤP ${level}!`);
+              messages.push(`HP: ${petExpResult.pet.currentStats.maxHp} | Tấn Công: ${petExpResult.pet.currentStats.attack} | Phòng Thủ: ${petExpResult.pet.currentStats.defense}`);
+              messages.push('═══════════════════════════════════');
+            }
+          }
+        }
+      }
       
       player.inCombat = false;
       player.combatTarget = undefined;
@@ -631,47 +681,93 @@ export async function executeCombatTick(playerId: string, agentId: string): Prom
     }
     
     // Agent attacks back
-    const agentDamage = calculateDamage(agent.damage);
-    const playerDefense = await calculatePlayerDefense(player);
-    const actualDamage = Math.max(MINIMUM_DAMAGE, agentDamage - playerDefense);
+    // Random chance to attack pet if available
+    const hasPet = player.activePetId !== null && player.activePetId !== undefined;
+    const shouldAttackPet = hasPet && Math.random() < PET_ATTACK_TARGET_CHANCE;
     
-    player.hp = Math.max(0, player.hp - actualDamage);
-    await player.save();
-    
-    // Enhanced enemy attack narrative with more variety
-    const hpPercent = (player.hp / player.maxHp) * 100;
-    let enemyAttackMessage = '';
-    
-    if (playerDefense > 0) {
-      const deflectMessages = [
-        `[${agent.name}] lao vào tấn công bạn!`,
-        `[${agent.name}] đánh trả dữ dội!`,
-        `[${agent.name}] phản công với sức mạnh đáng sợ!`,
-        `[${agent.name}] tấn công ngược bạn!`
-      ];
-      const deflectMessage = deflectMessages[Math.floor(Math.random() * deflectMessages.length)];
-      enemyAttackMessage = `${deflectMessage} Gây ${agentDamage} sát thương, nhưng giáp của bạn hấp thụ ${playerDefense} sát thương.`;
+    if (shouldAttackPet) {
+      const pet = await PetSchema.findById(player.activePetId);
+      const petState = gameState.getPet(player.activePetId.toString());
+      
+      if (pet && petState && petState.currentStats.hp > 0) {
+        const agentDamage = calculateDamage(agent.damage);
+        const petDefense = petState.currentStats.defense || 0;
+        const actualDamage = Math.max(MINIMUM_DAMAGE, agentDamage - petDefense);
+        
+        petState.currentStats.hp = Math.max(0, petState.currentStats.hp - actualDamage);
+        
+        // Update pet HP in database
+        pet.currentStats.hp = petState.currentStats.hp;
+        await pet.save();
+        
+        const petAttackMessages = [
+          `[${agent.name}] quay sang tấn công [${pet.nickname}]!`,
+          `[${agent.name}] nhắm vào [${pet.nickname}] và tấn công!`,
+          `[${agent.name}] lao vào đánh [${pet.nickname}]!`
+        ];
+        const petAttackMsg = petAttackMessages[Math.floor(Math.random() * petAttackMessages.length)];
+        messages.push(`${petAttackMsg} Gây ${actualDamage} sát thương! (HP còn lại: ${petState.currentStats.hp}/${petState.currentStats.maxHp})`);
+        
+        // Check if pet died
+        if (petState.currentStats.hp <= 0) {
+          messages.push(`[${pet.nickname}] đã bị đánh bại!`);
+          await petDefeated(pet._id.toString());
+        }
+      } else {
+        // Pet is dead or not found, attack player instead
+        const agentDamage = calculateDamage(agent.damage);
+        const playerDefense = await calculatePlayerDefense(player);
+        const actualDamage = Math.max(MINIMUM_DAMAGE, agentDamage - playerDefense);
+        
+        player.hp = Math.max(0, player.hp - actualDamage);
+        await player.save();
+        
+        messages.push(`[${agent.name}] tấn công bạn! Gây ${actualDamage} sát thương. (HP còn lại: ${player.hp}/${player.maxHp})`);
+      }
     } else {
-      const attackMessages = [
-        `[${agent.name}] vung vuốt lên người bạn!`,
-        `[${agent.name}] tấn công bạn bằng sức mạnh dữ dội!`,
-        `[${agent.name}] lao vào và đánh trúng bạn!`,
-        `[${agent.name}] phản công với đòn hiểm hóc!`
-      ];
-      const attackMessage = attackMessages[Math.floor(Math.random() * attackMessages.length)];
-      enemyAttackMessage = `${attackMessage} Gây ${actualDamage} sát thương!`;
+      // Attack player normally
+      const agentDamage = calculateDamage(agent.damage);
+      const playerDefense = await calculatePlayerDefense(player);
+      const actualDamage = Math.max(MINIMUM_DAMAGE, agentDamage - playerDefense);
+      
+      player.hp = Math.max(0, player.hp - actualDamage);
+      await player.save();
+      
+      // Enhanced enemy attack narrative with more variety
+      const hpPercent = (player.hp / player.maxHp) * 100;
+      let enemyAttackMessage = '';
+      
+      if (playerDefense > 0) {
+        const deflectMessages = [
+          `[${agent.name}] lao vào tấn công bạn!`,
+          `[${agent.name}] đánh trả dữ dội!`,
+          `[${agent.name}] phản công với sức mạnh đáng sợ!`,
+          `[${agent.name}] tấn công ngược bạn!`
+        ];
+        const deflectMessage = deflectMessages[Math.floor(Math.random() * deflectMessages.length)];
+        enemyAttackMessage = `${deflectMessage} Gây ${agentDamage} sát thương, nhưng giáp của bạn hấp thụ ${playerDefense} sát thương.`;
+      } else {
+        const attackMessages = [
+          `[${agent.name}] vung vuốt lên người bạn!`,
+          `[${agent.name}] tấn công bạn bằng sức mạnh dữ dội!`,
+          `[${agent.name}] lao vào và đánh trúng bạn!`,
+          `[${agent.name}] phản công với đòn hiểm hóc!`
+        ];
+        const attackMessage = attackMessages[Math.floor(Math.random() * attackMessages.length)];
+        enemyAttackMessage = `${attackMessage} Gây ${actualDamage} sát thương!`;
+      }
+      
+      // Add HP warning if critical
+      if (hpPercent <= 20) {
+        enemyAttackMessage += ` (HP còn lại: ${player.hp}/${player.maxHp}) ⚠️ CẢNH BÁO: HP RẤT THẤP!`;
+      } else if (hpPercent <= 40) {
+        enemyAttackMessage += ` (HP còn lại: ${player.hp}/${player.maxHp}) ⚠️ Cảnh báo: HP thấp!`;
+      } else {
+        enemyAttackMessage += ` (HP còn lại: ${player.hp}/${player.maxHp})`;
+      }
+      
+      messages.push(enemyAttackMessage);
     }
-    
-    // Add HP warning if critical
-    if (hpPercent <= 20) {
-      enemyAttackMessage += ` (HP còn lại: ${player.hp}/${player.maxHp}) ⚠️ CẢN H BÁO: HP RẤT THẤP!`;
-    } else if (hpPercent <= 40) {
-      enemyAttackMessage += ` (HP còn lại: ${player.hp}/${player.maxHp}) ⚠️ Cảnh báo: HP thấp!`;
-    } else {
-      enemyAttackMessage += ` (HP còn lại: ${player.hp}/${player.maxHp})`;
-    }
-    
-    messages.push(enemyAttackMessage);
     
     // Check if player died
     if (player.hp <= 0) {

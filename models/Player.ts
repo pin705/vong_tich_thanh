@@ -234,5 +234,34 @@ export const PlayerSchema = defineMongooseModel({
         default: () => new Date(),
       },
     },
+    // Pet System
+    petStable: [{
+      type: Schema.Types.ObjectId,
+      ref: 'Pet',
+    }],
+    activePetId: {
+      type: Schema.Types.ObjectId,
+      ref: 'Pet',
+      default: null,
+    },
+    // Pet Trial Tower
+    tamerBadge: {
+      type: Number,
+      default: 0,
+    },
+    petTrialProgress: {
+      currentFloor: {
+        type: Number,
+        default: 1,
+      },
+      highestFloor: {
+        type: Number,
+        default: 1,
+      },
+      lastWeeklyReset: {
+        type: Date,
+        default: () => new Date(),
+      },
+    },
   },
 });

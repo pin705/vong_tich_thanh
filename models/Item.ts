@@ -15,7 +15,7 @@ export const ItemSchema = defineMongooseModel({
     },
     type: {
       type: String,
-      enum: ['weapon', 'armor', 'consumable', 'misc', 'craftingMaterial', 'recipe', 'furniture', 'Equipment', 'Recipe', 'Material', 'upgrade_material'],
+      enum: ['weapon', 'armor', 'consumable', 'misc', 'craftingMaterial', 'recipe', 'furniture', 'Equipment', 'Recipe', 'Material', 'upgrade_material', 'PET_EGG', 'PET_FOOD', 'PET_UPGRADE', 'PET_SKILLBOOK', 'PET_CONSUMABLE'],
       required: true,
       index: true, // Index for filtering by type
     },
@@ -126,6 +126,11 @@ export const ItemSchema = defineMongooseModel({
       unique: true,
       sparse: true, // Allow null values and only enforce uniqueness on non-null values
       index: true,
+    },
+    // Pet System - Additional data for pet items
+    data: {
+      type: Schema.Types.Mixed,
+      default: null,
     },
   },
 });

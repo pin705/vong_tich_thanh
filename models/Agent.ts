@@ -116,7 +116,7 @@ export const AgentSchema = defineMongooseModel({
     // Dungeon System - Shop currency type
     shopCurrency: {
       type: String,
-      enum: ['gold', 'premium', 'dungeon_coin'],
+      enum: ['gold', 'premium', 'dungeon_coin', 'tamer_badge'],
       default: 'gold',
     },
     // Maximum number of instances of this agent that can spawn in the room

@@ -4,6 +4,8 @@ import { RoomSchema } from '../../models/Room';
 import { ItemSchema } from '../../models/Item';
 import { AgentSchema } from '../../models/Agent';
 import { BuffSchema } from '../../models/Buff';
+import { PetSchema } from '../../models/Pet';
+import { PetTemplateSchema } from '../../models/PetTemplate';
 import { gameState } from './gameState';
 import { DEV_FEATURE_MESSAGE, SMALL_POTION_HEALING } from './constants';
 import { startCombat, fleeCombat, updateQuestProgress } from './combatSystem';
@@ -20,6 +22,7 @@ import { BUILT_IN_COMMANDS } from './commandParser';
 import { transferItem, transferGold, addItemToPlayer, removeItemFromPlayer } from './inventoryService';
 import { findItemOnGround, findItemInInventory, findTargetInRoom } from './entityFinder';
 import { getHelpText } from './helpSystem';
+import { determinePetQuality, summonPet, unsummonPet, addExp } from './petService';
 
 // Command routing configuration
 const MOVEMENT_COMMANDS = ['go', 'n', 's', 'e', 'w', 'u', 'd', 
@@ -767,7 +770,146 @@ export async function handleCommandDb(command: Command, playerId: string): Promi
           } else {
             responses.push(`Bạn không thể sử dụng [${useItem.name}] ngay bây giờ.`);
           }
-        } else {
+        }
+        // Handle pet egg items
+        else if (useItem.type === 'PET_EGG') {
+          if (!useItem.data || !useItem.data.grantsPetKey) {
+            responses.push('Trứng này có vẻ bị hỏng...');
+            break;
+          }
+
+          // Find pet template
+          const petTemplate = await PetTemplateSchema.findOne({ petKey: useItem.data.grantsPetKey });
+          if (!petTemplate) {
+            responses.push('Không tìm thấy thông tin loài thú cưng.');
+            break;
+          }
+
+          // Determine pet quality
+          const quality = determinePetQuality();
+          
+          // Create new pet
+          const newPet = await PetSchema.create({
+            ownerId: player._id,
+            templateId: petTemplate._id,
+            nickname: petTemplate.name,
+            level: 1,
+            exp: 0,
+            expToNextLevel: 100,
+            currentStats: {
+              hp: petTemplate.baseStats.hp,
+              maxHp: petTemplate.baseStats.hp,
+              attack: petTemplate.baseStats.attack,
+              defense: petTemplate.baseStats.defense
+            },
+            skills: [],
+            quality
+          });
+
+          // Add pet to player's stable
+          if (!player.petStable) {
+            player.petStable = [];
+          }
+          player.petStable.push(newPet._id);
+          
+          // Remove egg from inventory
+          player.inventory = player.inventory.filter((id: any) => id.toString() !== useItem._id.toString());
+          await player.save();
+          
+          // Delete the consumed egg
+          await ItemSchema.findByIdAndDelete(useItem._id);
+
+          // Quality names in Vietnamese
+          const qualityNames: { [key: string]: string } = {
+            COMMON: 'Thường',
+            UNCOMMON: 'Không Phổ Biến',
+            RARE: 'Hiếm',
+            EPIC: 'Sử Thi',
+            LEGENDARY: 'Huyền Thoại'
+          };
+
+          responses.push('═══════════════════════════════════════════════════');
+          responses.push(`Trứng nở! Bạn nhận được [${newPet.nickname}]!`);
+          responses.push(`Phẩm chất: ${qualityNames[quality] || quality}`);
+          responses.push(`HP: ${newPet.currentStats.maxHp} | Tấn Công: ${newPet.currentStats.attack} | Phòng Thủ: ${newPet.currentStats.defense}`);
+          responses.push('═══════════════════════════════════════════════════');
+          responses.push(`Sử dụng lệnh "summon ${newPet.nickname}" để triệu hồi thú cưng!`);
+
+          // Broadcast to room
+          const eggRoom = await RoomSchema.findById(player.currentRoomId);
+          if (eggRoom) {
+            gameState.broadcastToRoom(
+              eggRoom._id.toString(),
+              {
+                type: 'message',
+                payload: {
+                  text: `[${player.username}] đã nở một quả trứng và nhận được [${newPet.nickname}]!`,
+                  messageType: 'action'
+                }
+              },
+              player._id.toString()
+            );
+          }
+        }
+        // Handle pet food items
+        else if (useItem.type === 'PET_FOOD') {
+          if (!player.activePetId) {
+            responses.push('Bạn cần triệu hồi thú cưng trước khi cho ăn!');
+            break;
+          }
+
+          if (!useItem.data || !useItem.data.expValue) {
+            responses.push('Vật phẩm này không thể cho thú cưng ăn.');
+            break;
+          }
+
+          const pet = await PetSchema.findById(player.activePetId);
+          if (!pet) {
+            responses.push('Không tìm thấy thú cưng.');
+            break;
+          }
+
+          // Add exp to pet
+          const expValue = useItem.data.expValue;
+          const result = await addExp(pet._id.toString(), expValue);
+
+          // Remove food from inventory
+          player.inventory = player.inventory.filter((id: any) => id.toString() !== useItem._id.toString());
+          await player.save();
+          
+          // Delete the consumed food
+          await ItemSchema.findByIdAndDelete(useItem._id);
+
+          responses.push(`[${pet.nickname}] đã ăn [${useItem.name}] và nhận được ${expValue} EXP!`);
+          
+          if (result.leveledUp && result.leveledUp.length > 0) {
+            for (const level of result.leveledUp) {
+              responses.push('═══════════════════════════════════════════════════');
+              responses.push(`[${pet.nickname}] ĐÃ LÊN CẤP ${level}!`);
+              responses.push(`HP: ${result.pet.currentStats.maxHp} | Tấn Công: ${result.pet.currentStats.attack} | Phòng Thủ: ${result.pet.currentStats.defense}`);
+              responses.push('═══════════════════════════════════════════════════');
+            }
+          } else {
+            responses.push(`EXP: ${result.pet.exp}/${result.pet.expToNextLevel}`);
+          }
+
+          // Broadcast to room
+          const foodRoom = await RoomSchema.findById(player.currentRoomId);
+          if (foodRoom) {
+            gameState.broadcastToRoom(
+              foodRoom._id.toString(),
+              {
+                type: 'message',
+                payload: {
+                  text: `[${player.username}] cho [${pet.nickname}] ăn [${useItem.name}].`,
+                  messageType: 'action'
+                }
+              },
+              player._id.toString()
+            );
+          }
+        }
+        else {
           responses.push(`[${useItem.name}] không phải là vật phẩm có thể sử dụng.`);
         }
         break;
@@ -1689,6 +1831,61 @@ export async function handleCommandDb(command: Command, playerId: string): Promi
         } else {
           responses.push(challengeResult.message);
         }
+        break;
+      }
+
+      case 'pet': {
+        // Pet management commands
+        responses.push('═══════════════════════════════════════════════════');
+        responses.push('            HỆ THỐNG THÚ CƯNG                      ');
+        responses.push('═══════════════════════════════════════════════════');
+        responses.push('summon [tên]       - Triệu hồi thú cưng');
+        responses.push('unsummon           - Thu hồi thú cưng');
+        responses.push('pet attack [tên]   - Ra lệnh pet tấn công');
+        responses.push('pet follow         - Ra lệnh pet theo sau');
+        responses.push('use [trứng]        - Nở trứng thú cưng');
+        responses.push('use [thức ăn]      - Cho pet ăn để lên cấp');
+        responses.push('');
+        responses.push('Mở menu Pet từ UI để xem chi tiết chuồng thú cưng!');
+        responses.push('═══════════════════════════════════════════════════');
+        break;
+      }
+
+      case 'summon': {
+        if (!target) {
+          responses.push('Bạn muốn triệu hồi thú cưng nào?');
+          responses.push('Cú pháp: summon [tên pet]');
+          break;
+        }
+
+        // Find pet in player's stable
+        const pets = await PetSchema.find({ _id: { $in: player.petStable || [] } });
+        const pet = pets.find((p: any) => 
+          p.nickname.toLowerCase().includes(target.toLowerCase())
+        );
+
+        if (!pet) {
+          responses.push(`Bạn không có thú cưng nào tên "${target}" trong chuồng.`);
+          break;
+        }
+
+        const summonResult = await summonPet(player._id.toString(), pet._id.toString());
+        responses.push(summonResult.message);
+        
+        if (summonResult.success) {
+          responses.push(`[${pet.nickname}] (Cấp ${pet.level}) đã xuất hiện bên cạnh bạn!`);
+        }
+        break;
+      }
+
+      case 'unsummon': {
+        if (!player.activePetId) {
+          responses.push('Bạn không có thú cưng nào được triệu hồi.');
+          break;
+        }
+
+        const unsummonResult = await unsummonPet(player._id.toString());
+        responses.push(unsummonResult.message);
         break;
       }
 

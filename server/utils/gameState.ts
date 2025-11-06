@@ -7,6 +7,23 @@ interface ActivePlayer {
   partyId?: string | null;
 }
 
+// Active pet state
+interface ActivePet {
+  _id: string;
+  name: string;
+  ownerId: string;
+  templateId: string;
+  currentRoomId: string;
+  currentStats: {
+    hp: number;
+    maxHp: number;
+    attack: number;
+    defense: number;
+  };
+  level: number;
+  quality: string;
+}
+
 // Player skill cooldown tracking
 export interface PlayerSkillCooldown {
   skillId: string;
@@ -23,6 +40,7 @@ export interface PlayerState {
 
 class GameState {
   private activePlayers: Map<string, ActivePlayer> = new Map();
+  private activePets: Map<string, ActivePet> = new Map();
   private combatTicks: Map<string, NodeJS.Timeout> = new Map();
   private playerStates: Map<string, PlayerState> = new Map();
 
@@ -129,6 +147,34 @@ class GameState {
     const state = this.getPlayerState(playerId);
     if (state) {
       Object.assign(state, updates);
+    }
+  }
+
+  // Pet management
+  addPet(pet: ActivePet) {
+    this.activePets.set(pet._id, pet);
+  }
+
+  removePet(petId: string) {
+    this.activePets.delete(petId);
+  }
+
+  getPet(petId: string): ActivePet | undefined {
+    return this.activePets.get(petId);
+  }
+
+  getPetsInRoom(roomId: string): ActivePet[] {
+    return Array.from(this.activePets.values()).filter(p => p.currentRoomId === roomId);
+  }
+
+  getPlayerPet(playerId: string): ActivePet | undefined {
+    return Array.from(this.activePets.values()).find(p => p.ownerId === playerId);
+  }
+
+  updatePetRoom(petId: string, newRoomId: string) {
+    const pet = this.activePets.get(petId);
+    if (pet) {
+      pet.currentRoomId = newRoomId;
     }
   }
 }
