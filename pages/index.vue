@@ -1543,8 +1543,8 @@ const handleTabCompletion = (event: KeyboardEvent) => {
     tabCompletionMatches.value = [...new Set(targets)].sort();
     tabCompletionIndex.value = 0;
     tabCompletionPrefix.value = targetPrefix;
-  } else {
-    // Cycle to next match
+  } else if (tabCompletionMatches.value.length > 0) {
+    // Cycle to next match (only if we have matches)
     tabCompletionIndex.value = (tabCompletionIndex.value + 1) % tabCompletionMatches.value.length;
   }
   
@@ -1560,14 +1560,16 @@ const handleTabCompletion = (event: KeyboardEvent) => {
 
 // Reset tab completion state when user types
 const resetTabCompletion = (event: Event) => {
-  // Don't reset if this is from tab completion itself
-  if ((event as InputEvent).inputType !== 'insertText' && (event as InputEvent).inputType !== 'deleteContentBackward') {
-    return;
-  }
+  // Only reset on actual text input changes
+  const inputEvent = event as InputEvent;
+  const inputType = inputEvent.inputType;
   
-  tabCompletionMatches.value = [];
-  tabCompletionIndex.value = -1;
-  tabCompletionPrefix.value = '';
+  // Reset only for text insertion or deletion events
+  if (inputType && (inputType === 'insertText' || inputType === 'deleteContentBackward' || inputType === 'deleteContentForward')) {
+    tabCompletionMatches.value = [];
+    tabCompletionIndex.value = -1;
+    tabCompletionPrefix.value = '';
+  }
 };
 
 // Handle chat command from chat panel
