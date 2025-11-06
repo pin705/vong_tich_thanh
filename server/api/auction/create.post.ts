@@ -1,7 +1,7 @@
 import { AuctionItemSchema } from '../../../models/AuctionItem';
 import { PlayerSchema } from '../../../models/Player';
 import { ItemSchema } from '../../../models/Item';
-import { removeItemFromPlayer, removeGoldFromPlayer } from '../../../utils/inventoryService';
+import { removeItemFromPlayer, removeGoldFromPlayer } from '../../utils/inventoryService';
 
 const AUCTION_FEE = 10; // 10 gold to create auction
 const DEFAULT_DURATION = 24 * 60 * 60 * 1000; // 24 hours
