@@ -7,6 +7,7 @@ export const ItemSchema = defineMongooseModel({
     name: {
       type: String,
       required: true,
+      index: true, // Index for faster name lookups
     },
     description: {
       type: String,
@@ -16,6 +17,7 @@ export const ItemSchema = defineMongooseModel({
       type: String,
       enum: ['weapon', 'armor', 'consumable', 'misc', 'craftingMaterial', 'recipe', 'furniture', 'Equipment', 'Recipe', 'Material'],
       required: true,
+      index: true, // Index for filtering by type
     },
     value: {
       type: Number,

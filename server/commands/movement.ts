@@ -3,6 +3,7 @@ import { PlayerSchema } from '../../models/Player';
 import { RoomSchema } from '../../models/Room';
 import { gameState } from '../utils/gameState';
 import { formatRoomDescription, DIRECTION_MAP, DIRECTION_NAMES_VI, getOppositeDirection } from '../utils/roomUtils';
+import type { Types } from 'mongoose';
 
 /**
  * Handle movement commands (go, n, s, e, w, u, d, etc.)
@@ -74,6 +75,17 @@ export async function handleMovementCommand(command: Command, playerId: string):
 
     // Update player's room
     player.currentRoomId = nextRoom._id;
+    
+    // Track visited room
+    if (!player.visitedRooms) {
+      player.visitedRooms = [];
+    }
+    const roomIdStr = nextRoom._id.toString();
+    const alreadyVisited = player.visitedRooms.some((id: Types.ObjectId) => id.toString() === roomIdStr);
+    if (!alreadyVisited) {
+      player.visitedRooms.push(nextRoom._id);
+    }
+    
     await player.save();
 
     // Update in-memory state
@@ -158,6 +170,17 @@ export async function handleGotoCommand(command: Command, playerId: string): Pro
 
     // Update player room
     player.currentRoomId = room._id;
+    
+    // Track visited room
+    if (!player.visitedRooms) {
+      player.visitedRooms = [];
+    }
+    const roomIdStr = room._id.toString();
+    const alreadyVisited = player.visitedRooms.some((id: Types.ObjectId) => id.toString() === roomIdStr);
+    if (!alreadyVisited) {
+      player.visitedRooms.push(room._id);
+    }
+    
     await player.save();
 
     // Update in-memory state
