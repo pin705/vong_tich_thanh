@@ -198,5 +198,16 @@ export const PlayerSchema = defineMongooseModel({
       enum: ['player', 'admin'],
       default: 'player',
     },
+    // Phase 30: Custom Alias System
+    customAliases: {
+      type: Map,
+      of: String, // Alias -> Full Command
+      default: {},
+    },
+    // Phase 30: Auto-Combat Settings
+    autoCombat: {
+      type: Boolean,
+      default: false, // Auto-attack nearest mob when available
+    },
   },
 });

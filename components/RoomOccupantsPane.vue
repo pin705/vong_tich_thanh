@@ -29,7 +29,18 @@
       >
         (M) {{ mob.name }}
       </div>
-      <div v-if="players.length === 0 && npcs.length === 0 && mobs.length === 0" class="occupant-empty">
+      <div v-if="respawns && respawns.length > 0" class="respawns-section">
+        <div class="respawns-title">[ Hồi Sinh ]</div>
+        <div
+          v-for="(respawn, index) in respawns"
+          :key="'respawn-' + index"
+          class="respawn-item"
+          :title="formatRespawnTooltip(respawn)"
+        >
+          ({{ respawn.type === 'mob' ? 'M' : 'N' }}) {{ respawn.name }} - {{ formatRespawnTime(respawn.respawnTime) }}
+        </div>
+      </div>
+      <div v-if="players.length === 0 && npcs.length === 0 && mobs.length === 0 && (!respawns || respawns.length === 0)" class="occupant-empty">
         (Không có ai)
       </div>
     </div>
@@ -37,9 +48,17 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue';
+
 interface Occupant {
   id: string;
   name: string;
+}
+
+interface Respawn {
+  name: string;
+  respawnTime: string;
+  type: string;
 }
 
 interface SelectedTarget {
@@ -52,6 +71,7 @@ const props = defineProps<{
   players: Occupant[];
   npcs: Occupant[];
   mobs: Occupant[];
+  respawns?: Respawn[];
   selectedTarget: SelectedTarget | null;
 }>();
 
@@ -61,6 +81,33 @@ const emit = defineEmits<{
 
 const selectTarget = (type: 'player' | 'npc' | 'mob', id: string, name: string) => {
   emit('selectTarget', type, id, name);
+};
+
+// Format respawn time to show countdown
+const formatRespawnTime = (respawnTimeStr: string): string => {
+  const respawnTime = new Date(respawnTimeStr);
+  const now = new Date();
+  const diffMs = respawnTime.getTime() - now.getTime();
+  
+  if (diffMs <= 0) {
+    return 'sắp...';
+  }
+  
+  const diffSeconds = Math.floor(diffMs / 1000);
+  const minutes = Math.floor(diffSeconds / 60);
+  const seconds = diffSeconds % 60;
+  
+  if (minutes > 0) {
+    return `${minutes}p ${seconds}s`;
+  } else {
+    return `${seconds}s`;
+  }
+};
+
+// Format tooltip with full timestamp
+const formatRespawnTooltip = (respawn: Respawn): string => {
+  const respawnTime = new Date(respawn.respawnTime);
+  return `${respawn.name} sẽ hồi sinh lúc ${respawnTime.toLocaleTimeString()}`;
 };
 </script>
 
@@ -107,5 +154,32 @@ const selectTarget = (type: 'player' | 'npc' | 'mob', id: string, name: string) 
 .occupant-empty {
   color: var(--text-dim);
   font-style: italic;
+}
+
+.respawns-section {
+  margin-top: 0.75rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid rgba(0, 136, 0, 0.2);
+}
+
+.respawns-title {
+  color: var(--text-accent);
+  font-weight: bold;
+  margin-bottom: 0.3rem;
+  font-size: 14px;
+  opacity: 0.8;
+}
+
+.respawn-item {
+  color: var(--text-dim);
+  padding: 0.15rem 0.25rem;
+  font-size: 14px;
+  font-style: italic;
+  cursor: help;
+}
+
+.respawn-item:hover {
+  color: var(--text-bright);
+  background-color: rgba(0, 255, 0, 0.05);
 }
 </style>

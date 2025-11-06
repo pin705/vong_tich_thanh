@@ -41,6 +41,7 @@
           :players="roomOccupants.players"
           :npcs="roomOccupants.npcs"
           :mobs="roomOccupants.mobs"
+          :respawns="roomOccupants.respawns"
           :selectedTarget="selectedTarget"
           @selectTarget="handleEntitySelect"
         />
@@ -151,9 +152,13 @@
     <!-- Settings Overlay -->
     <SettingsOverlay
       :isOpen="settingsOpen"
+      :autoCombat="playerAutoCombat"
+      :aliases="playerCustomAliases"
       @close="settingsOpen = false"
       @themeChange="handleThemeChange"
       @fontSizeChange="handleFontSizeChange"
+      @autoCombatChange="handleAutoCombatChange"
+      @aliasesChange="handleAliasesChange"
     />
 
 
@@ -460,6 +465,10 @@ const worldMapOpen = ref(false);
 const questsOpen = ref(false);
 const professionChoiceOpen = ref(false);
 
+// Player settings state
+const playerAutoCombat = ref(false);
+const playerCustomAliases = ref<Record<string, string>>({});
+
 // Popup states
 const inventoryPopupOpen = ref(false);
 const mapPopupOpen = ref(false);
@@ -574,7 +583,8 @@ const allocatedTalents = ref<Record<string, number>>({});
 const roomOccupants = ref<RoomOccupantsState>({
   players: [],
   npcs: [],
-  mobs: []
+  mobs: [],
+  respawns: []
 });
 
 // Selected target for actions
@@ -1515,6 +1525,25 @@ const connectWebSocket = () => {
         case 'combat_log':
           addMessage(message || payload, 'combat_log', undefined, 'combat', category);
           break;
+        // Combat-specific message types
+        case 'damage_in':
+          addMessage(message || payload, 'damage_in', undefined, channel || 'combat', category);
+          break;
+        case 'damage_out':
+          addMessage(message || payload, 'damage_out', undefined, channel || 'combat', category);
+          break;
+        case 'heal':
+          addMessage(message || payload, 'heal', undefined, channel || 'combat', category);
+          break;
+        case 'critical':
+          addMessage(message || payload, 'critical', undefined, channel || 'combat', category);
+          break;
+        case 'xp':
+          addMessage(message || payload, 'xp', undefined, channel || 'combat', category);
+          break;
+        case 'loot':
+          addMessage(message || payload, 'loot', undefined, channel || 'combat', category);
+          break;
         case 'chat_log':
           addMessage(message || payload.message, 'chat_log', payload.user, 'chat', category);
           break;
@@ -1602,7 +1631,8 @@ const connectWebSocket = () => {
             roomOccupants.value = {
               players: payload.players || [],
               npcs: payload.npcs || [],
-              mobs: payload.mobs || []
+              mobs: payload.mobs || [],
+              respawns: payload.respawns || []
             };
           }
           break;
@@ -1646,6 +1676,23 @@ const connectWebSocket = () => {
           // Handle new mail notification
           playerState.value.hasUnreadMail = true;
           addMessage('[!] Bạn có thư mới!', 'system', undefined, 'main', 'system');
+          break;
+        case 'shop_data':
+          // Handle merchant shop data for trading popup
+          if (payload && payload.success) {
+            tradingData.value.merchantItems = (payload.items || []).map((item: any) => ({
+              id: item._id,
+              name: item.name,
+              description: item.description,
+              type: item.type,
+              value: item.price || 0,
+              stats: item.stats,
+              levelRequirement: item.requiredLevel,
+              equipped: false
+            }));
+            tradingData.value.merchantName = payload.vendor?.name || tradingData.value.merchantName;
+            tradingData.value.merchantId = payload.vendor?.id || tradingData.value.merchantId;
+          }
           break;
         case 'chat':
           // Handle chat messages with categories - route to chat channel
@@ -1697,6 +1744,29 @@ const handleFontSizeChange = (sizeId: string) => {
   FONT_SIZE_IDS.forEach(id => document.body.classList.remove(`font-size-${id}`));
   // Add new font size class
   document.body.classList.add(`font-size-${sizeId}`);
+};
+
+// Handle auto-combat setting change
+const handleAutoCombatChange = (enabled: boolean) => {
+  playerAutoCombat.value = enabled;
+};
+
+// Handle custom aliases change
+const handleAliasesChange = (aliases: Record<string, string>) => {
+  playerCustomAliases.value = aliases;
+};
+
+// Load player settings from server
+const loadPlayerSettings = async () => {
+  try {
+    const response = await $fetch('/api/player/info');
+    if (response.success && response.player) {
+      playerAutoCombat.value = response.player.autoCombat || false;
+      playerCustomAliases.value = response.player.customAliases || {};
+    }
+  } catch (error) {
+    console.error('Failed to load player settings:', error);
+  }
 };
 
 // Party handlers
@@ -1789,6 +1859,9 @@ onMounted(() => {
   
   // Load chat history from localStorage
   loadChatFromStorage();
+  
+  // Load player settings
+  loadPlayerSettings();
   
   // Initialize device type detection
   updateDeviceType();

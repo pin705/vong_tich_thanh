@@ -8,6 +8,10 @@ import { broadcastRoomOccupants } from '../routes/ws';
 // AI tick interval - process agent behaviors every 10 seconds
 const AI_TICK_INTERVAL = 10000;
 
+// Default max instances for agent spawning
+const DEFAULT_MOB_MAX_INSTANCES = 3;
+const DEFAULT_AGENT_MAX_INSTANCES = 1;
+
 // Wander behavior - agent moves randomly to adjacent rooms
 async function processWanderBehavior(agent: any): Promise<void> {
   try {
@@ -235,19 +239,64 @@ interface RespawnTimer {
   agentData: any;
   roomId: string;
   timer: NodeJS.Timeout;
+  respawnTime: Date; // When the agent will respawn
 }
 
 const respawnTimers: Map<string, RespawnTimer> = new Map();
 
+// Get respawn information for a room
+export function getRoomRespawns(roomId: string): Array<{ name: string; respawnTime: Date; type: string }> {
+  const respawns: Array<{ name: string; respawnTime: Date; type: string }> = [];
+  
+  for (const [agentId, timerData] of respawnTimers.entries()) {
+    if (timerData.roomId === roomId) {
+      respawns.push({
+        name: timerData.agentData.name,
+        respawnTime: timerData.respawnTime,
+        type: timerData.agentData.type
+      });
+    }
+  }
+  
+  return respawns;
+}
+
 // Schedule agent respawn - uses room's respawnTimeSeconds or defaults to 5 minutes
+// Can spawn multiple instances based on maxInstances setting
 export async function scheduleAgentRespawn(agentData: any, roomId: string): Promise<void> {
   // Get room to check respawn time
   const room = await RoomSchema.findById(roomId);
   const respawnSeconds = room?.respawnTimeSeconds || 300; // Default 5 minutes
   const RESPAWN_TIME = respawnSeconds * 1000;
+  const respawnTime = new Date(Date.now() + RESPAWN_TIME);
   
   const timer = setTimeout(async () => {
     try {
+      // Get max instances for this agent type (default to 3 for mobs, 1 for others)
+      const maxInstances = agentData.maxInstances || (agentData.type === 'mob' ? DEFAULT_MOB_MAX_INSTANCES : DEFAULT_AGENT_MAX_INSTANCES);
+      
+      // Count how many instances of this agent (by name and type) already exist in the room
+      const room = await RoomSchema.findById(roomId);
+      if (!room) {
+        console.error(`Room ${roomId} not found for respawn`);
+        return;
+      }
+      
+      const existingAgents = await AgentSchema.find({ 
+        _id: { $in: room.agents },
+        name: agentData.name,
+        type: agentData.type
+      });
+      
+      const currentCount = existingAgents.length;
+      
+      // Only spawn if below max instances
+      if (currentCount >= maxInstances) {
+        console.log(`Agent ${agentData.name} already at max instances (${currentCount}/${maxInstances}) in room ${roomId}`);
+        respawnTimers.delete(agentData._id.toString());
+        return;
+      }
+      
       // Create new agent with same data
       const newAgent = await AgentSchema.create({
         name: agentData.name,
@@ -271,6 +320,7 @@ export async function scheduleAgentRespawn(agentData: any, roomId: string): Prom
         isVendor: agentData.isVendor,
         shopInventory: agentData.shopInventory,
         shopType: agentData.shopType,
+        maxInstances: agentData.maxInstances,
         inCombat: false
       });
 
@@ -311,7 +361,9 @@ export async function scheduleAgentRespawn(agentData: any, roomId: string): Prom
   respawnTimers.set(agentData._id.toString(), {
     agentData,
     roomId,
-    timer
+    timer,
+    respawnTime
+  });
   });
 }
 

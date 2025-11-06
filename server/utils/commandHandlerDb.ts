@@ -14,6 +14,7 @@ import { handleCombatCommand } from '../commands/combat';
 import { handleItemCommand } from '../commands/item';
 import { formatRoomDescription } from './roomUtils';
 import { deduplicateItemsById } from './itemDeduplication';
+import { BUILT_IN_COMMANDS } from './commandParser';
 
 // Command routing configuration
 const MOVEMENT_COMMANDS = ['go', 'n', 's', 'e', 'w', 'u', 'd', 
@@ -24,6 +25,60 @@ const COMBAT_COMMANDS = ['attack', 'a', 'kill', 'flee', 'run'];
 
 const ITEM_COMMANDS = ['inventory', 'i', 'get', 'g', 'drop', 'use', 
                        'list', 'buy', 'sell'];
+
+// Helper function to format trade status display
+async function formatTradeStatus(
+  playerTrade: { tradeId: string; trade: any; isInitiator: boolean },
+  playerId: string
+): Promise<string[]> {
+  const responses: string[] = [];
+  const { trade, isInitiator } = playerTrade;
+  const otherPlayerId = isInitiator ? trade.targetId : trade.initiatorId;
+  const otherPlayer = await PlayerSchema.findById(otherPlayerId);
+  
+  responses.push('═══════════════════════════════════════════════════');
+  responses.push('            GIAO DỊCH ĐANG HOẠT ĐỘNG              ');
+  responses.push('═══════════════════════════════════════════════════');
+  responses.push(`Đối tác: [${otherPlayer?.username || 'Unknown'}]`);
+  responses.push('');
+  
+  // Show initiator's offer
+  const initiatorItems = await ItemSchema.find({ _id: { $in: trade.initiatorItems } });
+  responses.push(`${isInitiator ? 'Bạn' : otherPlayer?.username || 'Đối tác'} đưa ra:`);
+  if (initiatorItems.length > 0) {
+    initiatorItems.forEach((item: any) => {
+      responses.push(`  - [${item.name}]`);
+    });
+  }
+  if (trade.initiatorGold > 0) {
+    responses.push(`  - ${trade.initiatorGold} vàng`);
+  }
+  if (initiatorItems.length === 0 && trade.initiatorGold === 0) {
+    responses.push('  (Chưa có gì)');
+  }
+  responses.push('');
+  
+  // Show target's offer
+  const targetItems = await ItemSchema.find({ _id: { $in: trade.targetItems } });
+  responses.push(`${!isInitiator ? 'Bạn' : otherPlayer?.username || 'Đối tác'} đưa ra:`);
+  if (targetItems.length > 0) {
+    targetItems.forEach((item: any) => {
+      responses.push(`  - [${item.name}]`);
+    });
+  }
+  if (trade.targetGold > 0) {
+    responses.push(`  - ${trade.targetGold} vàng`);
+  }
+  if (targetItems.length === 0 && trade.targetGold === 0) {
+    responses.push('  (Chưa có gì)');
+  }
+  responses.push('');
+  
+  responses.push(`Trạng thái bạn: ${(isInitiator ? trade.initiatorLocked : trade.targetLocked) ? 'ĐÃ KHÓA' : 'Chưa khóa'}`);
+  responses.push(`Trạng thái đối tác: ${(isInitiator ? trade.targetLocked : trade.initiatorLocked) ? 'ĐÃ KHÓA' : 'Chưa khóa'}`);
+  
+  return responses;
+}
 
 // Main command handler with database integration
 export async function handleCommandDb(command: Command, playerId: string): Promise<string[]> {
@@ -116,8 +171,21 @@ export async function handleCommandDb(command: Command, playerId: string): Promi
         responses.push('  pvp [on/off]             - Bật/tắt chế độ PvP');
         responses.push('  attack [tên người chơi]  - Tấn công người chơi (cần PvP)');
         responses.push('');
+        responses.push('GIAO DỊCH:');
+        responses.push('  trade invite [tên]       - Mời người chơi giao dịch');
+        responses.push('  trade accept             - Chấp nhận lời mời giao dịch');
+        responses.push('  trade decline            - Từ chối lời mời giao dịch');
+        responses.push('  trade add [vật]          - Thêm vật phẩm vào giao dịch');
+        responses.push('  trade gold [số]          - Thêm vàng vào giao dịch');
+        responses.push('  trade lock               - Khóa giao dịch');
+        responses.push('  trade confirm            - Xác nhận giao dịch');
+        responses.push('  trade cancel             - Hủy giao dịch');
+        responses.push('');
         responses.push('KHÁC:');
         responses.push('  help                     - Hiển thị trợ giúp');
+        responses.push('  alias add [tên] [lệnh]   - Tạo lệnh tắt tùy chỉnh');
+        responses.push('  alias remove [tên]       - Xóa lệnh tắt');
+        responses.push('  alias list               - Xem danh sách lệnh tắt');
         responses.push('  quit                     - Thoát game');
         responses.push('');
         break;
@@ -1500,11 +1568,33 @@ export async function handleCommandDb(command: Command, playerId: string): Promi
         const subTarget = args?.[0];
 
         if (!subCommand) {
-          responses.push('Sử dụng: trade [invite/accept/decline/add/gold/lock/confirm/cancel]');
+          // Show trade status if player is in an active trade
+          const playerTrade = tradeService.getPlayerTrade(playerId);
+          if (playerTrade) {
+            const statusLines = await formatTradeStatus(playerTrade, playerId);
+            responses.push(...statusLines);
+            responses.push('');
+            responses.push('Lệnh: trade add/gold/lock/confirm/cancel');
+          } else {
+            responses.push('Sử dụng: trade [invite/accept/decline/add/gold/lock/confirm/cancel/status]');
+          }
           break;
         }
 
         switch (subCommand) {
+          case 'status': {
+            // Show current trade status
+            const playerTrade = tradeService.getPlayerTrade(playerId);
+            if (!playerTrade) {
+              responses.push('Bạn không đang trong giao dịch nào.');
+              break;
+            }
+            
+            const statusLines = await formatTradeStatus(playerTrade, playerId);
+            responses.push(...statusLines);
+            break;
+          }
+
           case 'invite': {
             if (!subTarget) {
               responses.push('Mời ai giao dịch? Cú pháp: trade invite [tên người chơi]');
@@ -1905,6 +1995,110 @@ export async function handleCommandDb(command: Command, playerId: string): Promi
       case 'quit':
         responses.push('Tạm biệt! Hẹn gặp lại.');
         break;
+
+      case 'alias': {
+        // Custom alias management
+        const subCommand = target?.toLowerCase();
+        const aliasName = args?.[0];
+        const aliasCommand = args?.slice(1).join(' ');
+
+        if (!subCommand) {
+          responses.push('═══════════════════════════════════════════════════');
+          responses.push('            HỆ THỐNG LỆNH TẮT TÙY CHỈNH           ');
+          responses.push('═══════════════════════════════════════════════════');
+          responses.push('alias add [tên] [lệnh]   - Tạo lệnh tắt mới');
+          responses.push('alias remove [tên]       - Xóa lệnh tắt');
+          responses.push('alias list               - Xem danh sách lệnh tắt');
+          responses.push('');
+          responses.push('Ví dụ: alias add dn go north');
+          responses.push('       Sau đó gõ "dn" để thực hiện "go north"');
+          break;
+        }
+
+        switch (subCommand) {
+          case 'add': {
+            if (!aliasName || !aliasCommand) {
+              responses.push('Cú pháp: alias add [tên] [lệnh]');
+              responses.push('Ví dụ: alias add dn go north');
+              break;
+            }
+
+            // Validate alias name (no spaces, no special chars)
+            if (!/^[a-zA-Z0-9_]+$/.test(aliasName)) {
+              responses.push('Tên lệnh tắt chỉ được chứa chữ cái, số và dấu gạch dưới.');
+              break;
+            }
+
+            // Prevent overriding built-in commands
+            if (BUILT_IN_COMMANDS.includes(aliasName.toLowerCase())) {
+              responses.push(`Không thể đặt lệnh tắt trùng với lệnh hệ thống: "${aliasName}"`);
+              break;
+            }
+
+            // Initialize customAliases if not exists
+            if (!player.customAliases) {
+              player.customAliases = new Map();
+            }
+
+            // Check if alias already exists
+            if (player.customAliases.has(aliasName)) {
+              responses.push(`Lệnh tắt "${aliasName}" đã tồn tại. Sử dụng "alias remove ${aliasName}" để xóa trước.`);
+              break;
+            }
+
+            // Add the alias
+            player.customAliases.set(aliasName, aliasCommand);
+            await player.save();
+
+            responses.push(`[OK] Đã tạo lệnh tắt: "${aliasName}" -> "${aliasCommand}"`);
+            responses.push(`Gõ "${aliasName}" để thực hiện lệnh.`);
+            break;
+          }
+
+          case 'remove': {
+            if (!aliasName) {
+              responses.push('Cú pháp: alias remove [tên]');
+              break;
+            }
+
+            if (!player.customAliases || !player.customAliases.has(aliasName)) {
+              responses.push(`Lệnh tắt "${aliasName}" không tồn tại.`);
+              break;
+            }
+
+            player.customAliases.delete(aliasName);
+            await player.save();
+
+            responses.push(`[OK] Đã xóa lệnh tắt: "${aliasName}"`);
+            break;
+          }
+
+          case 'list': {
+            if (!player.customAliases || player.customAliases.size === 0) {
+              responses.push('Bạn chưa có lệnh tắt nào.');
+              responses.push('Sử dụng "alias add [tên] [lệnh]" để tạo lệnh tắt mới.');
+              break;
+            }
+
+            responses.push('═══════════════════════════════════════════════════');
+            responses.push('            DANH SÁCH LỆNH TẮT CỦA BẠN           ');
+            responses.push('═══════════════════════════════════════════════════');
+            
+            for (const [alias, command] of player.customAliases.entries()) {
+              responses.push(`  ${alias} -> ${command}`);
+            }
+            
+            responses.push('');
+            responses.push(`Tổng: ${player.customAliases.size} lệnh tắt`);
+            break;
+          }
+
+          default:
+            responses.push('Lệnh không hợp lệ. Sử dụng: alias [add/remove/list]');
+            break;
+        }
+        break;
+      }
 
       default:
         responses.push(`Lệnh không hợp lệ: "${action}"`);
