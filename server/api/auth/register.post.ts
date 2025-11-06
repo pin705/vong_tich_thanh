@@ -1,5 +1,6 @@
 import { PlayerSchema } from '../../../models/Player';
 import { MIN_PASSWORD_LENGTH, STARTING_HP, STARTING_GOLD, STARTING_LEVEL } from '../../utils/constants';
+import { validateUsername, validatePassword } from '../../utils/validation';
 
 export default defineEventHandler(async (event) => {
   try {
@@ -8,24 +9,34 @@ export default defineEventHandler(async (event) => {
     if (!username || !password) {
       throw createError({
         statusCode: 400,
-        message: 'Username and password are required'
+        message: 'Tên người chơi và mật khẩu là bắt buộc.'
       });
     }
 
-    // Validate password length
-    if (password.length < MIN_PASSWORD_LENGTH) {
+    // Validate username
+    const usernameValidation = validateUsername(username);
+    if (!usernameValidation.valid) {
       throw createError({
         statusCode: 400,
-        message: `Password must be at least ${MIN_PASSWORD_LENGTH} characters long`
+        message: usernameValidation.error
+      });
+    }
+
+    // Validate password
+    const passwordValidation = validatePassword(password);
+    if (!passwordValidation.valid) {
+      throw createError({
+        statusCode: 400,
+        message: passwordValidation.error
       });
     }
 
     // Check if user already exists
-    const existingPlayer = await PlayerSchema.findOne({ username });
+    const existingPlayer = await PlayerSchema.findOne({ username: username.trim() });
     if (existingPlayer) {
       throw createError({
         statusCode: 400,
-        message: 'Username already taken'
+        message: 'Tên người chơi đã được sử dụng.'
       });
     }
 
@@ -45,7 +56,7 @@ export default defineEventHandler(async (event) => {
 
     // Create new player
     const player = await PlayerSchema.create({
-      username,
+      username: username.trim(),
       password: hashedPassword,
       currentRoomId: startingRoom._id,
       hp: STARTING_HP,
