@@ -172,6 +172,66 @@ export async function initializeWorld() {
       }
     });
 
+    // Enhancement System: Upgrade Materials
+    const daCuongHoaCap1 = await ItemSchema.create({
+      name: 'Đá Cường Hóa Cấp 1',
+      description: 'Một viên đá phát sáng màu xanh lục. Dùng để cường hóa trang bị lên cấp cao hơn.',
+      type: 'upgrade_material',
+      upgradeType: 'enhancement',
+      itemKey: 'enhance_stone_1',
+      value: 50,
+      price: 100,
+      sellValue: 25,
+      quality: 'Thường'
+    });
+
+    const daNangSaoSoCap = await ItemSchema.create({
+      name: 'Đá Nâng Sao Sơ Cấp',
+      description: 'Một viên đá lấp lánh ánh sáng như sao. Có thể tăng số sao của trang bị.',
+      type: 'upgrade_material',
+      upgradeType: 'star',
+      itemKey: 'star_stone_1',
+      value: 100,
+      price: 200,
+      sellValue: 50,
+      quality: 'Tốt'
+    });
+
+    const daTinhLuyen = await ItemSchema.create({
+      name: 'Đá Tinh Luyện',
+      description: 'Một viên đá tinh khiết phát sáng ánh tím. Dùng để tinh luyện và cải thiện trang bị.',
+      type: 'upgrade_material',
+      upgradeType: 'refine',
+      itemKey: 'refine_stone_1',
+      value: 75,
+      price: 150,
+      sellValue: 35,
+      quality: 'Tốt'
+    });
+
+    // Dungeon Shop - Special items only available for dungeon coins
+    const kiemHamNguc = await ItemSchema.create({
+      name: 'Kiếm Hầm Ngục',
+      description: 'Một thanh kiếm rèn từ kim loại hiếm trong hầm ngục. Phát sáng ánh tím huyền bí.',
+      type: 'weapon',
+      slot: 'weapon',
+      value: 0, // Cannot be sold for gold
+      stats: { damage: 50 },
+      quality: 'Sử Thi',
+      requiredLevel: 20
+    });
+
+    const aoGiapHamNguc = await ItemSchema.create({
+      name: 'Áo Giáp Hầm Ngục',
+      description: 'Bộ giáp nặng được tạo từ vật liệu quý hiếm. Cung cấp phòng thủ tuyệt vời.',
+      type: 'armor',
+      slot: 'chest',
+      value: 0, // Cannot be sold for gold
+      stats: { defense: 40 },
+      quality: 'Sử Thi',
+      requiredLevel: 20
+    });
+
     // Phase 21 & 22: Crafting Materials
     // Zone 1 Materials (Level 1-10)
     const daChuot = await ItemSchema.create({
@@ -1335,6 +1395,27 @@ export async function initializeWorld() {
     await trungTamBoss.save();
     for (const room of citadelRooms) await room.save();
 
+    // Dungeon System: Create dungeon rooms
+    const dungeonLobby = await RoomSchema.create({
+      name: 'Sảnh Hầm Ngục',
+      description: 'Một sảnh rộng với cổng đá lớn dẫn vào hầm ngục. Ánh sáng lờ mờ từ những ngọn đuốc treo tường. Có một thương nhân đứng ở góc phòng.',
+      exits: {
+        north: khuChoCu._id, // Link back to main area
+      },
+    });
+
+    const dungeonInstance = await RoomSchema.create({
+      name: 'Hầm Ngục - Phòng Chiến',
+      description: 'Một phòng chiến rộng lớn với bầu không khí ngột ngạt. Đây là nơi bạn đối mặt với thử thách.',
+      exits: {
+        south: dungeonLobby._id,
+      },
+    });
+
+    dungeonLobby.exits.up = dungeonInstance._id;
+    await dungeonLobby.save();
+    await dungeonInstance.save();
+
     // Create NPCs
     const linhGac = await AgentSchema.create({
       name: 'Lính Gác',
@@ -1375,6 +1456,8 @@ export async function initializeWorld() {
         binhMau._id,
         binhNangLuongNho._id,
         dichChuyenVeChoCu._id,
+        daCuongHoaCap1._id,
+        daTinhLuyen._id,
         congThucMuLangKhach._id,
         congThucAoLangKhach._id,
         congThucQuanLangKhach._id,
@@ -1522,6 +1605,28 @@ export async function initializeWorld() {
       experience: 0
     });
 
+    // Dungeon System: Dungeon Merchant NPC
+    const dungeonMerchant = await AgentSchema.create({
+      name: 'Thương Nhân Hầm Ngục',
+      description: 'Một thương nhân bí ẩn chuyên bán đồ quý hiếm bằng Xu Hầm Ngục. Mắt người này lấp lánh với sự tham lam.',
+      type: 'npc',
+      currentRoomId: dungeonLobby._id,
+      hp: 200,
+      maxHp: 200,
+      level: 50,
+      damage: 50,
+      behavior: 'passive',
+      dialogue: [
+        'Chào mừng đến với cửa hàng đặc biệt của ta. Ta chỉ nhận Xu Hầm Ngục.',
+        'Những vật phẩm ở đây chỉ dành cho những người mạnh nhất.',
+        'Hãy chinh phục hầm ngục để kiếm Xu Hầm Ngục.'
+      ],
+      isVendor: true,
+      shopInventory: [daNangSaoSoCap._id, daTinhLuyen._id, kiemHamNguc._id, aoGiapHamNguc._id], // High-tier items
+      shopCurrency: 'dungeon_coin',
+      experience: 0
+    });
+
     // Phase 22: Zone 1 New NPCs and Mobs (Level 1-10)
     const giaLang = await AgentSchema.create({
       name: 'Già Làng',
@@ -1618,6 +1723,8 @@ export async function initializeWorld() {
         { itemId: chiaKhoaHamNgam._id, dropChance: 1.0 }, // 100% boss drop - unlocks Zone 2
         { itemId: daChuot._id, dropChance: 0.9 },
         { itemId: vaiRach._id, dropChance: 0.9 },
+        { itemId: daCuongHoaCap1._id, dropChance: 0.3 }, // 30% chance for enhancement stone
+        { itemId: daTinhLuyen._id, dropChance: 0.15 }, // 15% chance for refine stone
         { itemId: ruongGoNho._id, dropChance: 0.15 } // Small chance for container
       ]
     });
@@ -1703,6 +1810,9 @@ export async function initializeWorld() {
         { itemId: loiCoNguHong._id, dropChance: 1.0 }, // 100% boss drop - for rare weapon recipe
         { itemId: voNhenCung._id, dropChance: 0.8 },
         { itemId: loiNangLuongYeu._id, dropChance: 0.8 },
+        { itemId: daCuongHoaCap1._id, dropChance: 0.4 }, // 40% chance for enhancement stone
+        { itemId: daNangSaoSoCap._id, dropChance: 0.2 }, // 20% chance for star stone
+        { itemId: daTinhLuyen._id, dropChance: 0.25 }, // 25% chance for refine stone
         { itemId: congThucVukhi20Hiem._id, dropChance: 0.1 } // Phase 26: 10% drop for rare weapon recipe
       ]
     });
@@ -1782,7 +1892,10 @@ export async function initializeWorld() {
       lootTable: [
         { itemId: chipViMachCo._id, dropChance: 1.0 }, // 100% boss drop
         { itemId: banhRangRiSet._id, dropChance: 0.9 },
-        { itemId: moDotBienNho._id, dropChance: 0.9 }
+        { itemId: moDotBienNho._id, dropChance: 0.9 },
+        { itemId: daCuongHoaCap1._id, dropChance: 0.5 }, // 50% chance for enhancement stone
+        { itemId: daNangSaoSoCap._id, dropChance: 0.3 }, // 30% chance for star stone
+        { itemId: daTinhLuyen._id, dropChance: 0.35 } // 35% chance for refine stone
       ]
     });
 
