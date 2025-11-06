@@ -209,5 +209,11 @@ export const PlayerSchema = defineMongooseModel({
       type: Boolean,
       default: false, // Auto-attack nearest mob when available
     },
+    // Phase 31: Visited Rooms Tracking
+    visitedRooms: [{
+      type: Schema.Types.ObjectId,
+      ref: 'Room',
+      default: [],
+    }],
   },
 });

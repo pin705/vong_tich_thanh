@@ -53,7 +53,8 @@ export default defineEventHandler(async (event) => {
       level: STARTING_LEVEL,
       experience: 0,
       gold: STARTING_GOLD,
-      inventory: []
+      inventory: [],
+      visitedRooms: [startingRoom._id] // Mark starting room as visited
     });
 
     // Set session

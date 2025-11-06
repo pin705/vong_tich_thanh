@@ -7,6 +7,7 @@ export const AgentSchema = defineMongooseModel({
     name: {
       type: String,
       required: true,
+      index: true, // Index for faster lookups by name
     },
     description: {
       type: String,
@@ -16,11 +17,13 @@ export const AgentSchema = defineMongooseModel({
       type: String,
       enum: ['npc', 'mob'],
       required: true,
+      index: true, // Index for filtering by type
     },
     currentRoomId: {
       type: Schema.Types.ObjectId,
       ref: 'Room',
       required: true,
+      index: true, // Index for finding agents in a room
     },
     hp: {
       type: Number,
