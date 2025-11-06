@@ -226,11 +226,15 @@ async function checkLevelUp(player: any): Promise<string[]> {
       player.talentPoints = (player.talentPoints || 0) + 1;
     }
     
+    // Phase 29: Grant skill points on level up
+    player.skillPoints = (player.skillPoints || 0) + 1;
+    
     messages.push('');
     messages.push('═══════════════════════════════════');
     messages.push(`    LEVEL UP! Bạn đã lên cấp ${player.level}!`);
     messages.push(`    HP tối đa tăng thêm ${HP_GAIN_PER_LEVEL}!`);
     messages.push(`    HP đã được hồi phục đầy!`);
+    messages.push(`    [*] Bạn nhận được 1 điểm kỹ năng!`);
     if (player.level >= 10) {
       messages.push(`    [*] Bạn nhận được 1 điểm thiên phú!`);
     }

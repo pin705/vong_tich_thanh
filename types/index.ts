@@ -34,9 +34,11 @@ export interface PlayerState {
   inCombat: boolean;
   class?: string;
   profession?: string | null;
+  professionTier?: number;
   resource?: number;
   maxResource?: number;
   talentPoints?: number;
+  skillPoints?: number;
   hasUnreadMail?: boolean;
   guild?: string; // Guild ID if player is in a guild
   stats: {
@@ -188,6 +190,16 @@ export interface Skill {
   healing?: number;
   effects?: Record<string, any>;
   levelRequirement: number;
+  // Phase 29: Advanced skill properties
+  targetType?: 'self' | 'single' | 'area' | 'cone' | 'line';
+  range?: number;
+  animationEffect?: string;
+  maxUpgradeLevel?: number;
+  prerequisiteSkills?: string[];
+  skillPointCost?: number;
+  professionRequirement?: string | null;
+  tier?: number;
+  upgradeLevel?: number; // Current upgrade level for player's learned skills
 }
 
 // Talent types

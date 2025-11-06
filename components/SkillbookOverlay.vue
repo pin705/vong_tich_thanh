@@ -34,7 +34,12 @@
           >
             <div class="skill-number">[{{ index + 1 }}]</div>
             <div class="skill-info">
-              <div class="skill-name">{{ skill.name }}</div>
+              <div class="skill-name">
+                {{ skill.name }}
+                <span v-if="skill.upgradeLevel && skill.upgradeLevel > 1" class="skill-level">
+                  Lv.{{ skill.upgradeLevel }}
+                </span>
+              </div>
               <div class="skill-cost">
                 {{ skill.resourceCost }} {{ getResourceName() }}
                 <span v-if="skill.cooldown > 0"> | CD: {{ skill.cooldown }}s</span>
@@ -55,7 +60,12 @@
           >
             <div class="skill-number">[P]</div>
             <div class="skill-info">
-              <div class="skill-name">{{ skill.name }}</div>
+              <div class="skill-name">
+                {{ skill.name }}
+                <span v-if="skill.upgradeLevel && skill.upgradeLevel > 1" class="skill-level">
+                  Lv.{{ skill.upgradeLevel }}
+                </span>
+              </div>
               <div class="skill-description-short">{{ skill.description }}</div>
             </div>
           </div>
@@ -63,7 +73,12 @@
 
         <!-- Skill Detail Panel -->
         <div v-if="selectedSkill" class="skill-detail">
-          <div class="skill-detail-header">{{ selectedSkill.name }}</div>
+          <div class="skill-detail-header">
+            {{ selectedSkill.name }}
+            <span v-if="selectedSkill.upgradeLevel && selectedSkill.upgradeLevel > 1" class="skill-level-badge">
+              Level {{ selectedSkill.upgradeLevel }}
+            </span>
+          </div>
           <div class="skill-detail-body">
             <p>{{ selectedSkill.description }}</p>
             <div class="skill-stats">
@@ -78,6 +93,15 @@
               </div>
               <div v-if="selectedSkill.healing && selectedSkill.healing > 0">
                 <strong>Hồi máu:</strong> {{ selectedSkill.healing }}
+              </div>
+              <div v-if="selectedSkill.targetType">
+                <strong>Loại mục tiêu:</strong> {{ getTargetTypeName(selectedSkill.targetType) }}
+              </div>
+              <div v-if="selectedSkill.range && selectedSkill.range > 1">
+                <strong>Tầm xa:</strong> {{ selectedSkill.range }}
+              </div>
+              <div v-if="selectedSkill.tier">
+                <strong>Cấp độ kỹ năng:</strong> {{ selectedSkill.tier }}
               </div>
             </div>
             <button 
@@ -116,12 +140,21 @@ const emit = defineEmits(['close', 'assignSkill']);
 const activeTab = ref<'active' | 'passive'>('active');
 const selectedSkill = ref<Skill | null>(null);
 
+// Get player's learned skills with upgrade levels
+const learnedSkillLevels = ref<Record<string, number>>({});
+
 const activeSkills = computed(() => {
-  return props.skills.filter(s => s.type === 'active');
+  return props.skills.filter(s => s.type === 'active').map(s => ({
+    ...s,
+    upgradeLevel: learnedSkillLevels.value[s._id] || 1,
+  }));
 });
 
 const passiveSkills = computed(() => {
-  return props.skills.filter(s => s.type === 'passive');
+  return props.skills.filter(s => s.type === 'passive').map(s => ({
+    ...s,
+    upgradeLevel: learnedSkillLevels.value[s._id] || 1,
+  }));
 });
 
 function selectSkill(skill: Skill) {
@@ -136,6 +169,17 @@ function getResourceName(): string {
     scrap_engineer: 'Linh Kiện',
   };
   return resourceNames[props.playerClass || ''] || 'Tài Nguyên';
+}
+
+function getTargetTypeName(targetType: string): string {
+  const targetTypeNames: Record<string, string> = {
+    self: 'Bản Thân',
+    single: 'Đơn Mục Tiêu',
+    area: 'Vùng',
+    cone: 'Hình Nón',
+    line: 'Tuyến Thẳng',
+  };
+  return targetTypeNames[targetType] || targetType;
 }
 
 function assignToHotkey() {
@@ -248,6 +292,26 @@ function assignToHotkey() {
   font-weight: bold;
   color: #00ff00;
   margin-bottom: 0.25rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.skill-level {
+  color: #ffb000;
+  font-size: 0.85rem;
+  padding: 0.1rem 0.3rem;
+  border: 1px solid #ffb000;
+  background: rgba(255, 176, 0, 0.1);
+}
+
+.skill-level-badge {
+  color: #ffb000;
+  font-size: 0.9rem;
+  padding: 0.2rem 0.5rem;
+  border: 1px solid #ffb000;
+  background: rgba(255, 176, 0, 0.1);
+  margin-left: auto;
 }
 
 .skill-cost,
