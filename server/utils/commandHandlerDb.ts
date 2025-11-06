@@ -1593,6 +1593,81 @@ export async function handleCommandDb(command: Command, playerId: string): Promi
         break;
       }
 
+      case 'dungeon': {
+        // Dungeon system commands
+        const subCommand = target?.toLowerCase();
+        const { getDungeonStatus, startChallenge } = await import('./dungeonService');
+
+        if (!subCommand || subCommand === 'status') {
+          // Show dungeon status
+          const statusResult = await getDungeonStatus(playerId);
+          if (statusResult.success) {
+            const { currentFloor, highestFloor, dungeonCoin, lastWeeklyReset } = statusResult.data;
+            responses.push('═══════════════════════════════════════════════════');
+            responses.push('            HẦM NGỤC                               ');
+            responses.push('═══════════════════════════════════════════════════');
+            responses.push(`Tầng hiện tại: ${currentFloor}`);
+            responses.push(`Tầng cao nhất: ${highestFloor}`);
+            responses.push(`Xu Hầm Ngục: ${dungeonCoin}`);
+            responses.push('');
+            responses.push('Lệnh:');
+            responses.push('  dungeon enter    - Bắt đầu thử thách');
+            responses.push('  dungeon status   - Xem trạng thái');
+          } else {
+            responses.push(statusResult.message);
+          }
+          break;
+        }
+
+        if (subCommand === 'enter') {
+          // Start dungeon challenge
+          const statusResult = await getDungeonStatus(playerId);
+          if (!statusResult.success) {
+            responses.push(statusResult.message);
+            break;
+          }
+
+          const currentFloor = statusResult.data.currentFloor;
+          const challengeResult = await startChallenge(playerId, currentFloor);
+          
+          if (challengeResult.success) {
+            responses.push(challengeResult.message);
+            responses.push('Sử dụng lệnh "attack" hoặc "a" để chiến đấu!');
+          } else {
+            responses.push(challengeResult.message);
+          }
+          break;
+        }
+
+        responses.push('Lệnh không hợp lệ. Sử dụng: dungeon [enter/status]');
+        break;
+      }
+
+      case 'tiếp':
+      case 'tiep':
+      case 'next': {
+        // Continue to next dungeon floor
+        const { getDungeonStatus, startChallenge } = await import('./dungeonService');
+        
+        // Check if player just completed a floor
+        const statusResult = await getDungeonStatus(playerId);
+        if (!statusResult.success) {
+          responses.push(statusResult.message);
+          break;
+        }
+
+        const currentFloor = statusResult.data.currentFloor;
+        const challengeResult = await startChallenge(playerId, currentFloor);
+        
+        if (challengeResult.success) {
+          responses.push(challengeResult.message);
+          responses.push('Sử dụng lệnh "attack" hoặc "a" để chiến đấu!');
+        } else {
+          responses.push(challengeResult.message);
+        }
+        break;
+      }
+
       default:
         responses.push(`Lệnh không hợp lệ: "${action}"`);
         responses.push('Gõ "help" để xem danh sách lệnh.');

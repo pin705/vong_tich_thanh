@@ -215,5 +215,24 @@ export const PlayerSchema = defineMongooseModel({
       ref: 'Room',
       default: [],
     }],
+    // Enhancement & Dungeon System
+    dungeonCoin: {
+      type: Number,
+      default: 0,
+    },
+    dungeonProgress: {
+      currentFloor: {
+        type: Number,
+        default: 1,
+      },
+      highestFloor: {
+        type: Number,
+        default: 1,
+      },
+      lastWeeklyReset: {
+        type: Date,
+        default: () => new Date(),
+      },
+    },
   },
 });
