@@ -303,6 +303,9 @@
       @sendCommand="sendCommandFromShop"
       @itemPurchased="handleShopTransaction"
     />
+
+    <!-- Loading Indicator -->
+    <LoadingIndicator :isLoading="isLoading" :text="loadingText" />
   </div>
 </template>
 
@@ -346,6 +349,7 @@ import MainLogPane from '~/components/MainLogPane.vue';
 import CombatLogPane from '~/components/CombatLogPane.vue';
 import ChatLogPane from '~/components/ChatLogPane.vue';
 import RoomOccupantsPane from '~/components/RoomOccupantsPane.vue';
+import LoadingIndicator from '~/components/LoadingIndicator.vue';
 
 definePageMeta({
   middleware: 'auth'
@@ -471,6 +475,11 @@ const craftingPopupOpen = ref(false);
 const shopPopupOpen = ref(false);
 const mailPopupOpen = ref(false);
 const shopPopupRef = ref<InstanceType<typeof ShopPopup> | null>(null);
+
+// Loading state
+const isLoading = ref(false);
+const loadingText = ref('Đang tải...');
+
 const contextualPopupData = ref<{
   title: string;
   entityType: 'npc' | 'mob' | 'player' | null;
@@ -757,45 +766,57 @@ const focusInput = (event?: MouseEvent) => {
 
 // Handle tab bar clicks
 const handleTabClick = async (tabId: string) => {
-  switch (tabId) {
-    case 'map':
-    case 'worldmap':
-      // Load world map data before opening
-      await loadWorldMap();
-      mapPopupOpen.value = true;
-      break;
-    case 'occupants':
-      occupantsPopupOpen.value = true;
-      break;
-    case 'party':
-      partyPopupOpen.value = true;
-      break;
-    case 'guild':
-      guildPopupOpen.value = true;
-      break;
-    case 'mail':
-      mailPopupOpen.value = true;
-      break;
-    case 'auction':
-      auctionHousePopupOpen.value = true;
-      break;
-    case 'character':
-      // Load skills and talents data before opening
-      await loadSkills();
-      await loadTalents();
-      characterMenuOpen.value = true;
-      break;
-    case 'crafting':
-      await loadCraftingRecipes();
-      craftingPopupOpen.value = true;
-      break;
-    case 'settings':
-      settingsOpen.value = true;
-      break;
-    case 'quests':
-      await loadQuests();
-      questsOpen.value = true;
-      break;
+  try {
+    switch (tabId) {
+      case 'map':
+      case 'worldmap':
+        // Load world map data before opening
+        isLoading.value = true;
+        loadingText.value = 'Đang tải bản đồ...';
+        await loadWorldMap();
+        mapPopupOpen.value = true;
+        break;
+      case 'occupants':
+        occupantsPopupOpen.value = true;
+        break;
+      case 'party':
+        partyPopupOpen.value = true;
+        break;
+      case 'guild':
+        guildPopupOpen.value = true;
+        break;
+      case 'mail':
+        mailPopupOpen.value = true;
+        break;
+      case 'auction':
+        auctionHousePopupOpen.value = true;
+        break;
+      case 'character':
+        // Load skills and talents data before opening
+        isLoading.value = true;
+        loadingText.value = 'Đang tải thông tin nhân vật...';
+        await loadSkills();
+        await loadTalents();
+        characterMenuOpen.value = true;
+        break;
+      case 'crafting':
+        isLoading.value = true;
+        loadingText.value = 'Đang tải công thức chế tạo...';
+        await loadCraftingRecipes();
+        craftingPopupOpen.value = true;
+        break;
+      case 'settings':
+        settingsOpen.value = true;
+        break;
+      case 'quests':
+        isLoading.value = true;
+        loadingText.value = 'Đang tải nhiệm vụ...';
+        await loadQuests();
+        questsOpen.value = true;
+        break;
+    }
+  } finally {
+    isLoading.value = false;
   }
 };
 
@@ -1090,6 +1111,8 @@ const handleAssignSkill = (skill: Skill) => {
 
 // Handle talent allocation
 const handleAllocateTalent = async (talentId: string) => {
+  isLoading.value = true;
+  loadingText.value = 'Đang cộng điểm thiên phú...';
   try {
     const response = await $fetch('/api/player/talents', {
       method: 'POST',
@@ -1107,6 +1130,8 @@ const handleAllocateTalent = async (talentId: string) => {
     console.error('Error allocating talent:', error);
     const errorMsg = error.data?.message || 'Không thể cộng điểm thiên phú.';
     addMessage(errorMsg, 'error');
+  } finally {
+    isLoading.value = false;
   }
 };
 
@@ -1171,6 +1196,8 @@ const loadCraftingRecipes = async () => {
 
 // Handle crafting
 const handleCraft = async (recipeId: string) => {
+  isLoading.value = true;
+  loadingText.value = 'Đang chế tạo...';
   try {
     const response = await $fetch('/api/player/crafting/craft', {
       method: 'POST',
@@ -1189,11 +1216,15 @@ const handleCraft = async (recipeId: string) => {
     console.error('Error crafting:', error);
     const errorMsg = error?.data?.message || error?.message || 'Không thể chế tạo vật phẩm.';
     addMessage(errorMsg, 'error');
+  } finally {
+    isLoading.value = false;
   }
 };
 
 // Handle quest completion
 const handleCompleteQuest = async (questId: string) => {
+  isLoading.value = true;
+  loadingText.value = 'Đang hoàn thành nhiệm vụ...';
   try {
     const response = await $fetch('/api/player/quests/complete', {
       method: 'POST',
@@ -1208,11 +1239,15 @@ const handleCompleteQuest = async (questId: string) => {
     console.error('Error completing quest:', error);
     const errorMsg = error.data?.message || 'Không thể hoàn thành nhiệm vụ.';
     addMessage(errorMsg, 'error');
+  } finally {
+    isLoading.value = false;
   }
 };
 
 // Handle quest abandonment
 const handleAbandonQuest = async (questId: string) => {
+  isLoading.value = true;
+  loadingText.value = 'Đang hủy nhiệm vụ...';
   try {
     const response = await $fetch('/api/player/quests/abandon', {
       method: 'POST',
@@ -1227,11 +1262,15 @@ const handleAbandonQuest = async (questId: string) => {
     console.error('Error abandoning quest:', error);
     const errorMsg = error.data?.message || 'Không thể hủy bỏ nhiệm vụ.';
     addMessage(errorMsg, 'error');
+  } finally {
+    isLoading.value = false;
   }
 };
 
 // Handle repeating quest
 const handleRepeatQuest = async (questId: string) => {
+  isLoading.value = true;
+  loadingText.value = 'Đang nhận nhiệm vụ...';
   try {
     const response = await $fetch('/api/player/quests/repeat', {
       method: 'POST',
@@ -1246,6 +1285,8 @@ const handleRepeatQuest = async (questId: string) => {
     console.error('Error repeating quest:', error);
     const errorMsg = error.data?.message || 'Không thể nhận lại nhiệm vụ.';
     addMessage(errorMsg, 'error');
+  } finally {
+    isLoading.value = false;
   }
 };
 
@@ -1256,6 +1297,8 @@ const handleTrackQuest = (questId: string) => {
 
 // Handle profession choice
 const handleChooseProfession = async (professionId: string) => {
+  isLoading.value = true;
+  loadingText.value = 'Đang chọn nghề nghiệp...';
   try {
     const response = await $fetch('/api/player/profession', {
       method: 'POST',
@@ -1274,6 +1317,8 @@ const handleChooseProfession = async (professionId: string) => {
     console.error('Error choosing profession:', error);
     const errorMsg = error.data?.message || 'Không thể chọn nghề nghiệp.';
     addMessage(errorMsg, 'error');
+  } finally {
+    isLoading.value = false;
   }
 };
 
@@ -1702,6 +1747,8 @@ const declinePartyInvitation = () => {
 };
 
 const acceptGuildInvitation = async () => {
+  isLoading.value = true;
+  loadingText.value = 'Đang xử lý...';
   try {
     const response = await $fetch('/api/guild/accept', {
       method: 'POST',
@@ -1714,10 +1761,14 @@ const acceptGuildInvitation = async () => {
   } catch (error: any) {
     console.error('Failed to accept guild invitation:', error);
     addMessage(error.data?.statusMessage || 'Lỗi khi chấp nhận lời mời.', 'error');
+  } finally {
+    isLoading.value = false;
   }
 };
 
 const declineGuildInvitation = async () => {
+  isLoading.value = true;
+  loadingText.value = 'Đang xử lý...';
   try {
     await $fetch('/api/guild/decline', {
       method: 'POST',
@@ -1726,6 +1777,8 @@ const declineGuildInvitation = async () => {
   } catch (error) {
     console.error('Failed to decline guild invitation:', error);
     guildInvitationPopupOpen.value = false;
+  } finally {
+    isLoading.value = false;
   }
 };
 

@@ -3,6 +3,7 @@ import { RoomSchema } from '../../models/Room';
 import { PlayerSchema } from '../../models/Player';
 import { gameState } from './gameState';
 import { startCombat } from './combatSystem';
+import { broadcastRoomOccupants } from '../routes/ws';
 
 // AI tick interval - process agent behaviors every 10 seconds
 const AI_TICK_INTERVAL = 10000;
@@ -262,10 +263,14 @@ export async function scheduleAgentRespawn(agentData: any, roomId: string): Prom
         dialogue: agentData.dialogue,
         shopItems: agentData.shopItems,
         loot: agentData.loot,
+        lootTable: agentData.lootTable,
         experience: agentData.experience,
         agentType: agentData.agentType,
         mechanics: agentData.mechanics,
         faction: agentData.faction,
+        isVendor: agentData.isVendor,
+        shopInventory: agentData.shopInventory,
+        shopType: agentData.shopType,
         inCombat: false
       });
 
@@ -283,6 +288,9 @@ export async function scheduleAgentRespawn(agentData: any, roomId: string): Prom
             message: `[${newAgent.name}] xuất hiện!`
           }
         );
+        
+        // Update room occupants for all players in the room
+        await broadcastRoomOccupants(room._id.toString());
         
         // If boss, send world alert
         if (agentData.agentType === 'boss') {
