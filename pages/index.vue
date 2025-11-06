@@ -10,23 +10,37 @@
       :premiumCurrency="playerState.premiumCurrency"
     />
 
-    <!-- Main Output Area with Channel Tabs (85-90%) -->
-    <div class="main-output-pane">
-      <!-- Tab Selector -->
-      <TabSelector
-        :tabs="channelTabs"
-        :currentTab="currentChannel"
-        @tabChange="handleChannelChange"
-      />
-      
-      <!-- Content Area for Active Tab -->
-      <div class="channel-content">
-        <MainLogPane v-if="currentChannel === 'main'" :messages="mainLog" />
-        <CombatLogPane v-else-if="currentChannel === 'combat'" :messages="combatLog" />
-        <ChatLogPane 
-          v-else-if="currentChannel === 'chat'" 
-          :messages="chatLog" 
-          @sendChatCommand="handleChatCommand"
+    <!-- Main Content Area with Side Panel for Desktop -->
+    <div class="main-content-wrapper">
+      <!-- Main Output Area with Channel Tabs -->
+      <div class="main-output-pane">
+        <!-- Tab Selector -->
+        <TabSelector
+          :tabs="channelTabs"
+          :currentTab="currentChannel"
+          @tabChange="handleChannelChange"
+        />
+        
+        <!-- Content Area for Active Tab -->
+        <div class="channel-content">
+          <MainLogPane v-if="currentChannel === 'main'" :messages="mainLog" />
+          <CombatLogPane v-else-if="currentChannel === 'combat'" :messages="combatLog" />
+          <ChatLogPane 
+            v-else-if="currentChannel === 'chat'" 
+            :messages="chatLog" 
+            @sendChatCommand="handleChatCommand"
+          />
+        </div>
+      </div>
+
+      <!-- Side Panel for Occupants (Desktop Only) -->
+      <div v-if="isDesktop" class="side-panel">
+        <RoomOccupantsPane
+          :players="roomOccupants.players"
+          :npcs="roomOccupants.npcs"
+          :mobs="roomOccupants.mobs"
+          :selectedTarget="selectedTarget"
+          @selectTarget="handleEntitySelect"
         />
       </div>
     </div>
@@ -303,6 +317,7 @@ import TabSelector from '~/components/TabSelector.vue';
 import MainLogPane from '~/components/MainLogPane.vue';
 import CombatLogPane from '~/components/CombatLogPane.vue';
 import ChatLogPane from '~/components/ChatLogPane.vue';
+import RoomOccupantsPane from '~/components/RoomOccupantsPane.vue';
 
 definePageMeta({
   middleware: 'auth'
@@ -1571,14 +1586,31 @@ watch(messages, () => {
   overflow: hidden;
 }
 
+.main-content-wrapper {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+  margin: 0.5rem;
+  margin-bottom: 0;
+  gap: 0.5rem;
+}
+
 .main-output-pane {
   flex: 1;
   display: flex;
   flex-direction: column;
   border: 1px solid rgba(0, 136, 0, 0.3);
   overflow: hidden;
-  margin: 0.5rem;
-  margin-bottom: 0;
+  min-width: 0; /* Important for flex shrinking */
+}
+
+.side-panel {
+  width: 280px;
+  min-width: 280px;
+  max-width: 350px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
 .channel-content {
@@ -1639,10 +1671,52 @@ watch(messages, () => {
   opacity: 0.6;
 }
 
+/* Mobile and Tablet - hide side panel */
+@media (max-width: 1023px) {
+  .side-panel {
+    display: none;
+  }
+
+  .main-content-wrapper {
+    margin: 0.25rem;
+  }
+}
+
+/* Desktop - optimize for wide screens */
+@media (min-width: 1024px) {
+  .main-content-wrapper {
+    max-width: none; /* Remove any max-width constraints */
+  }
+
+  .main-output-pane {
+    max-width: none;
+  }
+
+  /* Wider side panel on large screens */
+  @media (min-width: 1440px) {
+    .side-panel {
+      width: 320px;
+      min-width: 320px;
+    }
+  }
+
+  /* Even wider on ultra-wide screens */
+  @media (min-width: 1920px) {
+    .side-panel {
+      width: 380px;
+      min-width: 380px;
+    }
+  }
+}
+
 /* Mobile responsiveness */
 @media (max-width: 768px) {
-  .main-output-pane {
+  .main-content-wrapper {
     margin: 0.25rem;
+  }
+
+  .main-output-pane {
+    margin: 0;
   }
 
   .output-area {
