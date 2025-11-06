@@ -12,9 +12,13 @@ import { tradeService } from './tradeService';
 import { handleMovementCommand, handleGotoCommand } from '../commands/movement';
 import { handleCombatCommand } from '../commands/combat';
 import { handleItemCommand } from '../commands/item';
+import { handlePartyCommand } from '../commands/party';
+import { handleSayCommand, handleWorldCommand, handleGuildChatCommand } from '../commands/social';
 import { formatRoomDescription } from './roomUtils';
 import { deduplicateItemsById } from './itemDeduplication';
 import { BUILT_IN_COMMANDS } from './commandParser';
+import { transferItem, transferGold, addItemToPlayer, removeItemFromPlayer } from './inventoryService';
+import { findItemOnGround, findItemInInventory, findTargetInRoom } from './entityFinder';
 
 // Command routing configuration
 const MOVEMENT_COMMANDS = ['go', 'n', 's', 'e', 'w', 'u', 'd', 
@@ -203,65 +207,54 @@ export async function handleCommandDb(command: Command, playerId: string): Promi
           const roomDesc = await formatRoomDescription(room, player);
           responses.push(...roomDesc);
         } else {
-          // Look at specific target
-          const targetLower = target.toLowerCase();
+          // Look at specific target using entity finder
+          const foundTarget = await findTargetInRoom(room, target);
           
-          // Check agents
-          if (room.agents && room.agents.length > 0) {
-            const agents = await AgentSchema.find({ _id: { $in: room.agents } }).populate('loot');
-            const agent = agents.find((a: any) => 
-              a.name.toLowerCase().includes(targetLower)
-            );
-            if (agent) {
-              responses.push(agent.description);
-              responses.push('');
+          if (foundTarget && foundTarget.type === 'agent') {
+            const agent = foundTarget.entity;
+            responses.push(agent.description);
+            responses.push('');
+            
+            // Show rewards for mobs
+            if (agent.type === 'mob') {
+              responses.push('--- Phần Thưởng (Dự Kiến) ---');
+              responses.push(`EXP: ${agent.experience}`);
               
-              // Show rewards for mobs
-              if (agent.type === 'mob') {
-                responses.push('--- Phần Thưởng (Dự Kiến) ---');
-                responses.push(`EXP: ${agent.experience}`);
-                
-                // Gold is not directly stored, but can be assumed from level
-                const estimatedGold = Math.floor(agent.level * 2);
-                responses.push(`Vàng: ~${estimatedGold}`);
-                
-                // Show loot items
-                if (agent.loot && agent.loot.length > 0) {
-                  const lootNames = agent.loot.map((item: any) => `[${item.name}]`).join(', ');
+              // Gold is not directly stored, but can be assumed from level
+              const estimatedGold = Math.floor(agent.level * 2);
+              responses.push(`Vàng: ~${estimatedGold}`);
+              
+              // Show loot items
+              if (agent.loot && agent.loot.length > 0) {
+                // Populate loot items if not already populated
+                const populatedAgent = await AgentSchema.findById(agent._id).populate('loot');
+                if (populatedAgent && populatedAgent.loot) {
+                  const lootNames = populatedAgent.loot.map((item: any) => `[${item.name}]`).join(', ');
                   responses.push(`Vật phẩm: ${lootNames}`);
                 }
-                responses.push('');
               }
-              
-              // Phase 25: Show vendor info
-              if (agent.isVendor) {
-                responses.push('💰 CỬA HÀNG AVAILABLE - Gõ \'list\' để xem hàng hóa.');
-                responses.push('');
-              }
-              
-              break;
+              responses.push('');
             }
+            
+            // Phase 25: Show vendor info
+            if (agent.isVendor) {
+              responses.push('💰 CỬA HÀNG AVAILABLE - Gõ \'list\' để xem hàng hóa.');
+              responses.push('');
+            }
+            
+            break;
           }
           
-          // Check items
-          if (room.items && room.items.length > 0) {
-            const items = await ItemSchema.find({ _id: { $in: room.items } });
-            const item = items.find((i: any) => 
-              i.name.toLowerCase().includes(targetLower)
-            );
-            if (item) {
-              responses.push(item.description);
-              break;
-            }
-          }
-          
-          // Check other players
-          const playersInRoom = gameState.getPlayersInRoom(room._id.toString());
-          const otherPlayer = playersInRoom.find(p => 
-            p.username.toLowerCase().includes(targetLower) && p.id !== playerId
-          );
-          if (otherPlayer) {
+          if (foundTarget && foundTarget.type === 'player') {
+            const otherPlayer = foundTarget.entity;
             responses.push(`[${otherPlayer.username}] đang đứng ở đây, trông có vẻ đang suy nghĩ về điều gì đó.`);
+            break;
+          }
+          
+          // Check items on ground
+          const foundItem = await findItemOnGround(room, target);
+          if (foundItem) {
+            responses.push(foundItem.description);
             break;
           }
           
@@ -277,21 +270,20 @@ export async function handleCommandDb(command: Command, playerId: string): Promi
         }
 
         const talkRoom = await RoomSchema.findById(player.currentRoomId);
-        if (!talkRoom || !talkRoom.agents || talkRoom.agents.length === 0) {
+        if (!talkRoom) {
           responses.push(`Bạn không thấy "${target}" ở đây để nói chuyện.`);
           break;
         }
 
-        const talkAgents = await AgentSchema.find({ _id: { $in: talkRoom.agents } });
-        const talkAgent = talkAgents.find((a: any) => 
-          a.name.toLowerCase().includes(target.toLowerCase())
-        );
-
-        if (!talkAgent) {
+        // Use entity finder to find the target agent
+        const talkTarget = await findTargetInRoom(talkRoom, target);
+        
+        if (!talkTarget || talkTarget.type !== 'agent') {
           responses.push(`Bạn không thấy "${target}" ở đây để nói chuyện.`);
           break;
         }
 
+        const talkAgent = talkTarget.entity;
         if (talkAgent.dialogue && talkAgent.dialogue.length > 0) {
           const randomDialogue = talkAgent.dialogue[Math.floor(Math.random() * talkAgent.dialogue.length)];
           responses.push(`[${talkAgent.name}] nói: "${randomDialogue}"`);
@@ -301,30 +293,9 @@ export async function handleCommandDb(command: Command, playerId: string): Promi
         break;
 
       case 'say':
-        if (!target && (!args || args.length === 0)) {
-          responses.push('Bạn muốn nói gì?');
-          break;
-        }
-
-        const message = [target, ...(args || [])].filter(Boolean).join(' ');
-        responses.push(`Bạn nói: "${message}"`);
-        
-        // Broadcast to room as chat with proper channel and category
-        const sayRoom = await RoomSchema.findById(player.currentRoomId);
-        if (sayRoom) {
-          gameState.broadcastToRoom(
-            sayRoom._id.toString(),
-            {
-              type: 'chat',
-              channel: 'chat',
-              category: 'say',
-              user: player.username,
-              message: message
-            },
-            playerId
-          );
-        }
+        responses.push(...await handleSayCommand(playerId, player, target, args));
         break;
+
 
       case 'inventory':
       case 'i':
@@ -366,22 +337,27 @@ export async function handleCommandDb(command: Command, playerId: string): Promi
           break;
         }
 
-        const getItems = await ItemSchema.find({ _id: { $in: getRoom.items } });
-        const getItem = getItems.find((i: any) => 
-          i.name.toLowerCase().includes(target.toLowerCase())
-        );
+        // Use entity finder to find item on ground
+        const getItem = await findItemOnGround(getRoom, target);
 
         if (!getItem) {
           responses.push(`Không có "${target}" ở đây để nhặt.`);
           break;
         }
 
-        // Remove from room, add to player inventory
+        // Remove from room
         getRoom.items = getRoom.items.filter((id: any) => id.toString() !== getItem._id.toString());
         await getRoom.save();
 
-        player.inventory.push(getItem._id);
-        await player.save();
+        // Add to player inventory using inventory service
+        const pickupResult = await addItemToPlayer(playerId, getItem._id.toString());
+        if (!pickupResult.success) {
+          // Rollback: add item back to room
+          getRoom.items.push(getItem._id);
+          await getRoom.save();
+          responses.push(pickupResult.message);
+          break;
+        }
 
         responses.push(`Bạn nhặt [${getItem.name}].`);
         
@@ -421,10 +397,8 @@ export async function handleCommandDb(command: Command, playerId: string): Promi
           break;
         }
 
-        const dropItems = await ItemSchema.find({ _id: { $in: player.inventory } });
-        const dropItem = dropItems.find((i: any) => 
-          i.name.toLowerCase().includes(target.toLowerCase())
-        );
+        // Use entity finder to find item in inventory
+        const dropItem = await findItemInInventory(player.inventory, target);
 
         if (!dropItem) {
           responses.push(`Bạn không có "${target}" trong túi đồ.`);
@@ -437,10 +411,14 @@ export async function handleCommandDb(command: Command, playerId: string): Promi
           break;
         }
 
-        // Remove from player, add to room
-        player.inventory = player.inventory.filter((id: any) => id.toString() !== dropItem._id.toString());
-        await player.save();
+        // Remove from player using inventory service
+        const dropResult = await removeItemFromPlayer(playerId, dropItem._id.toString());
+        if (!dropResult.success) {
+          responses.push(dropResult.message);
+          break;
+        }
 
+        // Add to room
         dropRoom.items.push(dropItem._id);
         await dropRoom.save();
 
@@ -924,440 +902,9 @@ export async function handleCommandDb(command: Command, playerId: string): Promi
       case 'party':
       case 'p':
       case 'moi':
-      case 'roi': {
-        // Get subcommand
-        const subCommand = target?.toLowerCase();
-        const subTarget = args?.[0];
-        
-        // Check if this is party chat (p [message] instead of p [subcommand])
-        // Party chat if: action is 'p' AND target is not a party subcommand
-        const partySubcommands = ['invite', 'accept', 'decline', 'leave', 'kick', 'promote', 'loot'];
-        if (action === 'p' && target && !partySubcommands.includes(subCommand)) {
-          // This is party chat
-          const chatMessage = [target, ...(args || [])].filter(Boolean).join(' ');
-          
-          if (!chatMessage) {
-            responses.push('Bạn muốn nói gì với nhóm?');
-            break;
-          }
-          
-          const playerParty = partyService.getPlayerParty(playerId);
-          if (!playerParty) {
-            responses.push('Bạn không ở trong nhóm nào.');
-            break;
-          }
-          
-          // Broadcast to all party members
-          const memberIds = partyService.getPartyMemberIds(playerParty.partyId);
-          const members = gameState.getPlayersByIds(memberIds);
-          
-          members.forEach(member => {
-            if (member.ws) {
-              member.ws.send(JSON.stringify({
-                type: 'chat',
-                channel: 'chat',
-                category: 'party',
-                user: player.username,
-                message: chatMessage
-              }));
-            }
-          });
-          
-          // Don't add to responses - it will be shown via chat system
-          break;
-        }
-        
-        // Handle "moi" alias for "party invite"
-        if (action === 'moi') {
-          // moi [player] -> party invite [player]
-          const targetPlayerName = target;
-          if (!targetPlayerName) {
-            responses.push('Mời ai vào nhóm? Cú pháp: moi [tên người chơi]');
-            break;
-          }
-          
-          // Find target player by name
-          const currentRoom = await RoomSchema.findById(player.currentRoomId);
-          if (!currentRoom) break;
-          
-          const playersInRoom = gameState.getPlayersInRoom(currentRoom._id.toString());
-          const targetPlayerInfo = playersInRoom.find(p => 
-            p.username.toLowerCase().includes(targetPlayerName.toLowerCase()) && p.id !== playerId
-          );
-          
-          if (!targetPlayerInfo) {
-            responses.push(`Không tìm thấy người chơi "${targetPlayerName}" ở đây.`);
-            break;
-          }
-          
-          const inviteResult = partyService.invitePlayer(playerId, targetPlayerInfo.id);
-          responses.push(inviteResult.message);
-          
-          if (inviteResult.success) {
-            // Send invitation to target player
-            const targetPlayer = gameState.getPlayer(targetPlayerInfo.id);
-            if (targetPlayer?.ws) {
-              targetPlayer.ws.send(JSON.stringify({
-                type: 'party_invitation',
-                payload: {
-                  inviterId: playerId,
-                  inviterName: player.username,
-                  partyId: inviteResult.partyId
-                }
-              }));
-            }
-            
-            // Update party ID in game state
-            gameState.updatePlayerParty(playerId, inviteResult.partyId!);
-          }
-          break;
-        }
-        
-        // Handle "roi" alias for "party leave"
-        if (action === 'roi') {
-          // Get party info BEFORE leaving
-          const playerPartyBeforeLeave = partyService.getPlayerParty(playerId);
-          const partyIdBeforeLeave = playerPartyBeforeLeave?.partyId;
-          
-          const leaveResult = partyService.leaveParty(playerId);
-          responses.push(leaveResult.message);
-          
-          if (leaveResult.success) {
-            gameState.updatePlayerParty(playerId, null);
-            
-            // Notify remaining party members (if party still exists)
-            if (partyIdBeforeLeave) {
-              const memberIds = partyService.getPartyMemberIds(partyIdBeforeLeave);
-              const members = gameState.getPlayersByIds(memberIds);
-              members.forEach(member => {
-                if (member.ws) {
-                  member.ws.send(JSON.stringify({
-                    type: 'system',
-                    category: 'party',
-                    message: `[${player.username}] đã rời nhóm.`
-                  }));
-                  
-                  if (leaveResult.newLeaderId === member.id) {
-                    member.ws.send(JSON.stringify({
-                      type: 'system',
-                      category: 'party',
-                      message: `Bạn đã trở thành nhóm trưởng.`
-                    }));
-                  }
-                }
-              });
-            }
-          }
-          break;
-        }
-        
-        // Handle regular party commands
-        if (!subCommand) {
-          // No subcommand - show party status
-          const playerParty = partyService.getPlayerParty(playerId);
-          if (!playerParty) {
-            responses.push('Bạn không ở trong nhóm nào.');
-            responses.push('Sử dụng: party invite [tên] để mời người khác.');
-          } else {
-            const { party } = playerParty;
-            responses.push('═══════════════════════════════════');
-            responses.push('           TỔ ĐỘI                  ');
-            responses.push('═══════════════════════════════════');
-            
-            const memberIds = Array.from(party.memberIds);
-            const members = await PlayerSchema.find({ _id: { $in: memberIds } });
-            
-            for (const member of members) {
-              const isLeader = member._id.toString() === party.leaderId;
-              const prefix = isLeader ? '(L)' : '   ';
-              responses.push(`${prefix} [${member.username}] - Level ${member.level}`);
-              responses.push(`     HP: ${member.hp}/${member.maxHp}`);
-            }
-            
-            responses.push('');
-            responses.push(`Quy tắc nhặt đồ: ${party.lootRule === 'leader-only' ? 'Chỉ Trưởng Nhóm' : 'Theo Lượt'}`);
-          }
-          break;
-        }
-        
-        switch (subCommand) {
-          case 'invite': {
-            if (!subTarget) {
-              responses.push('Mời ai vào nhóm? Cú pháp: party invite [tên]');
-              break;
-            }
-            
-            // Find target player by name
-            const currentRoom = await RoomSchema.findById(player.currentRoomId);
-            if (!currentRoom) break;
-            
-            const playersInRoom = gameState.getPlayersInRoom(currentRoom._id.toString());
-            const targetPlayerInfo = playersInRoom.find(p => 
-              p.username.toLowerCase().includes(subTarget.toLowerCase()) && p.id !== playerId
-            );
-            
-            if (!targetPlayerInfo) {
-              responses.push(`Không tìm thấy người chơi "${subTarget}" ở đây.`);
-              break;
-            }
-            
-            const inviteResult = partyService.invitePlayer(playerId, targetPlayerInfo.id);
-            responses.push(inviteResult.message);
-            
-            if (inviteResult.success) {
-              // Send invitation to target player
-              const targetPlayer = gameState.getPlayer(targetPlayerInfo.id);
-              if (targetPlayer?.ws) {
-                targetPlayer.ws.send(JSON.stringify({
-                  type: 'party_invitation',
-                  payload: {
-                    inviterId: playerId,
-                    inviterName: player.username,
-                    partyId: inviteResult.partyId
-                  }
-                }));
-              }
-              
-              // Update party ID in game state
-              gameState.updatePlayerParty(playerId, inviteResult.partyId!);
-            }
-            break;
-          }
-          
-          case 'accept': {
-            // Get pending invitations
-            const invitations = partyService.getPendingInvitations(playerId);
-            if (invitations.length === 0) {
-              responses.push('Không có lời mời nào.');
-              break;
-            }
-            
-            // Accept the most recent invitation
-            const invitation = invitations[0];
-            const inviter = await PlayerSchema.findById(invitation.inviterId);
-            if (!inviter) {
-              responses.push('Không tìm thấy người mời.');
-              break;
-            }
-            
-            const acceptResult = partyService.acceptInvitation(playerId, invitation.inviterId);
-            responses.push(acceptResult.message);
-            
-            if (acceptResult.success) {
-              gameState.updatePlayerParty(playerId, acceptResult.partyId!);
-              
-              // Notify party members
-              const memberIds = partyService.getPartyMemberIds(acceptResult.partyId!);
-              const members = gameState.getPlayersByIds(memberIds);
-              members.forEach(member => {
-                if (member.ws && member.id !== playerId) {
-                  member.ws.send(JSON.stringify({
-                    type: 'system',
-                    category: 'party',
-                    message: `[${player.username}] đã tham gia nhóm.`
-                  }));
-                }
-              });
-            }
-            break;
-          }
-          
-          case 'decline': {
-            // Get pending invitations
-            const invitations = partyService.getPendingInvitations(playerId);
-            if (invitations.length === 0) {
-              responses.push('Không có lời mời nào.');
-              break;
-            }
-            
-            // Decline the most recent invitation
-            const invitation = invitations[0];
-            const declineResult = partyService.declineInvitation(playerId, invitation.inviterId);
-            responses.push(declineResult.message);
-            break;
-          }
-          
-          case 'leave': {
-            // Get party info BEFORE leaving
-            const playerPartyBeforeLeave = partyService.getPlayerParty(playerId);
-            const partyIdBeforeLeave = playerPartyBeforeLeave?.partyId;
-            
-            const leaveResult = partyService.leaveParty(playerId);
-            responses.push(leaveResult.message);
-            
-            if (leaveResult.success) {
-              gameState.updatePlayerParty(playerId, null);
-              
-              // Notify remaining party members (if party still exists)
-              if (partyIdBeforeLeave) {
-                const memberIds = partyService.getPartyMemberIds(partyIdBeforeLeave);
-                const members = gameState.getPlayersByIds(memberIds);
-                members.forEach(member => {
-                  if (member.ws) {
-                    member.ws.send(JSON.stringify({
-                      type: 'system',
-                      category: 'party',
-                      message: `[${player.username}] đã rời nhóm.`
-                    }));
-                    
-                    if (leaveResult.newLeaderId === member.id) {
-                      member.ws.send(JSON.stringify({
-                        type: 'system',
-                        category: 'party',
-                        message: `Bạn đã trở thành nhóm trưởng.`
-                      }));
-                    }
-                  }
-                });
-              }
-            }
-            break;
-          }
-          
-          case 'kick': {
-            if (!subTarget) {
-              responses.push('Đuổi ai khỏi nhóm? Cú pháp: party kick [tên]');
-              break;
-            }
-            
-            // Find target player in party
-            const playerParty = partyService.getPlayerParty(playerId);
-            if (!playerParty) {
-              responses.push('Bạn không ở trong nhóm nào.');
-              break;
-            }
-            
-            const memberIds = Array.from(playerParty.party.memberIds);
-            const members = await PlayerSchema.find({ _id: { $in: memberIds } });
-            const targetMember = members.find(m => 
-              m.username.toLowerCase().includes(subTarget.toLowerCase()) && m._id.toString() !== playerId
-            );
-            
-            if (!targetMember) {
-              responses.push(`Không tìm thấy thành viên "${subTarget}" trong nhóm.`);
-              break;
-            }
-            
-            const kickResult = partyService.kickPlayer(playerId, targetMember._id.toString());
-            responses.push(kickResult.message);
-            
-            if (kickResult.success) {
-              gameState.updatePlayerParty(targetMember._id.toString(), null);
-              
-              // Notify kicked player
-              const kickedPlayer = gameState.getPlayer(targetMember._id.toString());
-              if (kickedPlayer?.ws) {
-                kickedPlayer.ws.send(JSON.stringify({
-                  type: 'system',
-                  category: 'party',
-                  message: `Bạn đã bị đuổi khỏi nhóm.`
-                }));
-              }
-              
-              // Notify other party members
-              const remainingMemberIds = partyService.getPartyMemberIds(playerParty.partyId);
-              const remainingMembers = gameState.getPlayersByIds(remainingMemberIds);
-              remainingMembers.forEach(member => {
-                if (member.ws && member.id !== playerId) {
-                  member.ws.send(JSON.stringify({
-                    type: 'system',
-                    category: 'party',
-                    message: `[${targetMember.username}] đã bị đuổi khỏi nhóm.`
-                  }));
-                }
-              });
-            }
-            break;
-          }
-          
-          case 'promote': {
-            if (!subTarget) {
-              responses.push('Trao quyền cho ai? Cú pháp: party promote [tên]');
-              break;
-            }
-            
-            // Find target player in party
-            const playerParty = partyService.getPlayerParty(playerId);
-            if (!playerParty) {
-              responses.push('Bạn không ở trong nhóm nào.');
-              break;
-            }
-            
-            const memberIds = Array.from(playerParty.party.memberIds);
-            const members = await PlayerSchema.find({ _id: { $in: memberIds } });
-            const targetMember = members.find(m => 
-              m.username.toLowerCase().includes(subTarget.toLowerCase())
-            );
-            
-            if (!targetMember) {
-              responses.push(`Không tìm thấy thành viên "${subTarget}" trong nhóm.`);
-              break;
-            }
-            
-            const promoteResult = partyService.promotePlayer(playerId, targetMember._id.toString());
-            responses.push(promoteResult.message);
-            
-            if (promoteResult.success) {
-              // Notify all party members
-              const allMemberIds = partyService.getPartyMemberIds(playerParty.partyId);
-              const allMembers = gameState.getPlayersByIds(allMemberIds);
-              allMembers.forEach(member => {
-                if (member.ws) {
-                  member.ws.send(JSON.stringify({
-                    type: 'system',
-                    category: 'party',
-                    message: `[${targetMember.username}] đã trở thành nhóm trưởng.`
-                  }));
-                }
-              });
-            }
-            break;
-          }
-          
-          case 'loot': {
-            if (!subTarget) {
-              responses.push('Chọn quy tắc nhặt đồ:');
-              responses.push('  party loot leader-only  - Chỉ trưởng nhóm');
-              responses.push('  party loot round-robin  - Theo lượt');
-              break;
-            }
-            
-            const lootRule = subTarget.toLowerCase();
-            if (lootRule !== 'leader-only' && lootRule !== 'round-robin') {
-              responses.push('Quy tắc không hợp lệ. Sử dụng: leader-only hoặc round-robin');
-              break;
-            }
-            
-            const lootResult = partyService.setLootRule(playerId, lootRule as 'leader-only' | 'round-robin');
-            responses.push(lootResult.message);
-            
-            if (lootResult.success) {
-              // Notify party members
-              const playerParty = partyService.getPlayerParty(playerId);
-              if (playerParty) {
-                const memberIds = partyService.getPartyMemberIds(playerParty.partyId);
-                const members = gameState.getPlayersByIds(memberIds);
-                members.forEach(member => {
-                  if (member.ws && member.id !== playerId) {
-                    member.ws.send(JSON.stringify({
-                      type: 'system',
-                      category: 'party',
-                      message: lootResult.message
-                    }));
-                  }
-                });
-              }
-            }
-            break;
-          }
-          
-          default:
-            responses.push('Lệnh nhóm không hợp lệ.');
-            responses.push('Các lệnh: party [invite/accept/decline/leave/kick/promote/loot]');
-            break;
-        }
+      case 'roi':
+        responses.push(...await handlePartyCommand(playerId, player, action, target, args));
         break;
-      }
 
       case 'g': {
         // Guild chat
@@ -1875,24 +1422,43 @@ export async function handleCommandDb(command: Command, playerId: string): Promi
                 }
                 if (validationFailed) break;
 
-                // Exchange items
+                // Exchange items using inventory service
                 for (const itemId of trade.initiatorItems) {
-                  initiator.inventory = initiator.inventory.filter((id: any) => id.toString() !== itemId);
-                  target.inventory.push(itemId);
+                  const transferResult = await transferItem(trade.initiatorId, trade.targetId, itemId);
+                  if (!transferResult.success) {
+                    responses.push(`Lỗi khi chuyển vật phẩm: ${transferResult.message}`);
+                    validationFailed = true;
+                    break;
+                  }
                 }
+                if (validationFailed) break;
+                
                 for (const itemId of trade.targetItems) {
-                  target.inventory = target.inventory.filter((id: any) => id.toString() !== itemId);
-                  initiator.inventory.push(itemId);
+                  const transferResult = await transferItem(trade.targetId, trade.initiatorId, itemId);
+                  if (!transferResult.success) {
+                    responses.push(`Lỗi khi chuyển vật phẩm: ${transferResult.message}`);
+                    validationFailed = true;
+                    break;
+                  }
                 }
+                if (validationFailed) break;
 
-                // Exchange gold
-                initiator.gold -= trade.initiatorGold;
-                target.gold += trade.initiatorGold;
-                target.gold -= trade.targetGold;
-                initiator.gold += trade.targetGold;
-
-                await initiator.save();
-                await target.save();
+                // Exchange gold using inventory service
+                if (trade.initiatorGold > 0) {
+                  const goldTransferResult = await transferGold(trade.initiatorId, trade.targetId, trade.initiatorGold);
+                  if (!goldTransferResult.success) {
+                    responses.push(`Lỗi khi chuyển vàng: ${goldTransferResult.message}`);
+                    break;
+                  }
+                }
+                
+                if (trade.targetGold > 0) {
+                  const goldTransferResult = await transferGold(trade.targetId, trade.initiatorId, trade.targetGold);
+                  if (!goldTransferResult.success) {
+                    responses.push(`Lỗi khi chuyển vàng: ${goldTransferResult.message}`);
+                    break;
+                  }
+                }
 
                 responses.push('[OK] Giao dịch thành công!');
 
@@ -1951,44 +1517,37 @@ export async function handleCommandDb(command: Command, playerId: string): Promi
       }
 
       case 'world':
-      case 'w': {
-        // World chat
-        const chatMessage = [target, ...(args || [])].filter(Boolean).join(' ');
-        
-        if (!chatMessage) {
-          responses.push('Bạn muốn nói gì với toàn thế giới?');
-          break;
-        }
-        
-        // Import and use broadcast service
-        const { broadcastService } = await import('./broadcastService');
-        broadcastService.sendWorldMessage(playerId, chatMessage, player.username);
-        
-        responses.push(`[Thế Giới] Bạn nói: "${chatMessage}"`);
+      case 'w':
+        responses.push(...await handleWorldCommand(playerId, player, target, args));
         break;
-      }
 
       case 'guild':
-      case 'g': {
-        // Guild chat
-        const chatMessage = [target, ...(args || [])].filter(Boolean).join(' ');
-        
-        if (!chatMessage) {
-          responses.push('Bạn muốn nói gì với bang hội?');
+      case 'g':
+        responses.push(...await handleGuildChatCommand(playerId, player, target, args));
+        break;
+
+      case 'auto': {
+        // Toggle auto-attack mode
+        const playerState = gameState.getPlayerState(playerId);
+        if (!playerState) {
+          responses.push('Lỗi: Không tìm thấy trạng thái người chơi.');
           break;
         }
-        
-        // Check if player is in a guild
-        if (!player.guild) {
-          responses.push('Bạn không ở trong bang hội nào.');
+
+        // Check if player is in combat
+        if (!playerState.inCombat) {
+          responses.push('Bạn không ở trong chiến đấu.');
           break;
         }
+
+        // Toggle auto-attack
+        playerState.isAutoAttacking = !playerState.isAutoAttacking;
         
-        // Import and use broadcast service
-        const { broadcastService } = await import('./broadcastService');
-        await broadcastService.sendGuildMessage(playerId, player.guild.toString(), chatMessage);
-        
-        responses.push(`[Guild] Bạn nói: "${chatMessage}"`);
+        if (playerState.isAutoAttacking) {
+          responses.push('[AUTO] Đã BẬT tự động tấn công.');
+        } else {
+          responses.push('[AUTO] Đã TẮT tự động tấn công.');
+        }
         break;
       }
 

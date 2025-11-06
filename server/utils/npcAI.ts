@@ -261,12 +261,12 @@ export function getRoomRespawns(roomId: string): Array<{ name: string; respawnTi
   return respawns;
 }
 
-// Schedule agent respawn - uses room's respawnTimeSeconds or defaults to 5 minutes
+// Schedule agent respawn - uses room's respawnTimeSeconds or defaults to 5 seconds
 // Can spawn multiple instances based on maxInstances setting
 export async function scheduleAgentRespawn(agentData: any, roomId: string): Promise<void> {
   // Get room to check respawn time
   const room = await RoomSchema.findById(roomId);
-  const respawnSeconds = room?.respawnTimeSeconds || 300; // Default 5 minutes
+  const respawnSeconds = room?.respawnTimeSeconds || 5; // Default 5 seconds
   const RESPAWN_TIME = respawnSeconds * 1000;
   const respawnTime = new Date(Date.now() + RESPAWN_TIME);
   
@@ -276,14 +276,14 @@ export async function scheduleAgentRespawn(agentData: any, roomId: string): Prom
       const maxInstances = agentData.maxInstances || (agentData.type === 'mob' ? DEFAULT_MOB_MAX_INSTANCES : DEFAULT_AGENT_MAX_INSTANCES);
       
       // Count how many instances of this agent (by name and type) already exist in the room
-      const room = await RoomSchema.findById(roomId);
-      if (!room) {
+      const targetRoom = await RoomSchema.findById(roomId);
+      if (!targetRoom) {
         console.error(`Room ${roomId} not found for respawn`);
         return;
       }
       
       const existingAgents = await AgentSchema.find({ 
-        _id: { $in: room.agents },
+        _id: { $in: targetRoom.agents },
         name: agentData.name,
         type: agentData.type
       });
@@ -325,14 +325,14 @@ export async function scheduleAgentRespawn(agentData: any, roomId: string): Prom
       });
 
       // Add to room
-      const room = await RoomSchema.findById(roomId);
-      if (room) {
-        room.agents.push(newAgent._id);
-        await room.save();
+      const respawnRoom = await RoomSchema.findById(roomId);
+      if (respawnRoom) {
+        respawnRoom.agents.push(newAgent._id);
+        await respawnRoom.save();
 
         // Broadcast respawn message
         gameState.broadcastToRoom(
-          room._id.toString(),
+          respawnRoom._id.toString(),
           {
             type: 'accent',
             message: `[${newAgent.name}] xuất hiện!`
@@ -340,12 +340,12 @@ export async function scheduleAgentRespawn(agentData: any, roomId: string): Prom
         );
         
         // Update room occupants for all players in the room
-        await broadcastRoomOccupants(room._id.toString());
+        await broadcastRoomOccupants(respawnRoom._id.toString());
         
         // If boss, send world alert
         if (agentData.agentType === 'boss') {
           const { broadcastService } = await import('./broadcastService');
-          broadcastService.sendWorldAlert(`*** [${newAgent.name}] đã xuất hiện tại [${room.name}]! ***`);
+          broadcastService.sendWorldAlert(`*** [${newAgent.name}] đã xuất hiện tại [${respawnRoom.name}]! ***`);
         }
       }
 
@@ -364,42 +364,13 @@ export async function scheduleAgentRespawn(agentData: any, roomId: string): Prom
     timer,
     respawnTime
   });
-  });
 }
 
-// AI tick interval timer
-let aiTickInterval: NodeJS.Timeout | null = null;
-
-// Start AI system
-export function startAISystem(): void {
-  if (aiTickInterval) {
-    console.log('AI system already running');
-    return;
-  }
-
-  console.log('Starting AI system...');
-  
-  // Process immediately, then every AI_TICK_INTERVAL
-  processAgentBehaviors();
-  
-  aiTickInterval = setInterval(() => {
-    processAgentBehaviors();
-  }, AI_TICK_INTERVAL);
-
-  console.log('AI system started');
-}
-
-// Stop AI system
-export function stopAISystem(): void {
-  if (aiTickInterval) {
-    clearInterval(aiTickInterval);
-    aiTickInterval = null;
-    console.log('AI system stopped');
-  }
-
-  // Clear all respawn timers
+// Clear all respawn timers (for cleanup on server shutdown)
+export function clearAllRespawnTimers(): void {
   respawnTimers.forEach(({ timer }) => clearTimeout(timer));
   respawnTimers.clear();
+  console.log('[NPC AI] Cleared all respawn timers');
 }
 
 // Export for use in other modules

@@ -2,12 +2,14 @@ import { PlayerSchema } from '../../models/Player';
 import { AgentSchema } from '../../models/Agent';
 import { ItemSchema } from '../../models/Item';
 import { RoomSchema } from '../../models/Room';
+import { PlayerQuestSchema } from '../../models/PlayerQuest';
 import { gameState } from './gameState';
 import { partyService } from './partyService';
 import { scheduleAgentRespawn } from './npcAI';
 import { applyExpBuff } from './buffSystem';
 import { clearBossState } from './bossMechanics';
 import { broadcastRoomOccupants } from '../routes/ws';
+import { addGoldToPlayer, addPremiumCurrencyToPlayer } from './inventoryService';
 import { COMBAT_TICK_INTERVAL, FLEE_SUCCESS_CHANCE, EXPERIENCE_PER_LEVEL, HP_GAIN_PER_LEVEL, MINIMUM_DAMAGE } from './constants';
 
 // Boss reward constants
@@ -237,10 +239,8 @@ async function checkLevelUp(player: any): Promise<string[]> {
     player.maxHp += HP_GAIN_PER_LEVEL;
     player.hp = player.maxHp; // Full heal on level up
     
-    // Grant talent point if level >= 10
-    if (player.level >= 10) {
-      player.talentPoints = (player.talentPoints || 0) + 1;
-    }
+    // Grant talent point on every level up (changed from level 10+ only)
+    player.talentPoints = (player.talentPoints || 0) + 1;
     
     // Phase 29: Grant skill points on level up
     player.skillPoints = (player.skillPoints || 0) + 1;
@@ -251,9 +251,7 @@ async function checkLevelUp(player: any): Promise<string[]> {
     messages.push(`    HP tối đa tăng thêm ${HP_GAIN_PER_LEVEL}!`);
     messages.push(`    HP đã được hồi phục đầy!`);
     messages.push(`    [*] Bạn nhận được 1 điểm kỹ năng!`);
-    if (player.level >= 10) {
-      messages.push(`    [*] Bạn nhận được 1 điểm thiên phú!`);
-    }
+    messages.push(`    [*] Bạn nhận được 1 điểm thiên phú!`);
     messages.push('═══════════════════════════════════');
   }
   
@@ -358,50 +356,58 @@ export async function executeCombatTick(playerId: string, agentId: string): Prom
     const messages: string[] = [];
     const room = await RoomSchema.findById(player.currentRoomId);
     
-    // Player attacks
-    const playerBaseDamage = await calculatePlayerDamage(player);
-    const playerDamage = calculateDamage(playerBaseDamage);
-    agent.hp = Math.max(0, agent.hp - playerDamage);
-    await agent.save();
-    
-    // Enhanced combat narrative with varied attack descriptions
-    const isCritical = playerDamage > playerBaseDamage * CRITICAL_HIT_MULTIPLIER;
-    const isGlancing = playerDamage < playerBaseDamage * GLANCING_BLOW_MULTIPLIER;
-    
-    let attackMessage = '';
-    if (isCritical) {
-      const critMessages = [
-        `Bạn tung ra một đòn chí mạng vào [${agent.name}]!`,
-        `Đòn đánh của bạn xé toạc phòng thủ của [${agent.name}]!`,
-        `Bạn tìm được khe hở và giáng một đòn hiểm hóc vào [${agent.name}]!`,
-        `Sức mạnh bùng nổ! Bạn đánh trúng điểm yếu của [${agent.name}]!`
-      ];
-      attackMessage = critMessages[Math.floor(Math.random() * critMessages.length)];
-      attackMessage += ` Gây ${playerDamage} sát thương! (Chí mạng!)`;
-    } else if (isGlancing) {
-      const glancingMessages = [
-        `Đòn đánh của bạn chỉ sượt qua [${agent.name}].`,
-        `[${agent.name}] né tránh một phần đòn tấn công của bạn.`,
-        `Bạn đánh trúng [${agent.name}] nhưng không gây nhiều sát thương.`,
-        `Đòn đánh yếu ớt, [${agent.name}] hầu như không bị ảnh hưởng.`
-      ];
-      attackMessage = glancingMessages[Math.floor(Math.random() * glancingMessages.length)];
-      attackMessage += ` Gây ${playerDamage} sát thương. (Trượt phớt)`;
-    } else {
-      const normalMessages = [
-        `Bạn vung vũ khí đánh trúng [${agent.name}].`,
-        `Bạn tấn công [${agent.name}] với một đòn chắc chắn.`,
-        `Bạn ra đòn và [${agent.name}] không kịp né.`,
-        `Bạn giáng xuống một đòn uy lực lên [${agent.name}].`,
-        `Bạn lao tới và tung đòn vào [${agent.name}].`,
-        `Vũ khí của bạn rít lên khi chém vào [${agent.name}].`
-      ];
-      attackMessage = normalMessages[Math.floor(Math.random() * normalMessages.length)];
-      attackMessage += ` Gây ${playerDamage} sát thương.`;
+    // Player attacks (only if auto-attacking is enabled)
+    const playerState = gameState.getPlayerState(playerId);
+    if (!playerState) {
+      console.error('Player state not found for combat tick');
+      return;
     }
     
-    attackMessage += ` (HP còn lại: ${agent.hp}/${agent.maxHp})`;
-    messages.push(attackMessage);
+    if (playerState.isAutoAttacking) {
+      const playerBaseDamage = await calculatePlayerDamage(player);
+      const playerDamage = calculateDamage(playerBaseDamage);
+      agent.hp = Math.max(0, agent.hp - playerDamage);
+      await agent.save();
+      
+      // Enhanced combat narrative with varied attack descriptions
+      const isCritical = playerDamage > playerBaseDamage * CRITICAL_HIT_MULTIPLIER;
+      const isGlancing = playerDamage < playerBaseDamage * GLANCING_BLOW_MULTIPLIER;
+      
+      let attackMessage = '';
+      if (isCritical) {
+        const critMessages = [
+          `Bạn tung ra một đòn chí mạng vào [${agent.name}]!`,
+          `Đòn đánh của bạn xé toạc phòng thủ của [${agent.name}]!`,
+          `Bạn tìm được khe hở và giáng một đòn hiểm hóc vào [${agent.name}]!`,
+          `Sức mạnh bùng nổ! Bạn đánh trúng điểm yếu của [${agent.name}]!`
+        ];
+        attackMessage = critMessages[Math.floor(Math.random() * critMessages.length)];
+        attackMessage += ` Gây ${playerDamage} sát thương! (Chí mạng!)`;
+      } else if (isGlancing) {
+        const glancingMessages = [
+          `Đòn đánh của bạn chỉ sượt qua [${agent.name}].`,
+          `[${agent.name}] né tránh một phần đòn tấn công của bạn.`,
+          `Bạn đánh trúng [${agent.name}] nhưng không gây nhiều sát thương.`,
+          `Đòn đánh yếu ớt, [${agent.name}] hầu như không bị ảnh hưởng.`
+        ];
+        attackMessage = glancingMessages[Math.floor(Math.random() * glancingMessages.length)];
+        attackMessage += ` Gây ${playerDamage} sát thương. (Trượt phớt)`;
+      } else {
+        const normalMessages = [
+          `Bạn vung vũ khí đánh trúng [${agent.name}].`,
+          `Bạn tấn công [${agent.name}] với một đòn chắc chắn.`,
+          `Bạn ra đòn và [${agent.name}] không kịp né.`,
+          `Bạn giáng xuống một đòn uy lực lên [${agent.name}].`,
+          `Bạn lao tới và tung đòn vào [${agent.name}].`,
+          `Vũ khí của bạn rít lên khi chém vào [${agent.name}].`
+        ];
+        attackMessage = normalMessages[Math.floor(Math.random() * normalMessages.length)];
+        attackMessage += ` Gây ${playerDamage} sát thương.`;
+      }
+      
+      attackMessage += ` (HP còn lại: ${agent.hp}/${agent.maxHp})`;
+      messages.push(attackMessage);
+    }
     
     // Check if agent died
     if (agent.hp <= 0) {
@@ -429,13 +435,17 @@ export async function executeCombatTick(playerId: string, agentId: string): Prom
         
         // Award premium currency (Cổ Thạch)
         const premiumReward = Math.floor(agent.level * BOSS_PREMIUM_CURRENCY_MULTIPLIER);
-        player.premiumCurrency = (player.premiumCurrency || 0) + premiumReward;
-        messages.push(`[+] Bạn nhận được ${premiumReward} Cổ Thạch!`);
+        const premiumResult = await addPremiumCurrencyToPlayer(playerId, premiumReward);
+        if (premiumResult.success) {
+          messages.push(`[+] Bạn nhận được ${premiumReward} Cổ Thạch!`);
+        }
         
         // Award gold
         const goldReward = agent.level * BOSS_GOLD_MULTIPLIER;
-        player.gold = (player.gold || 0) + goldReward;
-        messages.push(`[+] Bạn nhận được ${goldReward} Vàng!`);
+        const goldResult = await addGoldToPlayer(playerId, goldReward);
+        if (goldResult.success) {
+          messages.push(`[+] Bạn nhận được ${goldReward} Vàng!`);
+        }
         
         // Clear boss state
         clearBossState(agent._id.toString());
@@ -463,6 +473,14 @@ export async function executeCombatTick(playerId: string, agentId: string): Prom
       player.inCombat = false;
       player.combatTarget = undefined;
       
+      // Reset player state when combat ends
+      const endPlayerState = gameState.getPlayerState(playerId);
+      if (endPlayerState) {
+        endPlayerState.inCombat = false;
+        endPlayerState.isAutoAttacking = false;
+        endPlayerState.combatTargetId = null;
+      }
+      
       // Check for level up BEFORE saving to ensure level changes are persisted
       const levelUpMessages = await checkLevelUp(player);
       messages.push(...levelUpMessages);
@@ -473,6 +491,10 @@ export async function executeCombatTick(playerId: string, agentId: string): Prom
       // Drop loot
       const lootMessages = await dropLoot(agent, player.currentRoomId.toString());
       messages.push(...lootMessages);
+      
+      // Update quest progress for killing this mob
+      const questMessages = await updateQuestProgress(playerId, 'kill', agent.name);
+      messages.push(...questMessages);
       
       // Notify about loot turn if in party
       const killerParty = partyService.getPlayerParty(playerId);
@@ -572,6 +594,14 @@ export async function executeCombatTick(playerId: string, agentId: string): Prom
       // Send state update (combat ended)
       await sendCombatStateUpdate(playerId);
       
+      // Send combat-end message
+      const endPlayerObj = gameState.getPlayer(playerId);
+      if (endPlayerObj && endPlayerObj.ws) {
+        endPlayerObj.ws.send(JSON.stringify({
+          type: 'combat-end'
+        }));
+      }
+      
       // Broadcast to room
       if (room) {
         gameState.broadcastToRoom(
@@ -642,6 +672,14 @@ export async function executeCombatTick(playerId: string, agentId: string): Prom
       player.inCombat = false;
       player.combatTarget = undefined;
       
+      // Reset player state when player dies
+      const deathPlayerState = gameState.getPlayerState(playerId);
+      if (deathPlayerState) {
+        deathPlayerState.inCombat = false;
+        deathPlayerState.isAutoAttacking = false;
+        deathPlayerState.combatTargetId = null;
+      }
+      
       // Respawn at starting location
       const startingRoom = await RoomSchema.findOne({ name: 'Cổng Thành Cũ' });
       if (startingRoom) {
@@ -694,6 +732,14 @@ export async function executeCombatTick(playerId: string, agentId: string): Prom
       
       // Send state update (player died, combat ended)
       await sendCombatStateUpdate(playerId);
+      
+      // Send combat-end message
+      const deathPlayerObj = gameState.getPlayer(playerId);
+      if (deathPlayerObj && deathPlayerObj.ws) {
+        deathPlayerObj.ws.send(JSON.stringify({
+          type: 'combat-end'
+        }));
+      }
       
       // Broadcast to room
       if (room) {
@@ -780,6 +826,14 @@ export async function startCombat(playerId: string, agentId: string): Promise<st
     agent.combatTarget = player._id as any;
     await agent.save();
     
+    // Initialize player state with auto-attack enabled
+    const playerState = gameState.getPlayerState(playerId);
+    if (playerState) {
+      playerState.inCombat = true;
+      playerState.isAutoAttacking = true; // Auto-enable when starting combat
+      playerState.combatTargetId = agentId;
+    }
+    
     // Enhanced combat start narrative
     const combatStartMessages = [
       `Bạn rút vũ khí và lao vào tấn công [${agent.name}]!`,
@@ -813,6 +867,28 @@ export async function startCombat(playerId: string, agentId: string): Promise<st
         },
         playerId
       );
+    }
+    
+    // Send combat-start message with skills and cooldowns to player
+    const playerObj = gameState.getPlayer(playerId);
+    if (playerObj && playerObj.ws) {
+      // Populate player skills
+      await player.populate('skills');
+      
+      const playerState = gameState.getPlayerState(playerId);
+      
+      playerObj.ws.send(JSON.stringify({
+        type: 'combat-start',
+        targetData: {
+          id: agent._id.toString(),
+          name: agent.name,
+          hp: agent.hp,
+          maxHp: agent.maxHp,
+          level: agent.level
+        },
+        playerSkills: player.skills || [],
+        playerCooldowns: playerState?.skillCooldowns || []
+      }));
     }
     
     // Start combat tick
@@ -898,6 +974,22 @@ export async function fleeCombat(playerId: string): Promise<string[]> {
       
       gameState.stopCombat(playerId);
       gameState.updatePlayerRoom(playerId, nextRoom._id.toString());
+      
+      // Reset player state when fleeing
+      const fleePlayerState = gameState.getPlayerState(playerId);
+      if (fleePlayerState) {
+        fleePlayerState.inCombat = false;
+        fleePlayerState.isAutoAttacking = false;
+        fleePlayerState.combatTargetId = null;
+      }
+      
+      // Send combat-end message
+      const fleePlayerObj = gameState.getPlayer(playerId);
+      if (fleePlayerObj && fleePlayerObj.ws) {
+        fleePlayerObj.ws.send(JSON.stringify({
+          type: 'combat-end'
+        }));
+      }
       
       // Broadcast to new room
       gameState.broadcastToRoom(
@@ -1032,6 +1124,61 @@ export async function startPvPCombat(attackerId: string, targetId: string): Prom
   } catch (error) {
     console.error('Error starting PvP combat:', error);
     messages.push('Lỗi khi bắt đầu chiến đấu PvP.');
+  }
+  
+  return messages;
+}
+
+// Update quest progress when player performs an action
+async function updateQuestProgress(playerId: string, actionType: string, target: string): Promise<string[]> {
+  const messages: string[] = [];
+  
+  try {
+    // Find active quests for this player
+    const activeQuests = await PlayerQuestSchema.find({
+      playerId,
+      status: 'active'
+    });
+    
+    if (activeQuests.length === 0) {
+      return messages;
+    }
+    
+    // Update progress for matching objectives
+    for (const quest of activeQuests) {
+      let questUpdated = false;
+      
+      for (const objective of quest.objectives) {
+        // Check if objective matches the action
+        if (objective.type === actionType && objective.target.toLowerCase() === target.toLowerCase()) {
+          if (objective.progress < objective.count) {
+            objective.progress += 1;
+            questUpdated = true;
+            
+            // Check if objective is now complete
+            if (objective.progress >= objective.count) {
+              messages.push(`[Quest] Objective completed: ${objective.target} (${objective.progress}/${objective.count})`);
+            } else {
+              messages.push(`[Quest] Progress: ${objective.target} (${objective.progress}/${objective.count})`);
+            }
+          }
+        }
+      }
+      
+      if (questUpdated) {
+        // Check if all objectives are complete
+        const allComplete = quest.objectives.every((obj: any) => obj.progress >= obj.count);
+        if (allComplete) {
+          messages.push('');
+          messages.push(`[!] Quest "${quest.questId}" ready to complete!`);
+          messages.push('Return to the quest giver to claim your reward.');
+        }
+        
+        await quest.save();
+      }
+    }
+  } catch (error) {
+    console.error('Error updating quest progress:', error);
   }
   
   return messages;
