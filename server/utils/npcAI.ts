@@ -261,12 +261,12 @@ export function getRoomRespawns(roomId: string): Array<{ name: string; respawnTi
   return respawns;
 }
 
-// Schedule agent respawn - uses room's respawnTimeSeconds or defaults to 5 minutes
+// Schedule agent respawn - uses room's respawnTimeSeconds or defaults to 5 seconds
 // Can spawn multiple instances based on maxInstances setting
 export async function scheduleAgentRespawn(agentData: any, roomId: string): Promise<void> {
   // Get room to check respawn time
   const room = await RoomSchema.findById(roomId);
-  const respawnSeconds = room?.respawnTimeSeconds || 300; // Default 5 minutes
+  const respawnSeconds = room?.respawnTimeSeconds || 5; // Default 5 seconds
   const RESPAWN_TIME = respawnSeconds * 1000;
   const respawnTime = new Date(Date.now() + RESPAWN_TIME);
   
