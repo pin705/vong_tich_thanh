@@ -357,7 +357,12 @@ export async function executeCombatTick(playerId: string, agentId: string): Prom
     
     // Player attacks (only if auto-attacking is enabled)
     const playerState = gameState.getPlayerState(playerId);
-    if (playerState && playerState.isAutoAttacking) {
+    if (!playerState) {
+      console.error('Player state not found for combat tick');
+      return;
+    }
+    
+    if (playerState.isAutoAttacking) {
       const playerBaseDamage = await calculatePlayerDamage(player);
       const playerDamage = calculateDamage(playerBaseDamage);
       agent.hp = Math.max(0, agent.hp - playerDamage);

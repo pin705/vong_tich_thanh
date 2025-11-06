@@ -92,7 +92,7 @@ const props = defineProps<{
 const now = ref(Date.now());
 
 // Update time every second
-let intervalId: NodeJS.Timeout | null = null;
+let intervalId: number | null = null;
 
 onMounted(() => {
   intervalId = setInterval(() => {
