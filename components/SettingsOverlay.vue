@@ -59,8 +59,65 @@
 
         <!-- Lối Chơi Tab -->
         <div v-else-if="activeTab === 'gameplay'" class="tab-panel">
+          <!-- Auto Combat Setting -->
           <div class="setting-section">
-            <p class="coming-soon">Cài đặt lối chơi đang được phát triển...</p>
+            <h3 class="section-title">Tự Động Đánh Quái:</h3>
+            <p class="section-description">Khi bật, hệ thống sẽ tự động tấn công quái vật gần nhất khi không còn đang chiến đấu.</p>
+            
+            <div class="toggle-container">
+              <button
+                class="toggle-button"
+                :class="{ active: autoCombatEnabled }"
+                @click="toggleAutoCombat"
+                :disabled="savingSettings"
+              >
+                {{ autoCombatEnabled ? '[✓] BẬT' : '[ ] TẮT' }}
+              </button>
+            </div>
+          </div>
+
+          <!-- Custom Aliases Setting -->
+          <div class="setting-section">
+            <h3 class="section-title">Lệnh Tắt (Alias):</h3>
+            <p class="section-description">Tạo lệnh tắt cho các lệnh dài. Ví dụ: "aa" → "attack"</p>
+            
+            <!-- Existing Aliases -->
+            <div v-if="customAliases.length > 0" class="aliases-list">
+              <div v-for="(alias, index) in customAliases" :key="index" class="alias-item">
+                <span class="alias-short">{{ alias.short }}</span>
+                <span class="alias-arrow">→</span>
+                <span class="alias-full">{{ alias.full }}</span>
+                <button class="alias-remove" @click="removeAlias(alias.short)">✕</button>
+              </div>
+            </div>
+            <div v-else class="empty-aliases">
+              Chưa có lệnh tắt nào. Tạo lệnh tắt bên dưới.
+            </div>
+
+            <!-- Add New Alias -->
+            <div class="alias-input-container">
+              <input
+                v-model="newAliasShort"
+                type="text"
+                class="alias-input"
+                placeholder="Lệnh tắt (vd: aa)"
+                maxlength="10"
+              />
+              <span class="alias-arrow-static">→</span>
+              <input
+                v-model="newAliasFull"
+                type="text"
+                class="alias-input"
+                placeholder="Lệnh đầy đủ (vd: attack)"
+              />
+              <button
+                class="alias-add-button"
+                @click="addAlias"
+                :disabled="!newAliasShort.trim() || !newAliasFull.trim() || savingSettings"
+              >
+                [+]
+              </button>
+            </div>
           </div>
         </div>
 
@@ -99,19 +156,26 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, watch } from 'vue';
 import FullscreenOverlay from './FullscreenOverlay.vue';
 
 interface Props {
   isOpen: boolean;
+  autoCombat?: boolean;
+  aliases?: Record<string, string>;
 }
 
-const props = defineProps<Props>();
+const props = withDefaults(defineProps<Props>(), {
+  autoCombat: false,
+  aliases: () => ({})
+});
 
 const emit = defineEmits<{
   close: [];
   themeChange: [themeId: string];
   fontSizeChange: [sizeId: string];
+  autoCombatChange: [enabled: boolean];
+  aliasesChange: [aliases: Record<string, string>];
 }>();
 
 // Tab definitions
@@ -152,6 +216,22 @@ const giftCodeInput = ref('');
 const giftCodeMessage = ref('');
 const giftCodeStatus = ref<'success' | 'error'>('success');
 const redeemingCode = ref(false);
+
+// Auto combat and aliases state
+const autoCombatEnabled = ref(false);
+const customAliases = ref<Array<{ short: string; full: string }>>([]);
+const newAliasShort = ref('');
+const newAliasFull = ref('');
+const savingSettings = ref(false);
+
+// Watch for prop changes
+watch(() => props.autoCombat, (newValue) => {
+  autoCombatEnabled.value = newValue;
+}, { immediate: true });
+
+watch(() => props.aliases, (newValue) => {
+  customAliases.value = Object.entries(newValue).map(([short, full]) => ({ short, full }));
+}, { immediate: true, deep: true });
 
 const close = () => {
   emit('close');
@@ -207,6 +287,83 @@ const redeemGiftCode = async () => {
     giftCodeStatus.value = 'error';
   } finally {
     redeemingCode.value = false;
+  }
+};
+
+// Auto combat methods
+const toggleAutoCombat = async () => {
+  savingSettings.value = true;
+  try {
+    const newValue = !autoCombatEnabled.value;
+    autoCombatEnabled.value = newValue;
+    emit('autoCombatChange', newValue);
+    
+    // Save to server
+    await $fetch('/api/player/settings', {
+      method: 'POST',
+      body: {
+        autoCombat: newValue
+      }
+    });
+  } catch (error) {
+    console.error('Failed to save auto-combat setting:', error);
+    // Revert on error
+    autoCombatEnabled.value = !autoCombatEnabled.value;
+  } finally {
+    savingSettings.value = false;
+  }
+};
+
+// Alias methods
+const addAlias = async () => {
+  if (!newAliasShort.value.trim() || !newAliasFull.value.trim()) return;
+  
+  savingSettings.value = true;
+  try {
+    // Create new aliases object
+    const newAliases = { ...props.aliases };
+    newAliases[newAliasShort.value.trim()] = newAliasFull.value.trim();
+    
+    // Save to server
+    await $fetch('/api/player/settings', {
+      method: 'POST',
+      body: {
+        customAliases: newAliases
+      }
+    });
+    
+    emit('aliasesChange', newAliases);
+    
+    // Clear inputs
+    newAliasShort.value = '';
+    newAliasFull.value = '';
+  } catch (error) {
+    console.error('Failed to add alias:', error);
+  } finally {
+    savingSettings.value = false;
+  }
+};
+
+const removeAlias = async (aliasShort: string) => {
+  savingSettings.value = true;
+  try {
+    // Create new aliases object without the removed alias
+    const newAliases = { ...props.aliases };
+    delete newAliases[aliasShort];
+    
+    // Save to server
+    await $fetch('/api/player/settings', {
+      method: 'POST',
+      body: {
+        customAliases: newAliases
+      }
+    });
+    
+    emit('aliasesChange', newAliases);
+  } catch (error) {
+    console.error('Failed to remove alias:', error);
+  } finally {
+    savingSettings.value = false;
   }
 };
 
@@ -458,5 +615,158 @@ onMounted(() => {
   .font-size-options {
     flex-direction: column;
   }
+  
+  .alias-input-container {
+    flex-direction: column;
+  }
+  
+  .alias-arrow-static {
+    display: none;
+  }
+}
+
+/* Auto Combat Toggle */
+.toggle-container {
+  margin-top: 0.5rem;
+}
+
+.toggle-button {
+  background: transparent;
+  color: var(--text-bright);
+  border: 2px solid var(--text-dim);
+  padding: 0.75rem 2rem;
+  cursor: pointer;
+  font-family: 'VT323', 'Source Code Pro', monospace;
+  font-size: 20px;
+  font-weight: bold;
+  transition: all 0.2s;
+  min-width: 150px;
+}
+
+.toggle-button:hover:not(:disabled) {
+  border-color: var(--text-accent);
+  color: var(--text-accent);
+}
+
+.toggle-button.active {
+  background-color: rgba(0, 255, 0, 0.15);
+  border-color: var(--text-accent);
+  color: var(--text-accent);
+}
+
+.toggle-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Aliases */
+.aliases-list {
+  margin-bottom: 1rem;
+  max-height: 200px;
+  overflow-y: auto;
+  border: 1px solid var(--text-dim);
+  padding: 0.5rem;
+}
+
+.alias-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem;
+  border-bottom: 1px solid rgba(0, 136, 0, 0.1);
+}
+
+.alias-item:last-child {
+  border-bottom: none;
+}
+
+.alias-short {
+  color: var(--text-accent);
+  font-weight: bold;
+  min-width: 80px;
+}
+
+.alias-arrow {
+  color: var(--text-dim);
+}
+
+.alias-arrow-static {
+  color: var(--text-dim);
+  font-size: 20px;
+}
+
+.alias-full {
+  color: var(--text-bright);
+  flex: 1;
+}
+
+.alias-remove {
+  background: transparent;
+  color: var(--text-danger);
+  border: 1px solid var(--text-danger);
+  padding: 0.25rem 0.5rem;
+  cursor: pointer;
+  font-family: 'VT323', 'Source Code Pro', monospace;
+  font-size: 16px;
+  transition: all 0.2s;
+}
+
+.alias-remove:hover {
+  background-color: var(--text-danger);
+  color: var(--bg-black);
+}
+
+.empty-aliases {
+  color: var(--text-dim);
+  font-style: italic;
+  padding: 1rem;
+  text-align: center;
+  border: 1px dashed var(--text-dim);
+  margin-bottom: 1rem;
+}
+
+.alias-input-container {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.alias-input {
+  flex: 1;
+  background-color: var(--bg-black);
+  color: var(--text-bright);
+  border: 1px solid var(--text-dim);
+  padding: 0.5rem;
+  font-family: 'VT323', 'Source Code Pro', monospace;
+  font-size: 16px;
+}
+
+.alias-input:focus {
+  outline: none;
+  border-color: var(--text-accent);
+  box-shadow: 0 0 5px rgba(0, 255, 0, 0.3);
+}
+
+.alias-add-button {
+  background: transparent;
+  color: var(--text-accent);
+  border: 2px solid var(--text-accent);
+  padding: 0.5rem 1rem;
+  cursor: pointer;
+  font-family: 'VT323', 'Source Code Pro', monospace;
+  font-size: 20px;
+  font-weight: bold;
+  transition: all 0.2s;
+  min-width: 60px;
+}
+
+.alias-add-button:hover:not(:disabled) {
+  background-color: var(--text-accent);
+  color: var(--bg-black);
+}
+
+.alias-add-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 </style>

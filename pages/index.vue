@@ -152,9 +152,13 @@
     <!-- Settings Overlay -->
     <SettingsOverlay
       :isOpen="settingsOpen"
+      :autoCombat="playerAutoCombat"
+      :aliases="playerCustomAliases"
       @close="settingsOpen = false"
       @themeChange="handleThemeChange"
       @fontSizeChange="handleFontSizeChange"
+      @autoCombatChange="handleAutoCombatChange"
+      @aliasesChange="handleAliasesChange"
     />
 
 
@@ -460,6 +464,10 @@ const settingsOpen = ref(false);
 const worldMapOpen = ref(false);
 const questsOpen = ref(false);
 const professionChoiceOpen = ref(false);
+
+// Player settings state
+const playerAutoCombat = ref(false);
+const playerCustomAliases = ref<Record<string, string>>({});
 
 // Popup states
 const inventoryPopupOpen = ref(false);
@@ -1738,6 +1746,29 @@ const handleFontSizeChange = (sizeId: string) => {
   document.body.classList.add(`font-size-${sizeId}`);
 };
 
+// Handle auto-combat setting change
+const handleAutoCombatChange = (enabled: boolean) => {
+  playerAutoCombat.value = enabled;
+};
+
+// Handle custom aliases change
+const handleAliasesChange = (aliases: Record<string, string>) => {
+  playerCustomAliases.value = aliases;
+};
+
+// Load player settings from server
+const loadPlayerSettings = async () => {
+  try {
+    const response = await $fetch('/api/player/info');
+    if (response.success && response.player) {
+      playerAutoCombat.value = response.player.autoCombat || false;
+      playerCustomAliases.value = response.player.customAliases || {};
+    }
+  } catch (error) {
+    console.error('Failed to load player settings:', error);
+  }
+};
+
 // Party handlers
 const handlePartyMemberClick = (member: any) => {
   // Open contextual popup for party member
@@ -1828,6 +1859,9 @@ onMounted(() => {
   
   // Load chat history from localStorage
   loadChatFromStorage();
+  
+  // Load player settings
+  loadPlayerSettings();
   
   // Initialize device type detection
   updateDeviceType();
