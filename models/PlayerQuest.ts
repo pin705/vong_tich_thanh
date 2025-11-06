@@ -20,8 +20,8 @@ export interface IPlayerQuest {
 export const PlayerQuestSchema = defineMongooseModel<IPlayerQuest>({
   name: 'PlayerQuest',
   schema: {
-    playerId: { type: 'ObjectId', ref: 'Player', required: true },
-    questId: { type: 'ObjectId', ref: 'Quest', required: true },
+    playerId: { type: 'ObjectId', ref: 'Player', required: true, index: true },
+    questId: { type: 'ObjectId', ref: 'Quest', required: true, index: true },
     status: {
       type: String,
       enum: ['active', 'completed', 'failed'],
