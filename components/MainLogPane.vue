@@ -36,7 +36,6 @@ watch(() => props.messages.length, () => {
 // Parse text to make elements in brackets clickable
 const parseClickableElements = (text: string): string => {
   // Match text in brackets [text]
-  console.log('Parsing text for clickable elements:', text);
   return text?.replace(/\[([^\]]+)\]/g, (match, content) => {
     // Check if content contains commas (multiple items)
     if (content.includes(',')) {
