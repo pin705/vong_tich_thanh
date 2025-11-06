@@ -204,7 +204,10 @@ export const commandRateLimiter = new RateLimiter();
 export const chatRateLimiter = new RateLimiter();
 
 // Clean up rate limiters every 5 minutes
-setInterval(() => {
-  commandRateLimiter.cleanup();
-  chatRateLimiter.cleanup();
-}, 5 * 60 * 1000);
+// Only in non-test environments
+if (process.env.NODE_ENV !== 'test') {
+  setInterval(() => {
+    commandRateLimiter.cleanup();
+    chatRateLimiter.cleanup();
+  }, 5 * 60 * 1000);
+}

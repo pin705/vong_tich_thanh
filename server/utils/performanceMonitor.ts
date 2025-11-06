@@ -14,28 +14,44 @@ interface PerformanceMetric {
 
 class PerformanceMonitor {
   private metrics: Map<string, Omit<PerformanceMetric, 'avgTime'>> = new Map();
-  private activeTimers: Map<string, number> = new Map();
+  private activeTimers: Map<string, { startTime: number; operationName: string }> = new Map();
   
   /**
    * Start timing an operation
    */
-  start(operationName: string): void {
-    const timerId = `${operationName}-${Date.now()}-${Math.random()}`;
-    this.activeTimers.set(timerId, Date.now());
+  start(operationName: string): string {
+    const timerId = `${operationName}:${Date.now()}:${Math.random()}`;
+    this.activeTimers.set(timerId, { startTime: Date.now(), operationName });
+    return timerId;
   }
   
   /**
    * End timing an operation and record the metric
    */
-  end(operationName: string): void {
-    // Find the most recent timer for this operation
+  end(timerIdOrOperationName: string): void {
+    // If it's a timer ID (contains :), use it directly
+    if (timerIdOrOperationName.includes(':')) {
+      const timer = this.activeTimers.get(timerIdOrOperationName);
+      if (!timer) {
+        console.warn(`Timer not found: ${timerIdOrOperationName}`);
+        return;
+      }
+      
+      const duration = Date.now() - timer.startTime;
+      this.activeTimers.delete(timerIdOrOperationName);
+      this.record(timer.operationName, duration);
+      return;
+    }
+    
+    // Otherwise, find the most recent timer for this operation (backward compatibility)
+    const operationName = timerIdOrOperationName;
     let latestTimer: string | null = null;
     let latestTime = 0;
     
-    for (const [timerId, startTime] of this.activeTimers.entries()) {
-      if (timerId.startsWith(operationName) && startTime > latestTime) {
+    for (const [timerId, timer] of this.activeTimers.entries()) {
+      if (timer.operationName === operationName && timer.startTime > latestTime) {
         latestTimer = timerId;
-        latestTime = startTime;
+        latestTime = timer.startTime;
       }
     }
     
@@ -44,8 +60,8 @@ class PerformanceMonitor {
       return;
     }
     
-    const startTime = this.activeTimers.get(latestTimer)!;
-    const duration = Date.now() - startTime;
+    const timer = this.activeTimers.get(latestTimer)!;
+    const duration = Date.now() - timer.startTime;
     
     this.activeTimers.delete(latestTimer);
     this.record(operationName, duration);
@@ -82,13 +98,13 @@ class PerformanceMonitor {
     operationName: string,
     fn: () => Promise<T>
   ): Promise<T> {
-    this.start(operationName);
+    const timerId = this.start(operationName);
     try {
       const result = await fn();
-      this.end(operationName);
+      this.end(timerId);
       return result;
     } catch (error) {
-      this.end(operationName);
+      this.end(timerId);
       throw error;
     }
   }
@@ -97,13 +113,13 @@ class PerformanceMonitor {
    * Time a synchronous function and record its performance
    */
   time<T>(operationName: string, fn: () => T): T {
-    this.start(operationName);
+    const timerId = this.start(operationName);
     try {
       const result = fn();
-      this.end(operationName);
+      this.end(timerId);
       return result;
     } catch (error) {
-      this.end(operationName);
+      this.end(timerId);
       throw error;
     }
   }
@@ -242,7 +258,7 @@ export function monitored(operationName: string) {
   };
 }
 
-// Export as global if needed for debugging
-if (typeof globalThis !== 'undefined') {
+// Export as global if needed for debugging (development only)
+if (typeof globalThis !== 'undefined' && process.env.NODE_ENV === 'development') {
   (globalThis as any).__performanceMonitor = performanceMonitor;
 }

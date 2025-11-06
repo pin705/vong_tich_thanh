@@ -153,6 +153,9 @@ export async function safeAsync<T>(
 }
 
 // Clean up old errors every 30 minutes
-setInterval(() => {
-  errorLogger.cleanup(500);
-}, 30 * 60 * 1000);
+// Only in non-test environments
+if (process.env.NODE_ENV !== 'test') {
+  setInterval(() => {
+    errorLogger.cleanup(500);
+  }, 30 * 60 * 1000);
+}

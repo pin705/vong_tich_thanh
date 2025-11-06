@@ -377,6 +377,15 @@ export default defineWebSocketHandler({
               return;
             }
 
+            // Check if input is not empty before sanitizing
+            if (!payload.input || !payload.input.trim()) {
+              peer.send(JSON.stringify({
+                type: 'error',
+                message: 'Lệnh không được để trống.'
+              }));
+              return;
+            }
+
             // Sanitize input
             const sanitizedInput = sanitizeInput(payload.input);
             if (!sanitizedInput) {
