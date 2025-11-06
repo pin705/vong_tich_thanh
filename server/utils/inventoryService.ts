@@ -376,12 +376,20 @@ export async function transferItem(
       return removeResult;
     }
 
-    const addResult = await addItemToPlayer(toPlayerId, itemId);
-    if (!addResult.success) {
+    // Add the exact same item instance to the target player
+    const toPlayer = await PlayerSchema.findById(toPlayerId);
+    if (!toPlayer) {
       // Rollback: add item back to original player
-      await addItemToPlayer(fromPlayerId, itemId);
-      return { success: false, message: 'Lỗi khi chuyển vật phẩm.' };
+      const fromPlayer = await PlayerSchema.findById(fromPlayerId);
+      if (fromPlayer) {
+        fromPlayer.inventory.push(itemId);
+        await fromPlayer.save();
+      }
+      return { success: false, message: 'Không tìm thấy người chơi đích.' };
     }
+
+    toPlayer.inventory.push(itemId);
+    await toPlayer.save();
 
     return {
       success: true,

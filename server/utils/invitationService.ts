@@ -356,7 +356,3 @@ class InvitationService {
 // Export singleton instance
 export const invitationService = new InvitationService();
 
-// Auto-cleanup expired invitations every minute
-setInterval(() => {
-  invitationService.cleanupExpiredInvitations();
-}, 60000);

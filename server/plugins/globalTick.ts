@@ -1,4 +1,5 @@
 import { EventEmitter } from 'events';
+import { invitationService } from '../utils/invitationService';
 
 /**
  * Global Tick System - Unified tick loop for all game systems
@@ -25,16 +26,20 @@ let tick1sCount = 0;
 let tick2sCount = 0;
 let tick10sCount = 0;
 
+// Track if tick system has been started
+let isTickSystemStarted = false;
+
 /**
  * Start the global tick system
  */
 export function startGlobalTick(): void {
-  if (tick100msInterval || tick1sInterval || tick2sInterval || tick10sInterval) {
+  if (isTickSystemStarted || tick100msInterval || tick1sInterval || tick2sInterval || tick10sInterval) {
     console.log('[Global Tick] System already running');
     return;
   }
 
   console.log('[Global Tick] Starting unified tick system...');
+  isTickSystemStarted = true;
 
   // 100ms tick (for fast-paced combat updates)
   tick100msInterval = setInterval(() => {
@@ -59,6 +64,14 @@ export function startGlobalTick(): void {
     tick10sCount++;
     tickEmitter.emit('tick:10s', { count: tick10sCount, timestamp: Date.now() });
   }, TICK_10S);
+  
+  // Subscribe to 1-minute tick for cleanup tasks
+  onTick('tick:1s', (data) => {
+    // Cleanup expired invitations every 60 seconds
+    if (data.count % 60 === 0) {
+      invitationService.cleanupExpiredInvitations();
+    }
+  });
 
   console.log('[Global Tick] System started successfully');
   console.log('[Global Tick] Available events: tick:100ms, tick:1s, tick:2s, tick:10s');
@@ -92,6 +105,8 @@ export function stopGlobalTick(): void {
 
   // Remove all listeners
   tickEmitter.removeAllListeners();
+  
+  isTickSystemStarted = false;
 
   console.log('[Global Tick] System stopped');
 }
