@@ -116,6 +116,21 @@
             <span class="stat-value">{{ stats.dodge }}%</span>
           </div>
         </div>
+
+        <!-- Achievements and Titles Section -->
+        <div class="quick-access-section">
+          <div class="section-title">[ Truy Cập Nhanh ]</div>
+          <div class="quick-access-buttons">
+            <button class="quick-access-button" @click="emit('openAchievements')">
+              <span class="button-icon">🏆</span>
+              <span class="button-label">Thành Tựu</span>
+            </button>
+            <button class="quick-access-button" @click="emit('openTitles')">
+              <span class="button-icon">👑</span>
+              <span class="button-label">Danh Hiệu</span>
+            </button>
+          </div>
+        </div>
       </div>
 
       <!-- Items Tab -->
@@ -303,6 +318,8 @@ const emit = defineEmits<{
   allocateTalent: [talentId: string];
   openProfessionChoice: [];
   inventoryAction: [action: string, itemId: string];
+  openAchievements: [];
+  openTitles: [];
 }>();
 
 const activeTab = ref<'info' | 'items' | 'equipment' | 'skills' | 'talents'>('info');
@@ -529,6 +546,58 @@ const handleItemClick = (item: any) => {
   50% {
     transform: translateY(-5px);
   }
+}
+
+/* Quick Access Section Styles */
+.quick-access-section {
+  background-color: rgba(0, 136, 0, 0.03);
+  border: 1px solid rgba(0, 136, 0, 0.3);
+  padding: 1rem;
+}
+
+.quick-access-buttons {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.quick-access-button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 1rem;
+  background-color: rgba(0, 136, 0, 0.05);
+  border: 1px solid rgba(0, 136, 0, 0.4);
+  color: var(--text-bright);
+  cursor: pointer;
+  font-family: 'VT323', 'Source Code Pro', monospace;
+  transition: all 0.3s;
+}
+
+.quick-access-button:hover {
+  background-color: rgba(0, 255, 0, 0.1);
+  border-color: var(--text-accent);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 255, 0, 0.2);
+}
+
+.button-icon {
+  font-size: 32px;
+  filter: grayscale(30%);
+  transition: filter 0.3s;
+}
+
+.quick-access-button:hover .button-icon {
+  filter: grayscale(0%);
+}
+
+.button-label {
+  font-size: 16px;
+  font-weight: bold;
+  text-align: center;
 }
 
 /* Skills Tab Styles */
@@ -815,6 +884,22 @@ const handleItemClick = (item: any) => {
     padding: 1rem;
   }
   
+  .quick-access-section {
+    padding: 0.75rem;
+  }
+
+  .quick-access-buttons {
+    gap: 0.75rem;
+  }
+
+  .button-icon {
+    font-size: 28px;
+  }
+
+  .button-label {
+    font-size: 14px;
+  }
+  
   .info-content {
     gap: 1rem;
   }
@@ -853,6 +938,27 @@ const handleItemClick = (item: any) => {
   .profession-cta-button {
     padding: 0.75rem;
     font-size: 18px;
+  }
+  
+  .quick-access-section {
+    padding: 0.5rem;
+  }
+
+  .quick-access-buttons {
+    gap: 0.5rem;
+    grid-template-columns: 1fr;
+  }
+
+  .quick-access-button {
+    padding: 0.75rem;
+  }
+
+  .button-icon {
+    font-size: 24px;
+  }
+
+  .button-label {
+    font-size: 13px;
   }
   
   .info-content {
