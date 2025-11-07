@@ -5,6 +5,8 @@ export interface PlayerState {
   level: number;
   hp: number;
   maxHp: number;
+  mp?: number;
+  maxMp?: number;
   resource: number;
   maxResource: number;
   exp: number;
@@ -12,6 +14,9 @@ export interface PlayerState {
   gold: number;
   premiumCurrency: number;
   profession: string | null;
+  class?: string | null;
+  inCombat?: boolean;
+  guild?: any;
   stats: {
     damage: number;
     defense: number;
@@ -32,6 +37,8 @@ export function usePlayerState() {
     level: 1,
     hp: 100,
     maxHp: 100,
+    mp: 0,
+    maxMp: 100,
     resource: 0,
     maxResource: 100,
     exp: 0,
@@ -39,13 +46,16 @@ export function usePlayerState() {
     gold: 0,
     premiumCurrency: 0,
     profession: null,
+    class: null,
+    inCombat: false,
+    guild: null,
     stats: {
       damage: 5,
       defense: 0,
-      critChance: 0,
-      critDamage: 0,
+      critChance: 5,
+      critDamage: 150,
       lifesteal: 0,
-      dodge: 0
+      dodge: 5
     },
     inventoryItems: [],
     talentPoints: 0,

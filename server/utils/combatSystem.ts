@@ -48,19 +48,43 @@ async function sendCombatStateUpdate(playerId: string) {
   const playerObj = gameState.getPlayer(playerId);
   if (!playerObj || !playerObj.ws) return;
   
-  // Send player state
+  // Send player state with complete information
+  // Note: Duplicate field names are kept for backward compatibility:
+  // - mp/maxMp are aliases for resource/maxResource (used by different UI components)
+  // - currency is an alias for gold (legacy field name)
+  // These may be unified in a future major version
   playerObj.ws.send(JSON.stringify({
     type: 'player_state',
     payload: {
       name: player.username,
       hp: player.hp,
       maxHp: player.maxHp,
+      mp: player.resource || 0,
+      maxMp: player.maxResource || 100,
       resource: player.resource || 0,
       maxResource: player.maxResource || 100,
       level: player.level,
+      exp: player.experience || 0,
+      nextLevelExp: player.level * EXPERIENCE_PER_LEVEL,
+      gold: player.gold,
       currency: player.gold,
       premiumCurrency: player.premiumCurrency || 0,
-      inCombat: player.inCombat
+      profession: player.class || null,
+      class: player.class || null,
+      inCombat: player.inCombat,
+      hasUnreadMail: player.hasUnreadMail || false,
+      guild: player.guild || null,
+      talentPoints: player.talentPoints || 0,
+      skillPoints: player.skillPoints || 0,
+      stats: {
+        damage: player.damage || 5,
+        defense: player.defense || 0,
+        critChance: player.critChance || 5,
+        critDamage: player.critDamage || 150,
+        lifesteal: player.lifesteal || 0,
+        dodge: player.dodge || 5
+      },
+      inventoryItems: player.inventory || []
     }
   }));
   
@@ -1057,15 +1081,16 @@ export async function startCombat(playerId: string, agentId: string): Promise<st
     player.combatTarget = agent._id;
     await player.save();
     
+    // Agent's combatTarget should point to the PLAYER, not itself
     agent.inCombat = true;
     agent.combatTarget = player._id as any;
     await agent.save();
     
-    // Initialize player state with auto-attack enabled
+    // Initialize player state - respect player's autoCombat setting
     const playerState = gameState.getPlayerState(playerId);
     if (playerState) {
       playerState.inCombat = true;
-      playerState.isAutoAttacking = true; // Auto-enable when starting combat
+      playerState.isAutoAttacking = player.autoCombat || false; // Use player's preference
       playerState.combatTargetId = agentId;
     }
     

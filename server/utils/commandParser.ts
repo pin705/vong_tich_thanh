@@ -44,7 +44,7 @@ const COMMAND_ALIASES: Record<string, string> = {
 // Built-in commands that cannot be overridden by custom aliases
 export const BUILT_IN_COMMANDS = [
   'go', 'look', 'l', 'talk', 't', 'say', 'get', 'g', 'drop', 'use',
-  'attack', 'a', 'kill', 'flee', 'run', 'inventory', 'i',
+  'attack', 'a', 'kill', 'flee', 'run', 'auto', 'inventory', 'i',
   'list', 'buy', 'sell', 'party', 'p', 'moi', 'roi', 'guild',
   'pvp', 'trade', 'quit', 'help', 'alias', 'skills', 'talents',
   'n', 's', 'e', 'w', 'u', 'd', 'north', 'south', 'east', 'west', 'up', 'down'
