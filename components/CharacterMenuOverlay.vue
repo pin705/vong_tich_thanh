@@ -173,6 +173,8 @@
           <div v-if="loading" class="loading-message">Đang tải...</div>
           <div v-else-if="skills.length === 0" class="empty-message">
             Chưa có kỹ năng nào.
+            <br><br>
+            <small>💡 Nâng cấp thiên phú (Tab [5]) để mở khóa kỹ năng mới!</small>
           </div>
           <div v-else class="skills-grid">
             <div

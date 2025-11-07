@@ -25,6 +25,8 @@
         <div v-if="activeTab === 'active'" class="skills-list">
           <div v-if="activeSkills.length === 0" class="empty-message">
             Bạn chưa có kỹ năng chủ động nào.
+            <br><br>
+            <small>💡 Chọn nghề nghiệp (cấp 5) và nâng thiên phú (cấp 10) để mở khóa kỹ năng!</small>
           </div>
           <div 
             v-for="(skill, index) in activeSkills" 
@@ -51,6 +53,8 @@
         <div v-else class="skills-list">
           <div v-if="passiveSkills.length === 0" class="empty-message">
             Bạn chưa có kỹ năng bị động nào.
+            <br><br>
+            <small>💡 Chọn nghề nghiệp (cấp 5) và nâng thiên phú (cấp 10) để mở khóa kỹ năng!</small>
           </div>
           <div 
             v-for="skill in passiveSkills" 
