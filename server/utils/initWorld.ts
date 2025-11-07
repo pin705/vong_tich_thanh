@@ -1182,6 +1182,90 @@ export async function initializeWorld() {
       }
     });
 
+    // World Boss Hunt Items
+    const loiRobotCoDai = await ItemSchema.create({
+      itemKey: 'ancient_robot_core',
+      name: 'Lõi Robot Cổ Đại',
+      description: 'Một lõi năng lượng còn phát sáng từ một cỗ máy chiến tranh thời cổ đại. Nguyên liệu chế tạo huyền thoại.',
+      type: 'craftingMaterial',
+      rarity: 'legendary',
+      value: 1000,
+      sellValue: 500,
+    });
+
+    const huyHieuDietKhongLo = await ItemSchema.create({
+      itemKey: 'giant_slayer_badge',
+      name: 'Huy Hiệu Diệt Khổng Lồ',
+      description: 'Một huy hiệu đặc biệt chứng minh bạn đã chiến thắng một kẻ địch khổng lồ. Sử dụng để nhận danh hiệu vĩnh viễn.',
+      type: 'TITLE_BADGE',
+      rarity: 'epic',
+      value: 0,
+      grantTitle: 'Diệt Khổng Lồ',
+      braveryMedalPrice: 100,
+    });
+
+    // Arena PvP Items
+    const giapDauSi = await ItemSchema.create({
+      itemKey: 'gladiator_armor',
+      name: 'Giáp Đấu Sĩ',
+      description: 'Bộ giáp được rèn đặc biệt cho những chiến binh trong đấu trường. Giảm 5% sát thương từ người chơi.',
+      type: 'Equipment',
+      slot: 'chest',
+      rarity: 'epic',
+      quality: 'Hiếm',
+      requiredLevel: 20,
+      stats: {
+        defense: 25,
+        hp: 100,
+      },
+      gloryPointsPrice: 500,
+    });
+
+    const huyHieuVoSi = await ItemSchema.create({
+      itemKey: 'champion_badge',
+      name: 'Huy Hiệu Vô Địch',
+      description: 'Huy hiệu của những chiến binh bất bại trong đấu trường. Sử dụng để nhận danh hiệu vĩnh viễn.',
+      type: 'TITLE_BADGE',
+      rarity: 'legendary',
+      value: 0,
+      grantTitle: 'Vô Địch Đấu Trường',
+      gloryPointsPrice: 1000,
+    });
+
+    // Party Dungeon Items
+    const sachKyNangCu = await ItemSchema.create({
+      itemKey: 'ancient_skill_book',
+      name: 'Sách Kỹ Năng Cổ',
+      description: 'Một cuốn sách cổ chứa đựng kiến thức về kỹ năng chiến đấu. Có thể dùng để nâng cấp kỹ năng.',
+      type: 'SKILL_UPGRADE_BOOK',
+      rarity: 'rare',
+      value: 200,
+      sellValue: 100,
+    });
+
+    const thuAnPetCaoCap = await ItemSchema.create({
+      itemKey: 'premium_pet_food',
+      name: 'Thức Ăn Pet Cao Cấp',
+      description: 'Thức ăn đặc biệt giúp pet nhận được một lượng EXP lớn. Chỉ dành cho những người yêu thú cưng.',
+      type: 'PET_FOOD',
+      rarity: 'uncommon',
+      value: 150,
+      sellValue: 50,
+      data: {
+        expBonus: 500,
+      },
+    });
+
+    const daBaoVe = await ItemSchema.create({
+      itemKey: 'protection_stone',
+      name: 'Đá Bảo Vệ',
+      description: 'Một viên đá huyền bí có thể bảo vệ trang bị khỏi rớt cấp khi cường hóa thất bại.',
+      type: 'ENHANCEMENT_PROTECTION',
+      rarity: 'rare',
+      value: 300,
+      sellValue: 150,
+    });
+
     // Create rooms
     const cổngThành = await RoomSchema.create({
       name: 'Cổng Thành Cũ',

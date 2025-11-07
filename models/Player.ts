@@ -43,6 +43,14 @@ export const PlayerSchema = defineMongooseModel({
       type: Number,
       default: 0,
     },
+    braveryMedals: {
+      type: Number,
+      default: 0,
+    },
+    gloryPoints: {
+      type: Number,
+      default: 0,
+    },
     inventory: [{
       type: Schema.Types.ObjectId,
       ref: 'Item',
@@ -197,6 +205,11 @@ export const PlayerSchema = defineMongooseModel({
       type: String,
       enum: ['player', 'admin'],
       default: 'player',
+    },
+    // Title system
+    title: {
+      type: String,
+      default: null,
     },
     // Phase 30: Custom Alias System
     customAliases: {

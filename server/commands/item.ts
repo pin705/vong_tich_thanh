@@ -279,6 +279,66 @@ export async function handleItemCommand(command: Command, playerId: string): Pro
                 playerId
               );
             }
+          }
+          // Handle title badges
+          else if (item.type === 'TITLE_BADGE' && item.grantTitle) {
+            // Grant the title to the player
+            player.title = item.grantTitle;
+            
+            // Remove item from inventory
+            player.inventory = player.inventory.filter((id: any) => id.toString() !== item._id.toString());
+            await player.save();
+            
+            // Delete the consumed item
+            await ItemSchema.findByIdAndDelete(item._id);
+            
+            responses.push(`═══════════════════════════════════`);
+            responses.push(`✨ Bạn đã nhận được danh hiệu mới! ✨`);
+            responses.push(`[${item.grantTitle}]`);
+            responses.push(`═══════════════════════════════════`);
+            
+            // Broadcast to room
+            const room = await RoomSchema.findById(player.currentRoomId);
+            if (room) {
+              gameState.broadcastToRoom(
+                room._id.toString(),
+                {
+                  type: 'critical',
+                  message: `✨ [${player.username}] đã nhận được danh hiệu [${item.grantTitle}]! ✨`
+                },
+                playerId
+              );
+            }
+          }
+          // Handle premium pet food
+          else if (item.type === 'PET_FOOD' && item.data?.expBonus) {
+            if (!player.activePetId) {
+              responses.push('Bạn cần triệu hồi pet trước khi cho ăn!');
+              break;
+            }
+            
+            const { addExp: addPetExp } = await import('../utils/petService');
+            const expResult = await addPetExp(player.activePetId.toString(), item.data.expBonus);
+            
+            if (expResult.success) {
+              // Remove item from inventory
+              player.inventory = player.inventory.filter((id: any) => id.toString() !== item._id.toString());
+              await player.save();
+              
+              // Delete the consumed item
+              await ItemSchema.findByIdAndDelete(item._id);
+              
+              responses.push(`Bạn cho pet ăn [${item.name}].`);
+              responses.push(`[${expResult.pet.nickname}] nhận được ${item.data.expBonus} EXP!`);
+              
+              if (expResult.leveledUp && expResult.leveledUp.length > 0) {
+                for (const level of expResult.leveledUp) {
+                  responses.push('═══════════════════════════════════');
+                  responses.push(`[${expResult.pet.nickname}] ĐÃ LÊN CẤP ${level}!`);
+                  responses.push('═══════════════════════════════════');
+                }
+              }
+            }
           } else {
             responses.push(`Bạn không thể sử dụng [${item.name}] ngay bây giờ.`);
           }

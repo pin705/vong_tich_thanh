@@ -1,5 +1,6 @@
 import { resetDungeonProgress } from '../utils/dungeonService';
 import { resetPetTrialProgress } from '../utils/petTrialService';
+import { spawnWorldBoss } from '../utils/worldBossService';
 
 /**
  * Scheduler Plugin - Handle periodic tasks
@@ -55,6 +56,45 @@ export default defineNitroPlugin((nitroApp) => {
 
   // Start the scheduler
   scheduleWeeklyReset();
+
+  // Schedule daily world boss spawn at 8 PM (20:00)
+  function scheduleWorldBossSpawn() {
+    const now = new Date();
+    const targetTime = new Date(now);
+    
+    // Set to 8 PM today
+    targetTime.setHours(20, 0, 0, 0);
+    
+    // If it's already past 8 PM, schedule for tomorrow
+    if (now > targetTime) {
+      targetTime.setDate(targetTime.getDate() + 1);
+    }
+    
+    const msUntilSpawn = targetTime.getTime() - now.getTime();
+    
+    console.log(`[Scheduler] Next world boss spawn in ${Math.floor(msUntilSpawn / 1000 / 60 / 60)} hours`);
+    
+    setTimeout(async () => {
+      console.log('[Scheduler] Spawning world boss...');
+      try {
+        // Spawn world boss at a designated location
+        const bossId = await spawnWorldBoss('Quảng Trường Đổ Nát', 'colossal_warmech');
+        if (bossId) {
+          console.log(`[Scheduler] World boss spawned: ${bossId}`);
+        } else {
+          console.log('[Scheduler] Failed to spawn world boss (room not found or boss already exists)');
+        }
+      } catch (error) {
+        console.error('[Scheduler] Error spawning world boss:', error);
+      }
+      
+      // Schedule next spawn
+      scheduleWorldBossSpawn();
+    }, msUntilSpawn);
+  }
+
+  // Start world boss scheduler
+  scheduleWorldBossSpawn();
 
   console.log('[Scheduler] Scheduler plugin initialized');
 });

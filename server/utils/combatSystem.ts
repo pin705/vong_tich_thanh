@@ -14,6 +14,7 @@ import { broadcastRoomOccupants } from '../routes/ws';
 import { addGoldToPlayer, addPremiumCurrencyToPlayer } from './inventoryService';
 import { addExp as addPetExp, petDefeated } from './petService';
 import { COMBAT_TICK_INTERVAL, FLEE_SUCCESS_CHANCE, EXPERIENCE_PER_LEVEL, HP_GAIN_PER_LEVEL, MINIMUM_DAMAGE, TALENT_POINTS_PER_LEVEL, SKILL_POINTS_PER_LEVEL } from './constants';
+import { trackBossContribution, isWorldBoss, distributeWorldBossRewards } from './worldBossService';
 
 // Boss reward constants
 const BOSS_PREMIUM_CURRENCY_MULTIPLIER = 10;
@@ -385,6 +386,11 @@ export async function executeCombatTick(playerId: string, agentId: string): Prom
       agent.hp = Math.max(0, agent.hp - playerDamage);
       await agent.save();
       
+      // Track world boss contribution
+      if (isWorldBoss(agent._id.toString())) {
+        trackBossContribution(agent._id.toString(), player._id.toString(), player.username, playerDamage);
+      }
+      
       // Enhanced combat narrative with varied attack descriptions
       const isCritical = playerDamage > playerBaseDamage * CRITICAL_HIT_MULTIPLIER;
       const isGlancing = playerDamage < playerBaseDamage * GLANCING_BLOW_MULTIPLIER;
@@ -499,6 +505,42 @@ export async function executeCombatTick(playerId: string, agentId: string): Prom
       }
       
       messages.push(`Bạn đã hạ gục [${agent.name}]!`);
+      
+      // World Boss: Special handling for world bosses
+      if (isWorldBoss(agent._id.toString())) {
+        // Distribute world boss rewards to all contributors
+        await distributeWorldBossRewards(agent._id.toString());
+        
+        // World boss death is handled separately, skip normal rewards
+        // Delete the agent
+        await AgentSchema.findByIdAndDelete(agent._id);
+        if (room) {
+          await RoomSchema.findByIdAndUpdate(
+            room._id,
+            { $pull: { agents: agent._id } },
+            { new: true }
+          );
+        }
+        
+        gameState.stopCombat(playerId);
+        
+        // Send messages to player
+        const playerObj = gameState.getPlayer(playerId);
+        if (playerObj && playerObj.ws) {
+          messages.forEach(msg => {
+            const messageType = getCombatMessageType(msg);
+            playerObj.ws.send(JSON.stringify({ 
+              type: messageType, 
+              message: msg,
+              channel: 'combat',
+              category: 'combat-player'
+            }));
+          });
+        }
+        
+        await sendCombatStateUpdate(playerId);
+        return;
+      }
       
       // Handle faction reputation (Phase 18)
       if (agent.faction) {
