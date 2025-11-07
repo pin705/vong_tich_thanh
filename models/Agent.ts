@@ -7,6 +7,7 @@ export const AgentSchema = defineMongooseModel({
     name: {
       type: String,
       required: true,
+      index: true, // Index for faster lookups by name
     },
     description: {
       type: String,
@@ -16,11 +17,13 @@ export const AgentSchema = defineMongooseModel({
       type: String,
       enum: ['npc', 'mob'],
       required: true,
+      index: true, // Index for filtering by type
     },
     currentRoomId: {
       type: Schema.Types.ObjectId,
       ref: 'Room',
       required: true,
+      index: true, // Index for finding agents in a room
     },
     hp: {
       type: Number,
@@ -110,10 +113,41 @@ export const AgentSchema = defineMongooseModel({
       enum: ['gold', 'premium'],
       default: 'gold',
     },
+    // Dungeon System - Shop currency type
+    shopCurrency: {
+      type: String,
+      enum: ['gold', 'premium', 'dungeon_coin', 'tamer_badge'],
+      default: 'gold',
+    },
     // Maximum number of instances of this agent that can spawn in the room
     maxInstances: {
       type: Number,
       default: 1,
+    },
+    // Dungeon System - Mark as dungeon boss
+    isDungeonBoss: {
+      type: Boolean,
+      default: false,
+    },
+    dungeonFloor: {
+      type: Number,
+      default: null,
+    },
+    // Pet Trial System - Unique identifier for NPCs
+    agentKey: {
+      type: String,
+      unique: true,
+      required: true,
+      index: true,
+    },
+    // Pet Trial System - Mark as trial monster
+    isTrialMonster: {
+      type: Boolean,
+      default: false,
+    },
+    trialFloor: {
+      type: Number,
+      default: null,
     },
   },
 });

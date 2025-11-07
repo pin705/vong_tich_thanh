@@ -3,6 +3,8 @@ import { AgentSchema } from '../../models/Agent';
 import { ItemSchema } from '../../models/Item';
 import { RoomSchema } from '../../models/Room';
 import { PlayerQuestSchema } from '../../models/PlayerQuest';
+import { PetSchema } from '../../models/Pet';
+import { BuffSchema } from '../../models/Buff';
 import { gameState } from './gameState';
 import { partyService } from './partyService';
 import { scheduleAgentRespawn } from './npcAI';
@@ -10,7 +12,9 @@ import { applyExpBuff } from './buffSystem';
 import { clearBossState } from './bossMechanics';
 import { broadcastRoomOccupants } from '../routes/ws';
 import { addGoldToPlayer, addPremiumCurrencyToPlayer } from './inventoryService';
-import { COMBAT_TICK_INTERVAL, FLEE_SUCCESS_CHANCE, EXPERIENCE_PER_LEVEL, HP_GAIN_PER_LEVEL, MINIMUM_DAMAGE } from './constants';
+import { addExp as addPetExp, petDefeated } from './petService';
+import { COMBAT_TICK_INTERVAL, FLEE_SUCCESS_CHANCE, EXPERIENCE_PER_LEVEL, HP_GAIN_PER_LEVEL, MINIMUM_DAMAGE, TALENT_POINTS_PER_LEVEL, SKILL_POINTS_PER_LEVEL } from './constants';
+import { trackBossContribution, isWorldBoss, distributeWorldBossRewards } from './worldBossService';
 
 // Boss reward constants
 const BOSS_PREMIUM_CURRENCY_MULTIPLIER = 10;
@@ -19,6 +23,10 @@ const BOSS_GOLD_MULTIPLIER = 100;
 // Combat narrative constants
 const CRITICAL_HIT_MULTIPLIER = 1.1;
 const GLANCING_BLOW_MULTIPLIER = 0.9;
+
+// Pet combat constants
+const PET_ATTACK_TARGET_CHANCE = 0.4; // 40% chance for agent to target pet instead of player
+const PET_EXP_SHARE = 0.5; // Pet receives 50% of kill EXP
 
 // Helper function to categorize combat messages for semantic highlighting
 function getCombatMessageType(message: string): string {
@@ -90,9 +98,9 @@ function calculateDamage(baseDamage: number): number {
 async function calculatePlayerDamage(player: any): Promise<number> {
   let baseDamage = 5 + player.level; // Base damage increases with level
   
-  // Check inventory for equipped weapon
+  // Check inventory for equipped weapon (optimized: only fetch type and stats fields)
   if (player.inventory && player.inventory.length > 0) {
-    const items = await ItemSchema.find({ _id: { $in: player.inventory } });
+    const items = await ItemSchema.find({ _id: { $in: player.inventory } }).select('type stats').lean();
     const weapons = items.filter((item: any) => item.type === 'weapon');
     if (weapons.length > 0) {
       // Use the best weapon
@@ -112,9 +120,9 @@ async function calculatePlayerDamage(player: any): Promise<number> {
 async function calculatePlayerDefense(player: any): Promise<number> {
   let defense = 0;
   
-  // Check inventory for equipped armor
+  // Check inventory for equipped armor (optimized: only fetch type and stats fields)
   if (player.inventory && player.inventory.length > 0) {
-    const items = await ItemSchema.find({ _id: { $in: player.inventory } });
+    const items = await ItemSchema.find({ _id: { $in: player.inventory } }).select('type stats').lean();
     const armors = items.filter((item: any) => item.type === 'armor');
     if (armors.length > 0) {
       // Use the best armor
@@ -240,10 +248,10 @@ async function checkLevelUp(player: any): Promise<string[]> {
     player.hp = player.maxHp; // Full heal on level up
     
     // Grant talent point on every level up (changed from level 10+ only)
-    player.talentPoints = (player.talentPoints || 0) + 1;
+    player.talentPoints = (player.talentPoints || 0) + TALENT_POINTS_PER_LEVEL;
     
     // Phase 29: Grant skill points on level up
-    player.skillPoints = (player.skillPoints || 0) + 1;
+    player.skillPoints = (player.skillPoints || 0) + SKILL_POINTS_PER_LEVEL;
     
     messages.push('');
     messages.push('═══════════════════════════════════');
@@ -270,7 +278,9 @@ async function dropLoot(agent: any, roomId: string): Promise<string[]> {
       // Roll for drop chance
       const roll = Math.random();
       if (roll <= lootEntry.dropChance) {
-        const originalItem = await ItemSchema.findById(lootEntry.itemId);
+        const originalItem = await ItemSchema.findById(lootEntry.itemId)
+          .select('name description type value stats rarity quality slot requiredLevel setKey setBonus recipe resultItem')
+          .lean();
         if (originalItem) {
           const newItem = await ItemSchema.create({
             name: originalItem.name,
@@ -356,18 +366,32 @@ export async function executeCombatTick(playerId: string, agentId: string): Prom
     const messages: string[] = [];
     const room = await RoomSchema.findById(player.currentRoomId);
     
-    // Player attacks (only if auto-attacking is enabled)
+    // Check for PACIFIED buff (Pet Trial Tower - player cannot attack)
+    // Note: This query only executes during combat and PACIFIED is rare (only in Pet Trial)
+    // Future optimization: Cache buff status in gameState if needed
+    const pacifiedBuff = await BuffSchema.findOne({
+      playerId: player._id,
+      buffKey: 'PACIFIED',
+      active: true,
+    });
+    
+    // Player attacks (only if auto-attacking is enabled and NOT pacified)
     const playerState = gameState.getPlayerState(playerId);
     if (!playerState) {
       console.error('Player state not found for combat tick');
       return;
     }
     
-    if (playerState.isAutoAttacking) {
+    if (playerState.isAutoAttacking && !pacifiedBuff) {
       const playerBaseDamage = await calculatePlayerDamage(player);
       const playerDamage = calculateDamage(playerBaseDamage);
       agent.hp = Math.max(0, agent.hp - playerDamage);
       await agent.save();
+      
+      // Track world boss contribution
+      if (isWorldBoss(agent._id.toString())) {
+        trackBossContribution(agent._id.toString(), player._id.toString(), player.username, playerDamage);
+      }
       
       // Enhanced combat narrative with varied attack descriptions
       const isCritical = playerDamage > playerBaseDamage * CRITICAL_HIT_MULTIPLIER;
@@ -409,10 +433,116 @@ export async function executeCombatTick(playerId: string, agentId: string): Prom
       messages.push(attackMessage);
     }
     
+    // Pet attacks (if player has active pet and agent is still alive)
+    if (player.activePetId && agent.hp > 0) {
+      const pet = await PetSchema.findById(player.activePetId);
+      const petState = gameState.getPet(player.activePetId.toString());
+      
+      if (pet && petState && petState.currentStats.hp > 0) {
+        const petBaseDamage = petState.currentStats.attack || 5;
+        const petDamage = calculateDamage(petBaseDamage);
+        agent.hp = Math.max(0, agent.hp - petDamage);
+        await agent.save();
+        
+        const petAttackMessages = [
+          `[${pet.nickname}] lao vào cắn [${agent.name}]!`,
+          `[${pet.nickname}] tấn công [${agent.name}] dữ dội!`,
+          `[${pet.nickname}] đánh úp [${agent.name}] từ bên sườn!`,
+          `[${pet.nickname}] nhảy lên và cào vào [${agent.name}]!`
+        ];
+        const petAttackMsg = petAttackMessages[Math.floor(Math.random() * petAttackMessages.length)];
+        messages.push(`${petAttackMsg} Gây ${petDamage} sát thương. (HP còn lại: ${agent.hp}/${agent.maxHp})`);
+      }
+    }
+    
     // Check if agent died
     if (agent.hp <= 0) {
       messages.push('');
+      
+      // Check if this is a trial monster
+      if (agent.isTrialMonster && agent.trialFloor) {
+        // Get pet name for message
+        let petName = 'Thú cưng';
+        if (player.activePetId) {
+          const trialPet = await PetSchema.findById(player.activePetId);
+          if (trialPet) {
+            petName = trialPet.nickname;
+          }
+        }
+        messages.push(`[${petName}] đã hạ gục [${agent.name}]!`);
+        
+        // Complete trial floor and grant rewards
+        const { completeTrialFloor } = await import('./petTrialService');
+        const trialResult = await completeTrialFloor(playerId, agent.trialFloor);
+        
+        // Don't give regular EXP/loot for trial monsters - handled by completeTrialFloor
+        // Delete the agent and clean up
+        await AgentSchema.findByIdAndDelete(agent._id);
+        if (room) {
+          await RoomSchema.findByIdAndUpdate(
+            room._id,
+            { $pull: { agents: agent._id } },
+            { new: true }
+          );
+        }
+        
+        gameState.stopCombat(playerId);
+        
+        // Send messages to player
+        const playerObj = gameState.getPlayer(playerId);
+        if (playerObj && playerObj.ws) {
+          messages.forEach(msg => {
+            const messageType = getCombatMessageType(msg);
+            playerObj.ws.send(JSON.stringify({ 
+              type: messageType, 
+              message: msg,
+              channel: 'combat',
+              category: 'combat-player'
+            }));
+          });
+        }
+        
+        await sendCombatStateUpdate(playerId);
+        return;
+      }
+      
       messages.push(`Bạn đã hạ gục [${agent.name}]!`);
+      
+      // World Boss: Special handling for world bosses
+      if (isWorldBoss(agent._id.toString())) {
+        // Distribute world boss rewards to all contributors
+        await distributeWorldBossRewards(agent._id.toString());
+        
+        // World boss death is handled separately, skip normal rewards
+        // Delete the agent
+        await AgentSchema.findByIdAndDelete(agent._id);
+        if (room) {
+          await RoomSchema.findByIdAndUpdate(
+            room._id,
+            { $pull: { agents: agent._id } },
+            { new: true }
+          );
+        }
+        
+        gameState.stopCombat(playerId);
+        
+        // Send messages to player
+        const playerObj = gameState.getPlayer(playerId);
+        if (playerObj && playerObj.ws) {
+          messages.forEach(msg => {
+            const messageType = getCombatMessageType(msg);
+            playerObj.ws.send(JSON.stringify({ 
+              type: messageType, 
+              message: msg,
+              channel: 'combat',
+              category: 'combat-player'
+            }));
+          });
+        }
+        
+        await sendCombatStateUpdate(playerId);
+        return;
+      }
       
       // Handle faction reputation (Phase 18)
       if (agent.faction) {
@@ -470,6 +600,28 @@ export async function executeCombatTick(playerId: string, agentId: string): Prom
       const expMessages = await distributeExperience(player, totalExp, room._id.toString());
       messages.push(...expMessages);
       
+      // Give pet EXP if active
+      if (player.activePetId) {
+        const pet = await PetSchema.findById(player.activePetId);
+        const petState = gameState.getPet(player.activePetId.toString());
+        
+        if (pet && petState && petState.currentStats.hp > 0) {
+          const petExpAmount = Math.floor(totalExp * PET_EXP_SHARE);
+          const petExpResult = await addPetExp(pet._id.toString(), petExpAmount);
+          
+          messages.push(`[${pet.nickname}] nhận được ${petExpAmount} EXP!`);
+          
+          if (petExpResult.leveledUp && petExpResult.leveledUp.length > 0) {
+            for (const level of petExpResult.leveledUp) {
+              messages.push('═══════════════════════════════════');
+              messages.push(`[${pet.nickname}] ĐÃ LÊN CẤP ${level}!`);
+              messages.push(`HP: ${petExpResult.pet.currentStats.maxHp} | Tấn Công: ${petExpResult.pet.currentStats.attack} | Phòng Thủ: ${petExpResult.pet.currentStats.defense}`);
+              messages.push('═══════════════════════════════════');
+            }
+          }
+        }
+      }
+      
       player.inCombat = false;
       player.combatTarget = undefined;
       
@@ -495,6 +647,16 @@ export async function executeCombatTick(playerId: string, agentId: string): Prom
       // Update quest progress for killing this mob
       const questMessages = await updateQuestProgress(playerId, 'kill', agent.name);
       messages.push(...questMessages);
+      
+      // Dungeon System - Handle dungeon boss completion
+      if (agent.isDungeonBoss && agent.dungeonFloor) {
+        const { completeFloor } = await import('./dungeonService');
+        const dungeonResult = await completeFloor(playerId, agent.dungeonFloor);
+        if (dungeonResult.success) {
+          // Messages are sent via WebSocket in completeFloor
+          // Just mark that we handled this
+        }
+      }
       
       // Notify about loot turn if in party
       const killerParty = partyService.getPlayerParty(playerId);
@@ -621,47 +783,95 @@ export async function executeCombatTick(playerId: string, agentId: string): Prom
     }
     
     // Agent attacks back
-    const agentDamage = calculateDamage(agent.damage);
-    const playerDefense = await calculatePlayerDefense(player);
-    const actualDamage = Math.max(MINIMUM_DAMAGE, agentDamage - playerDefense);
+    // Trial monsters ALWAYS attack the pet (if available)
+    // Regular monsters have random chance to attack pet
+    const hasPet = player.activePetId !== null && player.activePetId !== undefined;
+    const isTrialMonster = agent.isTrialMonster === true;
+    const shouldAttackPet = hasPet && (isTrialMonster || Math.random() < PET_ATTACK_TARGET_CHANCE);
     
-    player.hp = Math.max(0, player.hp - actualDamage);
-    await player.save();
-    
-    // Enhanced enemy attack narrative with more variety
-    const hpPercent = (player.hp / player.maxHp) * 100;
-    let enemyAttackMessage = '';
-    
-    if (playerDefense > 0) {
-      const deflectMessages = [
-        `[${agent.name}] lao vào tấn công bạn!`,
-        `[${agent.name}] đánh trả dữ dội!`,
-        `[${agent.name}] phản công với sức mạnh đáng sợ!`,
-        `[${agent.name}] tấn công ngược bạn!`
-      ];
-      const deflectMessage = deflectMessages[Math.floor(Math.random() * deflectMessages.length)];
-      enemyAttackMessage = `${deflectMessage} Gây ${agentDamage} sát thương, nhưng giáp của bạn hấp thụ ${playerDefense} sát thương.`;
+    if (shouldAttackPet) {
+      const pet = await PetSchema.findById(player.activePetId);
+      const petState = gameState.getPet(player.activePetId.toString());
+      
+      if (pet && petState && petState.currentStats.hp > 0) {
+        const agentDamage = calculateDamage(agent.damage);
+        const petDefense = petState.currentStats.defense || 0;
+        const actualDamage = Math.max(MINIMUM_DAMAGE, agentDamage - petDefense);
+        
+        petState.currentStats.hp = Math.max(0, petState.currentStats.hp - actualDamage);
+        
+        // Update pet HP in database
+        pet.currentStats.hp = petState.currentStats.hp;
+        await pet.save();
+        
+        const petAttackMessages = [
+          `[${agent.name}] quay sang tấn công [${pet.nickname}]!`,
+          `[${agent.name}] nhắm vào [${pet.nickname}] và tấn công!`,
+          `[${agent.name}] lao vào đánh [${pet.nickname}]!`
+        ];
+        const petAttackMsg = petAttackMessages[Math.floor(Math.random() * petAttackMessages.length)];
+        messages.push(`${petAttackMsg} Gây ${actualDamage} sát thương! (HP còn lại: ${petState.currentStats.hp}/${petState.currentStats.maxHp})`);
+        
+        // Check if pet died
+        if (petState.currentStats.hp <= 0) {
+          messages.push(`[${pet.nickname}] đã bị đánh bại!`);
+          await petDefeated(pet._id.toString());
+        }
+      } else {
+        // Pet is dead or not found, attack player instead
+        const agentDamage = calculateDamage(agent.damage);
+        const playerDefense = await calculatePlayerDefense(player);
+        const actualDamage = Math.max(MINIMUM_DAMAGE, agentDamage - playerDefense);
+        
+        player.hp = Math.max(0, player.hp - actualDamage);
+        await player.save();
+        
+        messages.push(`[${agent.name}] tấn công bạn! Gây ${actualDamage} sát thương. (HP còn lại: ${player.hp}/${player.maxHp})`);
+      }
     } else {
-      const attackMessages = [
-        `[${agent.name}] vung vuốt lên người bạn!`,
-        `[${agent.name}] tấn công bạn bằng sức mạnh dữ dội!`,
-        `[${agent.name}] lao vào và đánh trúng bạn!`,
-        `[${agent.name}] phản công với đòn hiểm hóc!`
-      ];
-      const attackMessage = attackMessages[Math.floor(Math.random() * attackMessages.length)];
-      enemyAttackMessage = `${attackMessage} Gây ${actualDamage} sát thương!`;
+      // Attack player normally
+      const agentDamage = calculateDamage(agent.damage);
+      const playerDefense = await calculatePlayerDefense(player);
+      const actualDamage = Math.max(MINIMUM_DAMAGE, agentDamage - playerDefense);
+      
+      player.hp = Math.max(0, player.hp - actualDamage);
+      await player.save();
+      
+      // Enhanced enemy attack narrative with more variety
+      const hpPercent = (player.hp / player.maxHp) * 100;
+      let enemyAttackMessage = '';
+      
+      if (playerDefense > 0) {
+        const deflectMessages = [
+          `[${agent.name}] lao vào tấn công bạn!`,
+          `[${agent.name}] đánh trả dữ dội!`,
+          `[${agent.name}] phản công với sức mạnh đáng sợ!`,
+          `[${agent.name}] tấn công ngược bạn!`
+        ];
+        const deflectMessage = deflectMessages[Math.floor(Math.random() * deflectMessages.length)];
+        enemyAttackMessage = `${deflectMessage} Gây ${agentDamage} sát thương, nhưng giáp của bạn hấp thụ ${playerDefense} sát thương.`;
+      } else {
+        const attackMessages = [
+          `[${agent.name}] vung vuốt lên người bạn!`,
+          `[${agent.name}] tấn công bạn bằng sức mạnh dữ dội!`,
+          `[${agent.name}] lao vào và đánh trúng bạn!`,
+          `[${agent.name}] phản công với đòn hiểm hóc!`
+        ];
+        const attackMessage = attackMessages[Math.floor(Math.random() * attackMessages.length)];
+        enemyAttackMessage = `${attackMessage} Gây ${actualDamage} sát thương!`;
+      }
+      
+      // Add HP warning if critical
+      if (hpPercent <= 20) {
+        enemyAttackMessage += ` (HP còn lại: ${player.hp}/${player.maxHp}) ⚠️ CẢNH BÁO: HP RẤT THẤP!`;
+      } else if (hpPercent <= 40) {
+        enemyAttackMessage += ` (HP còn lại: ${player.hp}/${player.maxHp}) ⚠️ Cảnh báo: HP thấp!`;
+      } else {
+        enemyAttackMessage += ` (HP còn lại: ${player.hp}/${player.maxHp})`;
+      }
+      
+      messages.push(enemyAttackMessage);
     }
-    
-    // Add HP warning if critical
-    if (hpPercent <= 20) {
-      enemyAttackMessage += ` (HP còn lại: ${player.hp}/${player.maxHp}) ⚠️ CẢN H BÁO: HP RẤT THẤP!`;
-    } else if (hpPercent <= 40) {
-      enemyAttackMessage += ` (HP còn lại: ${player.hp}/${player.maxHp}) ⚠️ Cảnh báo: HP thấp!`;
-    } else {
-      enemyAttackMessage += ` (HP còn lại: ${player.hp}/${player.maxHp})`;
-    }
-    
-    messages.push(enemyAttackMessage);
     
     // Check if player died
     if (player.hp <= 0) {
@@ -739,6 +949,30 @@ export async function executeCombatTick(playerId: string, agentId: string): Prom
         deathPlayerObj.ws.send(JSON.stringify({
           type: 'combat-end'
         }));
+        
+        // Send new room information to update the map/UI
+        if (startingRoom) {
+          await startingRoom.populate('agents');
+          await startingRoom.populate('items');
+          
+          deathPlayerObj.ws.send(JSON.stringify({
+            type: 'room',
+            payload: {
+              name: startingRoom.name,
+              description: startingRoom.description,
+              exits: startingRoom.exits
+            }
+          }));
+          
+          // Send exits update
+          deathPlayerObj.ws.send(JSON.stringify({
+            type: 'exits',
+            payload: startingRoom.exits
+          }));
+          
+          // Broadcast room occupants to all players in the respawn room
+          await broadcastRoomOccupants(startingRoom._id.toString());
+        }
       }
       
       // Broadcast to room
@@ -1130,7 +1364,7 @@ export async function startPvPCombat(attackerId: string, targetId: string): Prom
 }
 
 // Update quest progress when player performs an action
-async function updateQuestProgress(playerId: string, actionType: string, target: string): Promise<string[]> {
+export async function updateQuestProgress(playerId: string, actionType: string, target: string): Promise<string[]> {
   const messages: string[] = [];
   
   try {

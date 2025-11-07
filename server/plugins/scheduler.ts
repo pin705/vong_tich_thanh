@@ -1,0 +1,101 @@
+import { resetDungeonProgress } from '../utils/dungeonService';
+import { resetPetTrialProgress } from '../utils/petTrialService';
+import { spawnWorldBoss } from '../utils/worldBossService';
+
+/**
+ * Scheduler Plugin - Handle periodic tasks
+ * Runs weekly resets on Sundays at 00:00
+ * - Dungeon progress reset
+ * - Pet Trial progress reset
+ * 
+ * NOTE: This implementation uses setTimeout which will be lost on server restart.
+ * For production, consider using:
+ * - node-cron for persistent scheduling
+ * - A job queue like Bull or Agenda
+ * - External cron service
+ */
+export default defineNitroPlugin((nitroApp) => {
+  console.log('[Scheduler] Starting scheduler plugin...');
+
+  // Calculate milliseconds until next Sunday 00:00
+  function getNextSundayMidnight(): number {
+    const now = new Date();
+    const nextSunday = new Date(now);
+    
+    // Set to next Sunday
+    nextSunday.setDate(now.getDate() + ((7 - now.getDay()) % 7 || 7));
+    nextSunday.setHours(0, 0, 0, 0);
+    
+    return nextSunday.getTime() - now.getTime();
+  }
+
+  // Schedule weekly reset
+  function scheduleWeeklyReset() {
+    const msUntilSunday = getNextSundayMidnight();
+    
+    console.log(`[Scheduler] Next weekly reset in ${Math.floor(msUntilSunday / 1000 / 60 / 60)} hours`);
+    
+    setTimeout(async () => {
+      console.log('[Scheduler] Running weekly resets...');
+      try {
+        // Reset dungeon progress
+        await resetDungeonProgress();
+        console.log('[Scheduler] Weekly dungeon reset completed');
+        
+        // Reset pet trial progress
+        await resetPetTrialProgress();
+        console.log('[Scheduler] Weekly pet trial reset completed');
+      } catch (error) {
+        console.error('[Scheduler] Error during weekly reset:', error);
+      }
+      
+      // Schedule next reset
+      scheduleWeeklyReset();
+    }, msUntilSunday);
+  }
+
+  // Start the scheduler
+  scheduleWeeklyReset();
+
+  // Schedule daily world boss spawn at 8 PM (20:00)
+  function scheduleWorldBossSpawn() {
+    const now = new Date();
+    const targetTime = new Date(now);
+    
+    // Set to 8 PM today
+    targetTime.setHours(20, 0, 0, 0);
+    
+    // If it's already past 8 PM, schedule for tomorrow
+    if (now > targetTime) {
+      targetTime.setDate(targetTime.getDate() + 1);
+    }
+    
+    const msUntilSpawn = targetTime.getTime() - now.getTime();
+    
+    console.log(`[Scheduler] Next world boss spawn in ${Math.floor(msUntilSpawn / 1000 / 60 / 60)} hours`);
+    
+    setTimeout(async () => {
+      console.log('[Scheduler] Spawning world boss...');
+      try {
+        // Spawn world boss at a designated location (TODO: make configurable)
+        const WORLD_BOSS_SPAWN_LOCATION = 'Quảng Trường Đổ Nát';
+        const bossId = await spawnWorldBoss(WORLD_BOSS_SPAWN_LOCATION, 'colossal_warmech');
+        if (bossId) {
+          console.log(`[Scheduler] World boss spawned: ${bossId}`);
+        } else {
+          console.log('[Scheduler] Failed to spawn world boss (room not found or boss already exists)');
+        }
+      } catch (error) {
+        console.error('[Scheduler] Error spawning world boss:', error);
+      }
+      
+      // Schedule next spawn
+      scheduleWorldBossSpawn();
+    }, msUntilSpawn);
+  }
+
+  // Start world boss scheduler
+  scheduleWorldBossSpawn();
+
+  console.log('[Scheduler] Scheduler plugin initialized');
+});

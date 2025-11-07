@@ -4,6 +4,12 @@ import { Schema } from 'mongoose';
 export const RoomSchema = defineMongooseModel({
   name: 'Room',
   schema: {
+    roomKey: {
+      type: String,
+      unique: true,
+      required: true,
+      index: true,
+    },
     name: {
       type: String,
       required: true,

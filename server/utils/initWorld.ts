@@ -1,119 +1,257 @@
-// Script to initialize the game world with rooms, NPCs, and items
+// ============================================================================
+// GAME WORLD INITIALIZATION SCRIPT
+// ============================================================================
+// 
+// PURPOSE:
+// Initializes the game world with static data (rooms, items, agents, quests)
+// 
+// REFACTORING APPROACH (Task: Refactor initWorld Logic):
+// 1. All models now have natural keys (roomKey, itemKey, agentKey, questKey)
+// 2. Using findOneAndUpdate() with upsert:true instead of create()
+// 3. This ensures _id stability across re-runs (same key = same _id)
+// 4. References between entities are linked using key-based lookups
+//
+// WORKFLOW:
+// Phase 1: Seed Items (upsert based on itemKey)
+// Phase 2: Seed Rooms (upsert based on roomKey)
+// Phase 3: Seed Agents (upsert based on agentKey)
+// Phase 4: Seed Quests (upsert based on questKey)
+// Phase 5: Build ID maps (key -> _id mappings)
+// Phase 6: Link entities (update references using ID maps)
+//
+// STATUS:
+// - ✓ Models updated with natural keys
+// - ✓ Helper functions added (fetchMappedIds)
+// - ⚠ Partial conversion to upsert pattern (examples provided)
+// - ⚠ Full conversion needed for all ~180 create() calls
+// - ⚠ Linking logic needs implementation
+//
+// ============================================================================
+
+import type { Types } from 'mongoose';
 import { PlayerSchema } from '../../models/Player';
 import { RoomSchema } from '../../models/Room';
 import { ItemSchema } from '../../models/Item';
 import { AgentSchema } from '../../models/Agent';
 import { QuestSchema } from '../../models/Quest';
+import { PetTemplateSchema } from '../../models/PetTemplate';
+
+// Type definitions for the ID maps used in linking
+interface IdMaps {
+  itemMap: Map<string, Types.ObjectId>;
+  roomMap: Map<string, Types.ObjectId>;
+  agentMap: Map<string, Types.ObjectId>;
+  questMap: Map<string, Types.ObjectId>;
+}
+
+/**
+ * Fetch all entity IDs and create maps from natural keys to _id
+ * This allows us to link entities using stable keys instead of volatile _ids
+ */
+async function fetchMappedIds(): Promise<IdMaps> {
+  console.log('Fetching mapped IDs for linking...');
+  
+  const itemMap = new Map<string, Types.ObjectId>();
+  const roomMap = new Map<string, Types.ObjectId>();
+  const agentMap = new Map<string, Types.ObjectId>();
+  const questMap = new Map<string, Types.ObjectId>();
+  
+  // Fetch all items and map itemKey -> _id
+  const allItems = await ItemSchema.find({}, 'itemKey _id').lean();
+  allItems.forEach((item: any) => {
+    if (item.itemKey) {
+      itemMap.set(item.itemKey, item._id);
+    }
+  });
+  console.log(`✓ Mapped ${itemMap.size} items`);
+  
+  // Fetch all rooms and map roomKey -> _id
+  const allRooms = await RoomSchema.find({}, 'roomKey _id').lean();
+  allRooms.forEach((room: any) => {
+    if (room.roomKey) {
+      roomMap.set(room.roomKey, room._id);
+    }
+  });
+  console.log(`✓ Mapped ${roomMap.size} rooms`);
+  
+  // Fetch all agents and map agentKey -> _id
+  const allAgents = await AgentSchema.find({}, 'agentKey _id').lean();
+  allAgents.forEach((agent: any) => {
+    if (agent.agentKey) {
+      agentMap.set(agent.agentKey, agent._id);
+    }
+  });
+  console.log(`✓ Mapped ${agentMap.size} agents`);
+  
+  // Fetch all quests and map questKey -> _id
+  const allQuests = await QuestSchema.find({}, 'questKey _id').lean();
+  allQuests.forEach((quest: any) => {
+    if (quest.questKey) {
+      questMap.set(quest.questKey, quest._id);
+    }
+  });
+  console.log(`✓ Mapped ${questMap.size} quests`);
+  
+  return { itemMap, roomMap, agentMap, questMap };
+}
 
 export async function initializeWorld() {
   try {
-    console.log('Initializing game world...');
+    console.log('='.repeat(60));
+    console.log('Initializing game world with upsert pattern...');
+    console.log('='.repeat(60));
 
-    // await RoomSchema.deleteMany({});
-    // await ItemSchema.deleteMany({});
-    // await AgentSchema.deleteMany({});
-    // await QuestSchema.deleteMany({});
+    // REMOVED: deleteMany() calls - no longer needed with upsert pattern
+    // REMOVED: "skip if exists" check - upsert handles updates automatically
 
-    // Check if world already exists
-    const existingRooms = await RoomSchema.countDocuments();
-    if (existingRooms > 0) {
-      console.log('World already initialized, skipping...');
-      return;
-    }
+    // =================================================================
+    // PHASE 1: Seed Items using findOneAndUpdate with upsert
+    // =================================================================
+    console.log('\n[Phase 1] Seeding Items...');
+    
+    // Using findOneAndUpdate with upsert: true for stable _id references
+    const binhMau = await ItemSchema.findOneAndUpdate(
+      { itemKey: 'binh_mau_nho' },
+      {
+        itemKey: 'binh_mau_nho',
+        name: 'Bình Máu Nhỏ',
+        description: 'Một bình thuốc nhỏ chứa dịch màu đỏ. Có thể hồi phục 15 HP.',
+        type: 'consumable',
+        value: 10,
+        price: 50,
+        sellValue: 10,
+        stats: { healing: 15 }
+      },
+      { upsert: true, new: true, setDefaultsOnInsert: true }
+    );
 
-    // Create items
-    const binhMau = await ItemSchema.create({
-      name: 'Bình Máu Nhỏ',
-      description: 'Một bình thuốc nhỏ chứa dịch màu đỏ. Có thể hồi phục 15 HP.',
-      type: 'consumable',
-      value: 10,
-      price: 50,
-      sellValue: 10,
-      stats: { healing: 15 }
-    });
+    const kiemGi = await ItemSchema.findOneAndUpdate(
+      { itemKey: 'kiem_gi' },
+      {
+        itemKey: 'kiem_gi',
+        name: 'Kiếm Gỉ',
+        description: 'Một thanh kiếm cũ đã gỉ sét. Vẫn có thể dùng được nhưng không sắc lắm.',
+        type: 'weapon',
+        value: 25,
+        stats: { damage: 8 }
+      },
+      { upsert: true, new: true, setDefaultsOnInsert: true }
+    );
 
-    const kiemGi = await ItemSchema.create({
-      name: 'Kiếm Gỉ',
-      description: 'Một thanh kiếm cũ đã gỉ sét. Vẫn có thể dùng được nhưng không sắc lắm.',
-      type: 'weapon',
-      value: 25,
-      stats: { damage: 8 }
-    });
+    const aoDa = await ItemSchema.findOneAndUpdate(
+      { itemKey: 'ao_da' },
+      {
+        itemKey: 'ao_da',
+        name: 'Áo Da',
+        description: 'Một bộ áo da đơn giản. Cung cấp một ít phòng thủ.',
+        type: 'armor',
+        value: 30,
+        stats: { defense: 5 }
+      },
+      { upsert: true, new: true, setDefaultsOnInsert: true }
+    );
 
-    const aoDa = await ItemSchema.create({
-      name: 'Áo Da',
-      description: 'Một bộ áo da đơn giản. Cung cấp một ít phòng thủ.',
-      type: 'armor',
-      value: 30,
-      stats: { defense: 5 }
-    });
+    const duoiChuot = await ItemSchema.findOneAndUpdate(
+      { itemKey: 'duoi_chuot' },
+      {
+        itemKey: 'duoi_chuot',
+        name: 'Đuôi Chuột',
+        description: 'Đuôi của một con chuột biến dị. Có thể bán cho thương gia.',
+        type: 'misc',
+        value: 2
+      },
+      { upsert: true, new: true, setDefaultsOnInsert: true }
+    );
 
-    const duoiChuot = await ItemSchema.create({
-      name: 'Đuôi Chuột',
-      description: 'Đuôi của một con chuột biến dị. Có thể bán cho thương gia.',
-      type: 'misc',
-      value: 2
-    });
+    const binhMauLon = await ItemSchema.findOneAndUpdate(
+      { itemKey: 'binh_mau_lon' },
+      {
+        itemKey: 'binh_mau_lon',
+        name: 'Bình Máu Lớn',
+        description: 'Một bình thuốc lớn chứa dịch màu đỏ tươi. Có thể hồi phục 30 HP.',
+        type: 'consumable',
+        value: 25,
+        price: 100,
+        sellValue: 25,
+        stats: { healing: 30 }
+      },
+      { upsert: true, new: true, setDefaultsOnInsert: true }
+    );
 
-    const binhMauLon = await ItemSchema.create({
-      name: 'Bình Máu Lớn',
-      description: 'Một bình thuốc lớn chứa dịch màu đỏ tươi. Có thể hồi phục 30 HP.',
-      type: 'consumable',
-      value: 25,
-      price: 100,
-      sellValue: 25,
-      stats: { healing: 30 }
-    });
+    const kiemThep = await ItemSchema.findOneAndUpdate(
+      { itemKey: 'kiem_thep' },
+      {
+        itemKey: 'kiem_thep',
+        name: 'Kiếm Thép',
+        description: 'Một thanh kiếm thép sắc bén. Vẫn còn mới và có thể gây sát thương tốt.',
+        type: 'weapon',
+        value: 50,
+        stats: { damage: 15 }
+      },
+      { upsert: true, new: true, setDefaultsOnInsert: true }
+    );
 
-    const kiemThep = await ItemSchema.create({
-      name: 'Kiếm Thép',
-      description: 'Một thanh kiếm thép sắc bén. Vẫn còn mới và có thể gây sát thương tốt.',
-      type: 'weapon',
-      value: 50,
-      stats: { damage: 15 }
-    });
+    const aoGiapNhe = await ItemSchema.findOneAndUpdate(
+      { itemKey: 'ao_giap_nhe' },
+      {
+        itemKey: 'ao_giap_nhe',
+        name: 'Áo Giáp Nhẹ',
+        description: 'Một bộ giáp nhẹ làm từ thép và da. Cung cấp phòng thủ tốt mà không làm chậm chuyển động.',
+        type: 'armor',
+        value: 60,
+        stats: { defense: 10 }
+      },
+      { upsert: true, new: true, setDefaultsOnInsert: true }
+    );
 
-    const aoGiapNhe = await ItemSchema.create({
-      name: 'Áo Giáp Nhẹ',
-      description: 'Một bộ giáp nhẹ làm từ thép và da. Cung cấp phòng thủ tốt mà không làm chậm chuyển động.',
-      type: 'armor',
-      value: 60,
-      stats: { defense: 10 }
-    });
-
-    const chiKhoaVang = await ItemSchema.create({
-      name: 'Chìa Khóa Vàng',
-      description: 'Một chiếc chìa khóa bằng vàng với hoa văn phức tạp. Có vẻ quan trọng.',
-      type: 'misc',
-      value: 100
-    });
+    const chiKhoaVang = await ItemSchema.findOneAndUpdate(
+      { itemKey: 'chia_khoa_vang' },
+      {
+        itemKey: 'chia_khoa_vang',
+        name: 'Chìa Khóa Vàng',
+        description: 'Một chiếc chìa khóa bằng vàng với hoa văn phức tạp. Có vẻ quan trọng.',
+        type: 'misc',
+        value: 100
+      },
+      { upsert: true, new: true, setDefaultsOnInsert: true }
+    );
 
     // Premium Shop Items
-    const theExpX2 = await ItemSchema.create({
-      name: 'Thẻ x2 EXP (1 Giờ)',
-      description: 'Một tấm thẻ phát sáng ánh xanh lục. Khi sử dụng, bạn sẽ nhận được gấp đôi kinh nghiệm trong 1 giờ.',
-      type: 'consumable',
-      value: 0,
-      premiumPrice: 50,
-      effects: {
-        buff: 'EXP_BOOST',
-        multiplier: 2,
-        duration_minutes: 60
-      }
-    });
+    const theExpX2 = await ItemSchema.findOneAndUpdate(
+      { itemKey: 'the_exp_x2' },
+      {
+        itemKey: 'the_exp_x2',
+        name: 'Thẻ x2 EXP (1 Giờ)',
+        description: 'Một tấm thẻ phát sáng ánh xanh lục. Khi sử dụng, bạn sẽ nhận được gấp đôi kinh nghiệm trong 1 giờ.',
+        type: 'consumable',
+        value: 0,
+        premiumPrice: 50,
+        effects: {
+          buff: 'EXP_BOOST',
+          multiplier: 2,
+          duration_minutes: 60
+        }
+      },
+      { upsert: true, new: true, setDefaultsOnInsert: true }
+    );
 
-    const theExpX3 = await ItemSchema.create({
-      name: 'Thẻ x3 EXP (30 Phút)',
-      description: 'Một tấm thẻ phát sáng ánh vàng rực rỡ. Khi sử dụng, bạn sẽ nhận được gấp ba kinh nghiệm trong 30 phút.',
-      type: 'consumable',
-      value: 0,
-      premiumPrice: 80,
-      effects: {
-        buff: 'EXP_BOOST',
-        multiplier: 3,
-        duration_minutes: 30
-      }
-    });
+    const theExpX3 = await ItemSchema.findOneAndUpdate(
+      { itemKey: 'the_exp_x3' },
+      {
+        itemKey: 'the_exp_x3',
+        name: 'Thẻ x3 EXP (30 Phút)',
+        description: 'Một tấm thẻ phát sáng ánh vàng rực rỡ. Khi sử dụng, bạn sẽ nhận được gấp ba kinh nghiệm trong 30 phút.',
+        type: 'consumable',
+        value: 0,
+        premiumPrice: 80,
+        effects: {
+          buff: 'EXP_BOOST',
+          multiplier: 3,
+          duration_minutes: 30
+        }
+      },
+      { upsert: true, new: true, setDefaultsOnInsert: true }
+    );
 
     // Phase 26: Additional Consumables
     const binhMauVua = await ItemSchema.create({
@@ -170,6 +308,226 @@ export async function initializeWorld() {
         container: true,
         randomLoot: true
       }
+    });
+
+    // Enhancement System: Upgrade Materials
+    const daCuongHoaCap1 = await ItemSchema.create({
+      name: 'Đá Cường Hóa Cấp 1',
+      description: 'Một viên đá phát sáng màu xanh lục. Dùng để cường hóa trang bị lên cấp cao hơn.',
+      type: 'upgrade_material',
+      upgradeType: 'enhancement',
+      itemKey: 'enhance_stone_1',
+      value: 50,
+      price: 100,
+      sellValue: 25,
+      quality: 'Thường'
+    });
+
+    const daNangSaoSoCap = await ItemSchema.create({
+      name: 'Đá Nâng Sao Sơ Cấp',
+      description: 'Một viên đá lấp lánh ánh sáng như sao. Có thể tăng số sao của trang bị.',
+      type: 'upgrade_material',
+      upgradeType: 'star',
+      itemKey: 'star_stone_1',
+      value: 100,
+      price: 200,
+      sellValue: 50,
+      quality: 'Tốt'
+    });
+
+    const daTinhLuyen = await ItemSchema.create({
+      name: 'Đá Tinh Luyện',
+      description: 'Một viên đá tinh khiết phát sáng ánh tím. Dùng để tinh luyện và cải thiện trang bị.',
+      type: 'upgrade_material',
+      upgradeType: 'refine',
+      itemKey: 'refine_stone_1',
+      value: 75,
+      price: 150,
+      sellValue: 35,
+      quality: 'Tốt'
+    });
+
+    // Dungeon Shop - Special items only available for dungeon coins
+    const kiemHamNguc = await ItemSchema.create({
+      name: 'Kiếm Hầm Ngục',
+      description: 'Một thanh kiếm rèn từ kim loại hiếm trong hầm ngục. Phát sáng ánh tím huyền bí.',
+      type: 'weapon',
+      slot: 'weapon',
+      value: 0, // Cannot be sold for gold
+      stats: { damage: 50 },
+      quality: 'Sử Thi',
+      requiredLevel: 20
+    });
+
+    const aoGiapHamNguc = await ItemSchema.create({
+      name: 'Áo Giáp Hầm Ngục',
+      description: 'Bộ giáp nặng được tạo từ vật liệu quý hiếm. Cung cấp phòng thủ tuyệt vời.',
+      type: 'armor',
+      slot: 'chest',
+      value: 0, // Cannot be sold for gold
+      stats: { defense: 40 },
+      quality: 'Sử Thi',
+      requiredLevel: 20
+    });
+
+    // Pet System Items
+    const trungSoi = await ItemSchema.create({
+      name: 'Trứng Sói',
+      description: 'Một quả trứng lớn với vỏ cứng màu xám bạc. Có vẻ chứa một sinh vật mạnh mẽ bên trong.',
+      type: 'PET_EGG',
+      itemKey: 'egg_wolf',
+      value: 0,
+      price: 500,
+      sellValue: 0,
+      data: { grantsPetKey: 'wolf' }
+    });
+
+    const thucAnPetSoCap = await ItemSchema.create({
+      name: 'Thức Ăn Pet Sơ Cấp',
+      description: 'Một túi thức ăn dinh dưỡng dành cho thú cưng. Cung cấp 50 điểm kinh nghiệm.',
+      type: 'PET_FOOD',
+      itemKey: 'pet_food_1',
+      value: 10,
+      price: 50,
+      sellValue: 10,
+      data: { expValue: 50 }
+    });
+
+    const thucAnPetCaoCap = await ItemSchema.create({
+      name: 'Thức Ăn Pet Cao Cấp',
+      description: 'Một túi thức ăn cao cấp dành cho thú cưng. Cung cấp 200 điểm kinh nghiệm.',
+      type: 'PET_FOOD',
+      itemKey: 'pet_food_2',
+      value: 50,
+      price: 250,
+      sellValue: 50,
+      data: { expValue: 200 }
+    });
+
+    const daTayTuyPet = await ItemSchema.create({
+      name: 'Đá Tẩy Tủy Pet',
+      description: 'Một viên đá quý hiếm phát sáng ánh vàng. Có thể dùng để thay đổi phẩm chất của thú cưng.',
+      type: 'PET_UPGRADE',
+      itemKey: 'pet_reroll_stone',
+      value: 0,
+      price: 0,
+      sellValue: 0
+    });
+
+    const sachKyNangPetCanXe = await ItemSchema.create({
+      name: 'Sách Kỹ Năng Pet: Cắn Xé',
+      description: 'Một cuốn sách cũ kỹ chứa kỹ thuật huấn luyện. Dạy thú cưng kỹ năng Cắn Xé.',
+      type: 'PET_SKILLBOOK',
+      itemKey: 'pet_skillbook_bite',
+      value: 0,
+      price: 300,
+      sellValue: 0,
+      data: { skillKey: 'bite' }
+    });
+
+    const theDoiTenPet = await ItemSchema.create({
+      name: 'Thẻ Đổi Tên Pet',
+      description: 'Một tấm thẻ đặc biệt cho phép bạn đổi tên thú cưng của mình.',
+      type: 'PET_CONSUMABLE',
+      itemKey: 'pet_rename_tag',
+      value: 0,
+      price: 100,
+      sellValue: 0
+    });
+
+    const binhMauPetNho = await ItemSchema.create({
+      name: 'Bình Máu Pet Nhỏ',
+      description: 'Một bình thuốc chuyên dụng cho thú cưng. Hồi phục 100 HP cho pet.',
+      type: 'PET_CONSUMABLE',
+      itemKey: 'pet_heal_potion_1',
+      value: 15,
+      price: 75,
+      sellValue: 15,
+      data: { healAmount: 100 }
+    });
+
+    const thuocCuongHoaPet = await ItemSchema.create({
+      name: 'Thuốc Cường Hóa Pet',
+      description: 'Một lọ thuốc màu đỏ tươi. Tăng sát thương của pet trong 30 giây.',
+      type: 'PET_CONSUMABLE',
+      itemKey: 'pet_strength_potion_1',
+      value: 25,
+      price: 125,
+      sellValue: 25,
+      data: { buffKey: 'PET_ATTACK_BUFF', duration: 30000 }
+    });
+
+    // Pet Trial System: Premium Pet Items (Tamer Badge Shop)
+    const trungPhuongHoang = await ItemSchema.create({
+      name: 'Trứng Phượng Hoàng',
+      description: 'Một quả trứng huyền thoại phát sáng ánh vàng rực rỡ. Bên trong là sinh vật huyền thoại Phượng Hoàng.',
+      type: 'PET_EGG',
+      itemKey: 'egg_phoenix',
+      value: 0,
+      price: 0,
+      sellValue: 0,
+      quality: 'Sử Thi',
+      rarity: 'legendary',
+      data: { grantsPetKey: 'phoenix' }
+    });
+
+    const thucAnPetSieuCap = await ItemSchema.create({
+      name: 'Thức Ăn Pet Siêu Cấp',
+      description: 'Thức ăn đặc biệt được chế biến từ nguyên liệu quý hiếm. Cung cấp 1000 điểm kinh nghiệm cho thú cưng.',
+      type: 'PET_FOOD',
+      itemKey: 'pet_food_3',
+      value: 0,
+      price: 0,
+      sellValue: 0,
+      quality: 'Hiếm',
+      data: { expValue: 1000 }
+    });
+
+    const sachKyNangPetPhunLua = await ItemSchema.create({
+      name: 'Sách Kỹ Năng Pet: Phun Lửa',
+      description: 'Một cuốn sách quý hiếm dạy thú cưng kỹ năng Phun Lửa mạnh mẽ.',
+      type: 'PET_SKILLBOOK',
+      itemKey: 'pet_skillbook_fire_breath',
+      value: 0,
+      price: 0,
+      sellValue: 0,
+      quality: 'Hiếm',
+      rarity: 'rare',
+      data: { skillKey: 'fire_breath' }
+    });
+
+    const sachKyNangPetTanCong = await ItemSchema.create({
+      name: 'Sách Kỹ Năng Pet: Tấn Công Liên Hoàn',
+      description: 'Cuốn sách dạy thú cưng kỹ năng tấn công nhiều lần liên tiếp.',
+      type: 'PET_SKILLBOOK',
+      itemKey: 'pet_skillbook_multi_attack',
+      value: 0,
+      price: 0,
+      sellValue: 0,
+      quality: 'Tốt',
+      data: { skillKey: 'multi_attack' }
+    });
+
+    const binhMauPetLon = await ItemSchema.create({
+      name: 'Bình Máu Pet Lớn',
+      description: 'Một bình thuốc lớn chuyên dụng cho thú cưng. Hồi phục 500 HP cho pet.',
+      type: 'PET_CONSUMABLE',
+      itemKey: 'pet_heal_potion_2',
+      value: 0,
+      price: 0,
+      sellValue: 0,
+      data: { healAmount: 500 }
+    });
+
+    const thuocPhongThuPet = await ItemSchema.create({
+      name: 'Thuốc Phòng Thủ Pet',
+      description: 'Một lọ thuốc màu xanh lục. Tăng phòng thủ của pet trong 30 giây.',
+      type: 'PET_CONSUMABLE',
+      itemKey: 'pet_defense_potion_1',
+      value: 0,
+      price: 0,
+      sellValue: 0,
+      data: { buffKey: 'PET_DEFENSE_BUFF', duration: 30000 }
     });
 
     // Phase 21 & 22: Crafting Materials
@@ -944,30 +1302,152 @@ export async function initializeWorld() {
       ]
     });
 
-    // Create rooms
-    const cổngThành = await RoomSchema.create({
-      name: 'Cổng Thành Cũ',
-      description: 'Bạn đang đứng trước một cổng thành bằng đá đã sụp đổ một nửa. Rêu và dây leo phủ kín. Gió rít qua những khe hở. Về phía bắc, bạn thấy ánh đèn leo lét của khu chợ.',
-      exits: {},
-      items: [],
-      agents: []
+    // Pet Templates
+    const wolfTemplate = await PetTemplateSchema.create({
+      petKey: 'wolf',
+      name: 'Sói',
+      description: 'Một con sói dũng mãnh với bộ lông bạc óng ánh. Trung thành và mạnh mẽ.',
+      baseStats: {
+        hp: 80,
+        attack: 12,
+        defense: 5
+      },
+      statGrowth: {
+        hpPerLevel: 15,
+        attackPerLevel: 2,
+        defensePerLevel: 1
+      }
     });
 
-    const khuCho = await RoomSchema.create({
-      name: 'Khu Chợ',
-      description: 'Một khu chợ nhỏ với vài gian hàng đang mở cửa. Mùi thức ăn và tiếng người qua lại tạo nên không khí sôi động.',
-      exits: {},
-      items: [],
-      agents: []
+    // World Boss Hunt Items
+    const loiRobotCoDai = await ItemSchema.create({
+      itemKey: 'ancient_robot_core',
+      name: 'Lõi Robot Cổ Đại',
+      description: 'Một lõi năng lượng còn phát sáng từ một cỗ máy chiến tranh thời cổ đại. Nguyên liệu chế tạo huyền thoại.',
+      type: 'craftingMaterial',
+      rarity: 'legendary',
+      value: 1000,
+      sellValue: 500,
     });
 
-    const hẻmTối = await RoomSchema.create({
-      name: 'Hẻm Tối',
-      description: 'Một con hẻm tối tăm và hẹp. Bạn nghe thấy tiếng chuột chạy trong bóng tối. Có mùi hôi thối nồng nặc.',
-      exits: {},
-      items: [duoiChuot._id],
-      agents: []
+    const huyHieuDietKhongLo = await ItemSchema.create({
+      itemKey: 'giant_slayer_badge',
+      name: 'Huy Hiệu Diệt Khổng Lồ',
+      description: 'Một huy hiệu đặc biệt chứng minh bạn đã chiến thắng một kẻ địch khổng lồ. Sử dụng để nhận danh hiệu vĩnh viễn.',
+      type: 'TITLE_BADGE',
+      rarity: 'epic',
+      value: 0,
+      grantTitle: 'Diệt Khổng Lồ',
+      braveryMedalPrice: 100,
     });
+
+    // Arena PvP Items
+    const giapDauSi = await ItemSchema.create({
+      itemKey: 'gladiator_armor',
+      name: 'Giáp Đấu Sĩ',
+      description: 'Bộ giáp được rèn đặc biệt cho những chiến binh trong đấu trường. Giảm 5% sát thương từ người chơi.',
+      type: 'Equipment',
+      slot: 'chest',
+      rarity: 'epic',
+      quality: 'Hiếm',
+      requiredLevel: 20,
+      stats: {
+        defense: 25,
+        hp: 100,
+      },
+      gloryPointsPrice: 500,
+    });
+
+    const huyHieuVoSi = await ItemSchema.create({
+      itemKey: 'champion_badge',
+      name: 'Huy Hiệu Vô Địch',
+      description: 'Huy hiệu của những chiến binh bất bại trong đấu trường. Sử dụng để nhận danh hiệu vĩnh viễn.',
+      type: 'TITLE_BADGE',
+      rarity: 'legendary',
+      value: 0,
+      grantTitle: 'Vô Địch Đấu Trường',
+      gloryPointsPrice: 1000,
+    });
+
+    // Party Dungeon Items
+    const sachKyNangCu = await ItemSchema.create({
+      itemKey: 'ancient_skill_book',
+      name: 'Sách Kỹ Năng Cổ',
+      description: 'Một cuốn sách cổ chứa đựng kiến thức về kỹ năng chiến đấu. Có thể dùng để nâng cấp kỹ năng.',
+      type: 'SKILL_UPGRADE_BOOK',
+      rarity: 'rare',
+      value: 200,
+      sellValue: 100,
+    });
+
+    const thuAnPetCaoCap = await ItemSchema.create({
+      itemKey: 'premium_pet_food',
+      name: 'Thức Ăn Pet Cao Cấp',
+      description: 'Thức ăn đặc biệt giúp pet nhận được một lượng EXP lớn. Chỉ dành cho những người yêu thú cưng.',
+      type: 'PET_FOOD',
+      rarity: 'uncommon',
+      value: 150,
+      sellValue: 50,
+      data: {
+        expBonus: 500,
+      },
+    });
+
+    const daBaoVe = await ItemSchema.create({
+      itemKey: 'protection_stone',
+      name: 'Đá Bảo Vệ',
+      description: 'Một viên đá huyền bí có thể bảo vệ trang bị khỏi rớt cấp khi cường hóa thất bại.',
+      type: 'ENHANCEMENT_PROTECTION',
+      rarity: 'rare',
+      value: 300,
+      sellValue: 150,
+    });
+
+    // =================================================================
+    // PHASE 2: Seed Rooms using findOneAndUpdate with upsert
+    // =================================================================
+    console.log('\n[Phase 2] Seeding Rooms...');
+    
+    // NOTE: Room references (exits, items, agents) will be linked in Phase 4
+    // For now, we create rooms with empty arrays/objects
+    const cổngThành = await RoomSchema.findOneAndUpdate(
+      { roomKey: 'cong_thanh_cu' },
+      {
+        roomKey: 'cong_thanh_cu',
+        name: 'Cổng Thành Cũ',
+        description: 'Bạn đang đứng trước một cổng thành bằng đá đã sụp đổ một nửa. Rêu và dây leo phủ kín. Gió rít qua những khe hở. Về phía bắc, bạn thấy ánh đèn leo lét của khu chợ.',
+        exits: {},
+        items: [],
+        agents: []
+      },
+      { upsert: true, new: true, setDefaultsOnInsert: true }
+    );
+
+    const khuCho = await RoomSchema.findOneAndUpdate(
+      { roomKey: 'khu_cho' },
+      {
+        roomKey: 'khu_cho',
+        name: 'Khu Chợ',
+        description: 'Một khu chợ nhỏ với vài gian hàng đang mở cửa. Mùi thức ăn và tiếng người qua lại tạo nên không khí sôi động.',
+        exits: {},
+        items: [],
+        agents: []
+      },
+      { upsert: true, new: true, setDefaultsOnInsert: true }
+    );
+
+    const hẻmTối = await RoomSchema.findOneAndUpdate(
+      { roomKey: 'hem_toi' },
+      {
+        roomKey: 'hem_toi',
+        name: 'Hẻm Tối',
+        description: 'Một con hẻm tối tăm và hẹp. Bạn nghe thấy tiếng chuột chạy trong bóng tối. Có mùi hôi thối nồng nặc.',
+        exits: {},
+        items: [], // Will be linked in Phase 4
+        agents: []
+      },
+      { upsert: true, new: true, setDefaultsOnInsert: true }
+    );
 
     const quảngTrường = await RoomSchema.create({
       name: 'Quảng Trường',
@@ -993,27 +1473,11 @@ export async function initializeWorld() {
       agents: []
     });
 
-    const thápCổ = await RoomSchema.create({
-      name: 'Tháp Cổ',
-      description: 'Một tòa tháp cổ cao ngất. Cầu thang xoắn ốc dẫn lên trên. Tường đá phủ đầy bụi và rêu.',
-      exits: {},
-      items: [],
-      agents: []
-    });
-
     const phòngKhóTreasure = await RoomSchema.create({
       name: 'Phòng Kho Báu',
       description: 'Một phòng nhỏ với nhiều rương gỗ. Không khí tĩnh lặng đến đáng ngờ. Có vẻ như ai đó đã ở đây trước bạn.',
       exits: {},
       items: [binhMauLon._id, kiemThep._id],
-      agents: []
-    });
-
-    const hànhLang = await RoomSchema.create({
-      name: 'Hành Lang Dài',
-      description: 'Một hành lang dài và hẹp. Đèn dầu trên tường còn cháy yếu ớt. Có nhiều cửa phòng ở hai bên.',
-      exits: {},
-      items: [],
       agents: []
     });
 
@@ -1025,7 +1489,7 @@ export async function initializeWorld() {
       agents: []
     });
 
-    // Phase 22: Zone 2 - Hầm Ngầm Bỏ Hoang (Abandoned Sewers) - 25 rooms
+    // Phase 22: Zone 2 - Hầm Ngầm Bỏ Hoang (Abandoned Sewers) - 7 rooms total
     const loiVaoHamNgam = await RoomSchema.create({
       name: 'Lối Vào Hầm Ngầm',
       description: 'Lối xuống tối tăm với các bậc đá ẩm ướt. Mùi hôi thối nồng nặc thoát lên từ bên dưới.',
@@ -1034,25 +1498,9 @@ export async function initializeWorld() {
       agents: []
     });
 
-    const hamNgam1 = await RoomSchema.create({
-      name: 'Hầm Ngầm Ẩm Ướt',
-      description: 'Hầm ngầm tối tăm với nước bẩn chảy dọc hai bên. Tường phủ đầy rêu xanh độc.',
-      exits: {},
-      items: [],
-      agents: []
-    });
-
     const hamNgam2 = await RoomSchema.create({
       name: 'Đường Hầm Cong',
       description: 'Đường hầm uốn cong với ánh sáng yếu ớt từ rêu phát quang. Tiếng nước nhỏ giọt vang vọng.',
-      exits: {},
-      items: [],
-      agents: []
-    });
-
-    const hamNgam3 = await RoomSchema.create({
-      name: 'Phòng Lọc Cũ',
-      description: 'Phòng lọc nước đã bị bỏ hoang. Các máy móc rỉ sét nằm la liệt.',
       exits: {},
       items: [],
       agents: []
@@ -1074,9 +1522,9 @@ export async function initializeWorld() {
       agents: []
     });
 
-    // Simplified: Create 19 more sewer rooms with variation (bulk insert)
+    // Simplified: Create 3 more sewer rooms with variation (bulk insert)
     const sewerRoomDocs = [];
-    for (let i = 5; i <= 23; i++) {
+    for (let i = 5; i <= 7; i++) {
       sewerRoomDocs.push({
         name: `Hầm Ngầm Khu ${i}`,
         description: `Khu vực hầm ngầm tối tăm, nước bẩn chảy ào ạt. ${i % 3 === 0 ? 'Có tiếng động lạ phía trước.' : i % 3 === 1 ? 'Mùi hôi thối nồng nặc.' : 'Tường phủ đầy rêu độc.'}`,
@@ -1087,18 +1535,10 @@ export async function initializeWorld() {
     }
     const sewerRooms = await RoomSchema.insertMany(sewerRoomDocs);
 
-    // Phase 22: Zone 3 - Nhà Máy Lắp Ráp Cũ (Old Assembly Plant) - 30 rooms
+    // Phase 22: Zone 3 - Nhà Máy Lắp Ráp Cũ (Old Assembly Plant) - 9 rooms total
     const loiVaoNhaMay = await RoomSchema.create({
       name: 'Cổng Nhà Máy',
       description: 'Cổng sắt khổng lồ đã rỉ sét nửa mở. Biển báo "Nguy Hiểm - Cấm Vào" đã phai màu.',
-      exits: {},
-      items: [],
-      agents: []
-    });
-
-    const nhaMay1 = await RoomSchema.create({
-      name: 'Sảnh Nhà Máy',
-      description: 'Sảnh rộng với trần nhà cao. Các băng chuyền đã ngừng hoạt động từ lâu.',
       exits: {},
       items: [],
       agents: []
@@ -1128,9 +1568,9 @@ export async function initializeWorld() {
       agents: []
     });
 
-    // Simplified: Create 25 more factory rooms (bulk insert)
+    // Simplified: Create 5 more factory rooms (bulk insert)
     const factoryRoomDocs = [];
-    for (let i = 4; i <= 28; i++) {
+    for (let i = 4; i <= 8; i++) {
       factoryRoomDocs.push({
         name: `Khu Vực Nhà Máy ${i}`,
         description: `${i % 4 === 0 ? 'Phân xưởng' : i % 4 === 1 ? 'Kho chứa' : i % 4 === 2 ? 'Hành lang' : 'Phòng kỹ thuật'} số ${i}. ${i % 2 === 0 ? 'Máy móc rỉ sét nằm la liệt.' : 'Có dấu hiệu hoạt động gần đây.'}`,
@@ -1141,7 +1581,7 @@ export async function initializeWorld() {
     }
     const factoryRooms = await RoomSchema.insertMany(factoryRoomDocs);
 
-    // Phase 22: Zone 4 - Phòng Thí Nghiệm Bị Chôn Vùi (Sunken Laboratory) - 35 rooms
+    // Phase 22: Zone 4 - Phòng Thí Nghiệm Bị Chôn Vùi (Sunken Laboratory) - 9 rooms total
     const loiVaoPhongLab = await RoomSchema.create({
       name: 'Lối Vào Phòng Lab',
       description: 'Lối vào bị ngập nước. Cửa kim loại dày bị cong vênh. Cảnh báo sinh học phát sáng đỏ.',
@@ -1174,9 +1614,9 @@ export async function initializeWorld() {
       agents: []
     });
 
-    // Simplified: Create 31 more lab rooms (bulk insert)
+    // Simplified: Create 5 more lab rooms (bulk insert)
     const labRoomDocs = [];
-    for (let i = 3; i <= 33; i++) {
+    for (let i = 3; i <= 7; i++) {
       labRoomDocs.push({
         name: `Phòng Lab Khu ${i}`,
         description: `${i % 5 === 0 ? 'Phòng thí nghiệm' : i % 5 === 1 ? 'Kho mẫu vật' : i % 5 === 2 ? 'Phòng quan sát' : i % 5 === 3 ? 'Phòng khử trùng' : 'Hành lang lab'} số ${i}. Ngập nước và tối tăm.`,
@@ -1187,7 +1627,7 @@ export async function initializeWorld() {
     }
     const labRooms = await RoomSchema.insertMany(labRoomDocs);
 
-    // Phase 22: Zone 5 - Trung Tâm Vong Tích Thành (Citadel Core) - 30 elite rooms
+    // Phase 22: Zone 5 - Trung Tâm Vong Tích Thành (Citadel Core) - 8 elite rooms total
     const loiVaoTrungTam = await RoomSchema.create({
       name: 'Cổng Vào Trung Tâm',
       description: 'Cổng khổng lồ bằng kim loại cổ đại. Các ký tự phát sáng xanh lam. Năng lượng dày đặc trong không khí.',
@@ -1220,9 +1660,9 @@ export async function initializeWorld() {
       agents: []
     });
 
-    // Simplified: Create 26 more citadel rooms (bulk insert)
+    // Simplified: Create 4 more citadel rooms (bulk insert)
     const citadelRoomDocs = [];
-    for (let i = 3; i <= 28; i++) {
+    for (let i = 3; i <= 6; i++) {
       citadelRoomDocs.push({
         name: `Trung Tâm Khu ${i}`,
         description: `${i % 4 === 0 ? 'Phòng nghi lễ' : i % 4 === 1 ? 'Hành lang cổ đại' : i % 4 === 2 ? 'Phòng bảo vật' : 'Đền thờ nhỏ'} trong Citadel Core. Năng lượng cổ ngữ bao trùm.`,
@@ -1247,37 +1687,25 @@ export async function initializeWorld() {
     hẻmTối.exits.west = khuCho._id;
     
     quảngTrường.exits.south = khuCho._id;
-    quảngTrường.exits.north = thápCổ._id;
+    quảngTrường.exits.north = phòngKhóTreasure._id; // Direct connection, bypassing removed rooms
     
     rừngRậm.exits.west = cổngThành._id;
     rừngRậm.exits.north = hang._id;
     
     hang.exits.south = rừngRậm._id;
     
-    thápCổ.exits.south = quảngTrường._id;
-    thápCổ.exits.up = hànhLang._id;
-    
-    hànhLang.exits.down = thápCổ._id;
-    hànhLang.exits.north = phòngKhóTreasure._id;
-    
-    phòngKhóTreasure.exits.south = hànhLang._id;
+    phòngKhóTreasure.exits.south = quảngTrường._id; // Direct connection back
     
     sânLuyệnTập.exits.east = khuCho._id;
 
     // Zone 2 (Sewers) - Simplified linear connection
     loiVaoHamNgam.exits.up = khuCho._id;
-    loiVaoHamNgam.exits.south = hamNgam1._id;
+    loiVaoHamNgam.exits.south = hamNgam2._id; // Direct connection, bypassing hamNgam1
     
-    hamNgam1.exits.north = loiVaoHamNgam._id;
-    hamNgam1.exits.east = hamNgam2._id;
+    hamNgam2.exits.north = loiVaoHamNgam._id; // Direct connection back
+    hamNgam2.exits.south = hamNgam4._id; // Direct connection, bypassing hamNgam3
     
-    hamNgam2.exits.west = hamNgam1._id;
-    hamNgam2.exits.south = hamNgam3._id;
-    
-    hamNgam3.exits.north = hamNgam2._id;
-    hamNgam3.exits.east = hamNgam4._id;
-    
-    hamNgam4.exits.west = hamNgam3._id;
+    hamNgam4.exits.north = hamNgam2._id; // Direct connection back
     hamNgam4.exits.south = sewerRooms[0]._id;
     
     // Link sewer rooms in a winding path
@@ -1292,12 +1720,9 @@ export async function initializeWorld() {
 
     // Zone 3 (Factory)
     loiVaoNhaMay.exits.south = hamNgamBoss._id;
-    loiVaoNhaMay.exits.north = nhaMay1._id;
+    loiVaoNhaMay.exits.north = nhaMay2._id; // Direct connection, bypassing nhaMay1
     
-    nhaMay1.exits.south = loiVaoNhaMay._id;
-    nhaMay1.exits.east = nhaMay2._id;
-    
-    nhaMay2.exits.west = nhaMay1._id;
+    nhaMay2.exits.south = loiVaoNhaMay._id; // Direct connection back
     nhaMay2.exits.north = nhaMay3._id;
     
     nhaMay3.exits.south = nhaMay2._id;
@@ -1359,23 +1784,18 @@ export async function initializeWorld() {
     await quảngTrường.save();
     await rừngRậm.save();
     await hang.save();
-    await thápCổ.save();
-    await hànhLang.save();
     await phòngKhóTreasure.save();
     await sânLuyệnTập.save();
     
     // Save Zone 2 rooms
     await loiVaoHamNgam.save();
-    await hamNgam1.save();
     await hamNgam2.save();
-    await hamNgam3.save();
     await hamNgam4.save();
     await hamNgamBoss.save();
     for (const room of sewerRooms) await room.save();
     
     // Save Zone 3 rooms
     await loiVaoNhaMay.save();
-    await nhaMay1.save();
     await nhaMay2.save();
     await nhaMay3.save();
     await nhaMayBoss.save();
@@ -1394,6 +1814,89 @@ export async function initializeWorld() {
     await trungTam2.save();
     await trungTamBoss.save();
     for (const room of citadelRooms) await room.save();
+
+    // Dungeon System: Create dungeon rooms
+    const dungeonLobby = await RoomSchema.create({
+      name: 'Sảnh Hầm Ngục',
+      description: 'Một sảnh rộng với cổng đá lớn dẫn vào hầm ngục. Ánh sáng lờ mờ từ những ngọn đuốc treo tường. Có một thương nhân đứng ở góc phòng.',
+      exits: {
+        north: khuChoCu._id, // Link back to main area
+      },
+    });
+
+    const dungeonInstance = await RoomSchema.create({
+      name: 'Hầm Ngục - Phòng Chiến',
+      description: 'Một phòng chiến rộng lớn với bầu không khí ngột ngạt. Đây là nơi bạn đối mặt với thử thách.',
+      exits: {
+        south: dungeonLobby._id,
+      },
+    });
+
+    dungeonLobby.exits.up = dungeonInstance._id;
+    await dungeonLobby.save();
+    await dungeonInstance.save();
+
+    // Pet Trial System: Create trial tower rooms
+    const trialLobby = await RoomSchema.create({
+      name: 'Sảnh Tháp Thử Luyện',
+      description: 'Một sảnh cao với ánh sáng xanh phát ra từ các cột pha lê. Trên tường khắc những hình vẽ về các Huấn Luyện Sư huyền thoại cùng thú cưng của họ. Không khí tràn đầy năng lượng kỳ lạ.',
+      exits: {},
+    });
+
+    const trialInstance = await RoomSchema.create({
+      name: 'Tháp Thử Luyện - Đấu Trường',
+      description: 'Một đấu trường rộng lớn với sàn đá cứng. Xung quanh là các hàng ghế đá trống rỗng, như thể từng chứng kiến vô số trận chiến. Đây là nơi thú cưng của bạn phải chiến đấu một mình.',
+      exits: {
+        down: trialLobby._id,
+      },
+      isSafeZone: false,
+    });
+
+    trialLobby.exits.up = trialInstance._id;
+    trialLobby.exits.east = cổngThành._id; // Link back to main area
+    cổngThành.exits.west = trialLobby._id; // Link to trial tower (use west exit)
+    await trialLobby.save();
+    await trialInstance.save();
+
+    // Arena System: Create arena rooms
+    const arenaLobby = await RoomSchema.create({
+      name: 'Phòng Chờ Đấu Trường',
+      description: 'Một phòng chờ rộng rãi với các băng ghế đá. Trên tường treo những tấm bảng ghi tên những chiến binh nổi tiếng. Không khí nơi đây căng thẳng nhưng đầy hứng khởi.',
+      exits: {},
+      isSafeZone: true,
+    });
+
+    const arena1v1RoomA = await RoomSchema.create({
+      name: 'Đấu Trường 1v1 - Phòng A',
+      description: 'Một đấu trường tròn với sàn đá cứng. Xung quanh là các hàng ghế cao chót vót, dù giờ đây đã trống rỗng. Đây là nơi quyết định người chiến thắng.',
+      exits: {},
+      isSafeZone: false,
+    });
+
+    const arena1v1RoomB = await RoomSchema.create({
+      name: 'Đấu Trường 1v1 - Phòng B',
+      description: 'Một đấu trường tròn với sàn đá cứng. Xung quanh là các hàng ghế cao chót vót, dù giờ đây đã trống rỗng. Đây là nơi quyết định người chiến thắng.',
+      exits: {},
+      isSafeZone: false,
+    });
+
+    arenaLobby.exits.south = khuCho._id; // Link back to main area
+    khuCho.exits.down = arenaLobby._id; // Link from marketplace
+    await arenaLobby.save();
+    await arena1v1RoomA.save();
+    await arena1v1RoomB.save();
+
+    // Party Dungeon System: Create entrance
+    const partyDungeonEntrance = await RoomSchema.create({
+      name: 'Lối Vào Di Tích Cổ',
+      description: 'Một lối vào đầy bụi với những cột đá cổ đại. Có vẻ như nơi đây đã bị lãng quên từ lâu. Một nhà khảo cổ đang nghiên cứu những bức tường.',
+      exits: {},
+      isSafeZone: true,
+    });
+
+    partyDungeonEntrance.exits.west = rừngRậm._id; // Link from forest
+    rừngRậm.exits.east = partyDungeonEntrance._id; // Link to dungeon
+    await partyDungeonEntrance.save();
 
     // Create NPCs
     const linhGac = await AgentSchema.create({
@@ -1435,12 +1938,99 @@ export async function initializeWorld() {
         binhMau._id,
         binhNangLuongNho._id,
         dichChuyenVeChoCu._id,
+        daCuongHoaCap1._id,
+        daTinhLuyen._id,
         congThucMuLangKhach._id,
         congThucAoLangKhach._id,
         congThucQuanLangKhach._id,
         congThucGiayLangKhach._id
       ],
       shopType: 'gold'
+    });
+
+    const petTamer = await AgentSchema.create({
+      name: 'Huấn Luyện Sư Kito',
+      description: 'Một người đàn ông với mái tóc bạc và đôi mắt sắc bén. Xung quanh ông có vài con thú nhỏ đang chơi đùa.',
+      type: 'npc',
+      agentKey: 'pet_tamer',
+      currentRoomId: cổngThành._id,
+      hp: 120,
+      maxHp: 120,
+      level: 15,
+      damage: 20,
+      behavior: 'passive',
+      dialogue: [
+        'Chào mừng đến với thế giới của Huấn Luyện Sư! Gõ "list" để xem cửa hàng của ta.',
+        'Ta có thể dạy ngươi cách huấn luyện và chăm sóc thú cưng.',
+        'Muốn thử sức với Tháp Thử Luyện? Gõ "thử luyện" để bắt đầu!',
+        'Huy Hiệu Huấn Luyện có thể đổi lấy vật phẩm quý hiếm cho thú cưng.'
+      ],
+      isVendor: true,
+      shopInventory: [
+        // Basic items - can be bought with gold
+        trungSoi._id,
+        thucAnPetSoCap._id,
+        thucAnPetCaoCap._id,
+        sachKyNangPetCanXe._id,
+        theDoiTenPet._id,
+        binhMauPetNho._id,
+        thuocCuongHoaPet._id,
+        // Premium items - require Tamer Badge from Pet Trial Tower
+        daTayTuyPet._id,
+        trungPhuongHoang._id,
+        thucAnPetSieuCap._id,
+        sachKyNangPetPhunLua._id,
+        sachKyNangPetTanCong._id,
+        binhMauPetLon._id,
+        thuocPhongThuPet._id
+      ],
+      shopType: 'gold',
+      shopCurrency: 'tamer_badge'
+    });
+
+    const arenaManager = await AgentSchema.create({
+      name: 'Quản Lý Đấu Trường',
+      description: 'Một người đàn ông cao lớn với bộ giáp lấp lánh. Ông là người quản lý các trận đấu trong đấu trường.',
+      type: 'npc',
+      agentKey: 'arena_manager',
+      currentRoomId: arenaLobby._id,
+      hp: 200,
+      maxHp: 200,
+      level: 30,
+      damage: 50,
+      behavior: 'passive',
+      dialogue: [
+        'Chào mừng đến đấu trường! Gõ "list" để xem cửa hàng vinh quang.',
+        'Muốn chiến đấu? Gõ "queue 1v1" để tham gia hàng chờ.',
+        'Điểm Vinh Quang chỉ có thể kiếm được từ chiến thắng PvP!',
+        'Những chiến binh mạnh nhất sẽ được vinh danh!'
+      ],
+      isVendor: true,
+      shopInventory: [
+        giapDauSi._id,
+        huyHieuVoSi._id,
+      ],
+      shopType: 'glory_points',
+      shopCurrency: 'glory_points'
+    });
+
+    const archaeologist = await AgentSchema.create({
+      name: 'Nhà Khảo Cổ',
+      description: 'Một người đàn ông cao với áo choàng bụi bặm và kính mắt dày. Ông đang ghi chép điều gì đó vào một cuốn sổ cũ.',
+      type: 'npc',
+      agentKey: 'archaeologist',
+      currentRoomId: partyDungeonEntrance._id,
+      hp: 100,
+      maxHp: 100,
+      level: 20,
+      damage: 15,
+      behavior: 'passive',
+      dialogue: [
+        'Chào! Tôi đang nghiên cứu Di Tích Cổ này.',
+        'Nếu nhóm của bạn muốn khám phá, gõ "talk nhà khảo cổ" và chọn "explore".',
+        'Hãy cẩn thận! Bên trong đầy rẫy bí ẩn và nguy hiểm.',
+        'Những người giải được các câu đố sẽ nhận được phần thưởng quý giá!',
+      ],
     });
 
     const chuotBienDi = await AgentSchema.create({
@@ -1509,7 +2099,7 @@ export async function initializeWorld() {
       level: 5,
       damage: 12,
       behavior: 'patrol',
-      patrolRoute: [quảngTrường._id, thápCổ._id, hànhLang._id, thápCổ._id],
+      patrolRoute: [quảngTrường._id, phòngKhóTreasure._id, quảngTrường._id],
       dialogue: [
         'Mọi thứ đều yên ổn ở đây.',
         'Đừng gây rối trong khu vực này.',
@@ -1579,6 +2169,28 @@ export async function initializeWorld() {
       isVendor: true,
       shopInventory: [theExpX2._id, theExpX3._id],
       shopType: 'premium',
+      experience: 0
+    });
+
+    // Dungeon System: Dungeon Merchant NPC
+    const dungeonMerchant = await AgentSchema.create({
+      name: 'Thương Nhân Hầm Ngục',
+      description: 'Một thương nhân bí ẩn chuyên bán đồ quý hiếm bằng Xu Hầm Ngục. Mắt người này lấp lánh với sự tham lam.',
+      type: 'npc',
+      currentRoomId: dungeonLobby._id,
+      hp: 200,
+      maxHp: 200,
+      level: 50,
+      damage: 50,
+      behavior: 'passive',
+      dialogue: [
+        'Chào mừng đến với cửa hàng đặc biệt của ta. Ta chỉ nhận Xu Hầm Ngục.',
+        'Những vật phẩm ở đây chỉ dành cho những người mạnh nhất.',
+        'Hãy chinh phục hầm ngục để kiếm Xu Hầm Ngục.'
+      ],
+      isVendor: true,
+      shopInventory: [daNangSaoSoCap._id, daTinhLuyen._id, kiemHamNguc._id, aoGiapHamNguc._id], // High-tier items
+      shopCurrency: 'dungeon_coin',
       experience: 0
     });
 
@@ -1678,6 +2290,8 @@ export async function initializeWorld() {
         { itemId: chiaKhoaHamNgam._id, dropChance: 1.0 }, // 100% boss drop - unlocks Zone 2
         { itemId: daChuot._id, dropChance: 0.9 },
         { itemId: vaiRach._id, dropChance: 0.9 },
+        { itemId: daCuongHoaCap1._id, dropChance: 0.3 }, // 30% chance for enhancement stone
+        { itemId: daTinhLuyen._id, dropChance: 0.15 }, // 15% chance for refine stone
         { itemId: ruongGoNho._id, dropChance: 0.15 } // Small chance for container
       ]
     });
@@ -1763,6 +2377,9 @@ export async function initializeWorld() {
         { itemId: loiCoNguHong._id, dropChance: 1.0 }, // 100% boss drop - for rare weapon recipe
         { itemId: voNhenCung._id, dropChance: 0.8 },
         { itemId: loiNangLuongYeu._id, dropChance: 0.8 },
+        { itemId: daCuongHoaCap1._id, dropChance: 0.4 }, // 40% chance for enhancement stone
+        { itemId: daNangSaoSoCap._id, dropChance: 0.2 }, // 20% chance for star stone
+        { itemId: daTinhLuyen._id, dropChance: 0.25 }, // 25% chance for refine stone
         { itemId: congThucVukhi20Hiem._id, dropChance: 0.1 } // Phase 26: 10% drop for rare weapon recipe
       ]
     });
@@ -1842,7 +2459,10 @@ export async function initializeWorld() {
       lootTable: [
         { itemId: chipViMachCo._id, dropChance: 1.0 }, // 100% boss drop
         { itemId: banhRangRiSet._id, dropChance: 0.9 },
-        { itemId: moDotBienNho._id, dropChance: 0.9 }
+        { itemId: moDotBienNho._id, dropChance: 0.9 },
+        { itemId: daCuongHoaCap1._id, dropChance: 0.5 }, // 50% chance for enhancement stone
+        { itemId: daNangSaoSoCap._id, dropChance: 0.3 }, // 30% chance for star stone
+        { itemId: daTinhLuyen._id, dropChance: 0.35 } // 35% chance for refine stone
       ]
     });
 
@@ -2006,7 +2626,14 @@ export async function initializeWorld() {
     // Add agents to rooms
     // Zone 1
     cổngThành.agents.push(linhGac._id, giaLang._id);
+    cổngThành.agents.push(petTamer._id); // Pet system
     khuCho.agents.push(thuongGia._id, thuongGiaBiAn._id);
+    
+    // Arena system
+    arenaLobby.agents.push(arenaManager._id);
+    
+    // Party dungeon system
+    partyDungeonEntrance.agents.push(archaeologist._id);
     hẻmTối.agents.push(chuotBienDi._id, chuotCong._id);
     rừngRậm.agents.push(sóiRừng._id, thayMaYeu._id, keCuopDuong._id);
     hang.agents.push(goblin._id, thuLinhKeCuop._id); // Phase 26: Added Level 10 boss
@@ -2464,11 +3091,129 @@ export async function initializeWorld() {
       active: true
     });
 
-    console.log('World initialized successfully!');
-    console.log(`- Created ${await RoomSchema.countDocuments()} rooms`);
-    console.log(`- Created ${await ItemSchema.countDocuments()} items`);
-    console.log(`- Created ${await AgentSchema.countDocuments()} agents`);
-    console.log(`- Created ${await QuestSchema.countDocuments()} quests`);
+    // Enhancement System: Daily Quests with upgrade material rewards
+    await QuestSchema.create({
+      name: '[Hàng Ngày] Săn Boss',
+      description: 'Tiêu diệt 3 Boss bất kỳ để nhận thưởng.',
+      type: 'daily',
+      questGiver: 'Thợ Rèn',
+      questGiverRoomId: khuCho._id,
+      objectives: [
+        { type: 'kill', target: 'Thủ Lĩnh Goblin', count: 1, progress: 0 }
+      ],
+      rewards: { 
+        exp: 500, 
+        gold: 200,
+        items: [daCuongHoaCap1._id, daCuongHoaCap1._id] // 2x Enhancement Stones
+      },
+      levelRequirement: 10,
+      isRepeatable: true,
+      active: true
+    });
+
+    await QuestSchema.create({
+      name: '[Hàng Ngày] Thu Thập Nguyên Liệu',
+      description: 'Thu thập 20 vật liệu chế tạo bất kỳ.',
+      type: 'daily',
+      questGiver: 'Thợ Rèn',
+      questGiverRoomId: khuCho._id,
+      objectives: [
+        { type: 'collect', target: 'Da Chuột', count: 20, progress: 0 }
+      ],
+      rewards: { 
+        exp: 300, 
+        gold: 150,
+        items: [daTinhLuyen._id] // 1x Refine Stone
+      },
+      levelRequirement: 5,
+      isRepeatable: true,
+      active: true
+    });
+
+    await QuestSchema.create({
+      name: '[Hàng Tuần] Chinh Phục Hầm Ngục',
+      description: 'Hoàn thành 10 tầng hầm ngục trong tuần.',
+      type: 'daily',
+      questGiver: 'Thương Nhân Hầm Ngục',
+      questGiverRoomId: dungeonLobby._id,
+      objectives: [
+        { type: 'visit', target: 'Hầm Ngục - Phòng Chiến', count: 10, progress: 0 }
+      ],
+      rewards: { 
+        exp: 1000, 
+        gold: 500,
+        items: [daNangSaoSoCap._id, daTinhLuyen._id] // Star Stone + Refine Stone
+      },
+      levelRequirement: 15,
+      isRepeatable: true,
+      active: true
+    });
+
+    // =================================================================
+    // TODO: Complete conversion of remaining create() calls to upsert
+    // =================================================================
+    // The pattern has been demonstrated above with Items and Rooms.
+    // Remaining work:
+    // 1. Convert remaining ~88 ItemSchema.create() calls to findOneAndUpdate()
+    // 2. Convert remaining ~30 RoomSchema.create() calls to findOneAndUpdate()  
+    // 3. Convert all ~42 AgentSchema.create() calls to findOneAndUpdate()
+    // 4. Convert all ~18 QuestSchema.create() calls to findOneAndUpdate()
+    //
+    // Pattern to follow for each:
+    //   const entity = await Schema.findOneAndUpdate(
+    //     { entityKey: 'unique_key' },  // Find by natural key
+    //     { ...allData },                // Update with all data
+    //     { upsert: true, new: true, setDefaultsOnInsert: true }  // Upsert options
+    //   );
+    
+    // =================================================================
+    // PHASE 3: Fetch ID Maps (after all entities are seeded)
+    // =================================================================
+    // NOTE: This should be called after all entities are created/upserted
+    // console.log('\n[Phase 3] Building ID maps...');
+    // const idMaps = await fetchMappedIds();
+    
+    // =================================================================
+    // PHASE 4: Link Dynamic Data (using ID maps)
+    // =================================================================
+    // NOTE: Use idMaps to update references between entities
+    // Example for room exits:
+    //
+    // await RoomSchema.updateOne(
+    //   { roomKey: 'cong_thanh_cu' },
+    //   {
+    //     $set: {
+    //       exits: {
+    //         north: idMaps.roomMap.get('khu_cho'),
+    //         south: idMaps.roomMap.get('hem_toi')
+    //       }
+    //     }
+    //   }
+    // );
+    //
+    // Example for agent loot tables:
+    //
+    // await AgentSchema.updateOne(
+    //   { agentKey: 'chuot_bien_di' },
+    //   {
+    //     $set: {
+    //       lootTable: [
+    //         { itemId: idMaps.itemMap.get('da_chuot'), dropChance: 0.5 },
+    //         { itemId: idMaps.itemMap.get('vai_rach'), dropChance: 0.3 }
+    //       ]
+    //     }
+    //   }
+    // );
+
+    console.log('='.repeat(60));
+    console.log('World initialization complete!');
+    console.log('='.repeat(60));
+    console.log(`✓ Rooms: ${await RoomSchema.countDocuments()}`);
+    console.log(`✓ Items: ${await ItemSchema.countDocuments()}`);
+    console.log(`✓ Agents: ${await AgentSchema.countDocuments()}`);
+    console.log(`✓ Quests: ${await QuestSchema.countDocuments()}`);
+    console.log(`✓ Pet Templates: ${await PetTemplateSchema.countDocuments()}`);
+    console.log('='.repeat(60));
     
     return {
       startingRoomId: cổngThành._id

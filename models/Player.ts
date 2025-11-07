@@ -43,6 +43,14 @@ export const PlayerSchema = defineMongooseModel({
       type: Number,
       default: 0,
     },
+    braveryMedals: {
+      type: Number,
+      default: 0,
+    },
+    gloryPoints: {
+      type: Number,
+      default: 0,
+    },
     inventory: [{
       type: Schema.Types.ObjectId,
       ref: 'Item',
@@ -198,6 +206,11 @@ export const PlayerSchema = defineMongooseModel({
       enum: ['player', 'admin'],
       default: 'player',
     },
+    // Title system
+    title: {
+      type: String,
+      default: null,
+    },
     // Phase 30: Custom Alias System
     customAliases: {
       type: Map,
@@ -208,6 +221,60 @@ export const PlayerSchema = defineMongooseModel({
     autoCombat: {
       type: Boolean,
       default: false, // Auto-attack nearest mob when available
+    },
+    // Phase 31: Visited Rooms Tracking
+    visitedRooms: [{
+      type: Schema.Types.ObjectId,
+      ref: 'Room',
+      default: [],
+    }],
+    // Enhancement & Dungeon System
+    dungeonCoin: {
+      type: Number,
+      default: 0,
+    },
+    dungeonProgress: {
+      currentFloor: {
+        type: Number,
+        default: 1,
+      },
+      highestFloor: {
+        type: Number,
+        default: 1,
+      },
+      lastWeeklyReset: {
+        type: Date,
+        default: () => new Date(),
+      },
+    },
+    // Pet System
+    petStable: [{
+      type: Schema.Types.ObjectId,
+      ref: 'Pet',
+    }],
+    activePetId: {
+      type: Schema.Types.ObjectId,
+      ref: 'Pet',
+      default: null,
+    },
+    // Pet Trial Tower
+    tamerBadge: {
+      type: Number,
+      default: 0,
+    },
+    petTrialProgress: {
+      currentFloor: {
+        type: Number,
+        default: 1,
+      },
+      highestFloor: {
+        type: Number,
+        default: 1,
+      },
+      lastWeeklyReset: {
+        type: Date,
+        default: () => new Date(),
+      },
     },
   },
 });

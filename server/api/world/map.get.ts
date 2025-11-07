@@ -100,13 +100,23 @@ export default defineEventHandler(async (event) => {
         hasNewQuests,
         hasActiveQuests,
         connections,
-        visited: true, // TODO: Track per player
+        visited: false, // Will be set based on player's visitedRooms
         isCurrent: false // Will be set below
       };
     });
 
-    // Get current player to mark current room
+    // Get current player to mark current room and visited rooms
     const player = await PlayerSchema.findById(session.user.id).lean();
+    
+    // Create a set of visited room IDs for faster lookup
+    const visitedRoomIds = new Set(
+      (player?.visitedRooms || []).map((id: any) => id.toString())
+    );
+    
+    // Mark visited rooms
+    worldRooms.forEach((room: any) => {
+      room.visited = visitedRoomIds.has(room.id);
+    });
     
     if (player?.currentRoomId) {
       const currentRoomId = player.currentRoomId.toString();
@@ -114,6 +124,8 @@ export default defineEventHandler(async (event) => {
       
       if (currentRoom) {
         currentRoom.isCurrent = true;
+        // Current room should always be marked as visited
+        currentRoom.visited = true;
         return {
           success: true,
           rooms: worldRooms,

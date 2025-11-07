@@ -1,5 +1,6 @@
 import { PlayerSchema } from '../../../models/Player';
 import { ItemSchema } from '../../../models/Item';
+import { validateObjectId } from '~/server/utils/validation';
 
 export default defineEventHandler(async (event) => {
   const user = await getUserSession(event);
@@ -17,6 +18,15 @@ export default defineEventHandler(async (event) => {
     throw createError({
       statusCode: 400,
       statusMessage: 'Recipe ID is required.'
+    });
+  }
+
+  // Validate recipeId format
+  const validation = validateObjectId(recipeId);
+  if (!validation.valid) {
+    throw createError({
+      statusCode: 400,
+      statusMessage: validation.error || 'Recipe ID không hợp lệ.'
     });
   }
 

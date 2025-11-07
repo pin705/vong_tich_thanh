@@ -4,11 +4,14 @@ import { handleCommand } from '../utils/commandHandler';
 import { handleCommandDb } from '../utils/commandHandlerDb';
 import { gameState } from '../utils/gameState';
 import { partyService } from '../utils/partyService';
+import { tradeService } from '../utils/tradeService';
+import { unsummonPet } from '../utils/petService';
 import { getRoomRespawns } from '../utils/npcAI';
 import { PlayerSchema } from '../../models/Player';
 import { RoomSchema } from '../../models/Room';
 import { AgentSchema } from '../../models/Agent';
 import { deduplicateItemsById } from '../utils/itemDeduplication';
+import { commandRateLimiter, chatRateLimiter, sanitizeInput } from '../utils/validation';
 
 // Store peer to player mapping
 const peerToPlayer = new Map<string, string>();
@@ -367,9 +370,37 @@ export default defineWebSocketHandler({
           }
 
           try {
+            // Rate limiting for commands (60 commands per minute)
+            if (!commandRateLimiter.checkLimit(playerIdForCmd, 60, 60000)) {
+              peer.send(JSON.stringify({
+                type: 'error',
+                message: 'Bạn đang gửi lệnh quá nhanh. Vui lòng chờ một chút.'
+              }));
+              return;
+            }
+
+            // Check if input is not empty before sanitizing
+            if (!payload.input || !payload.input.trim()) {
+              peer.send(JSON.stringify({
+                type: 'error',
+                message: 'Lệnh không được để trống.'
+              }));
+              return;
+            }
+
+            // Sanitize input
+            const sanitizedInput = sanitizeInput(payload.input);
+            if (!sanitizedInput) {
+              peer.send(JSON.stringify({
+                type: 'error',
+                message: 'Lệnh không hợp lệ.'
+              }));
+              return;
+            }
+
             // Get player to access custom aliases
             const cmdPlayer = await PlayerSchema.findById(playerIdForCmd);
-            const command = parseCommand(payload.input, cmdPlayer?.customAliases);
+            const command = parseCommand(sanitizedInput, cmdPlayer?.customAliases);
             console.log('[WS] Command:', command, 'from player:', playerIdForCmd);
             
             // Process command with database integration
@@ -510,7 +541,56 @@ export default defineWebSocketHandler({
           playerId
         );
         
-        // Remove player first
+        // Clean up player state: combat, trade, party, pet
+        try {
+          // 1. Exit combat if in combat (optimized: use atomic update)
+          const dbPlayer = await PlayerSchema.findById(playerId).select('inCombat activePetId').lean();
+          if (dbPlayer?.inCombat) {
+            await PlayerSchema.updateOne(
+              { _id: playerId },
+              { inCombat: false, combatTarget: null }
+            );
+            gameState.stopCombat(playerId);
+          }
+          
+          // 2. Cancel any active trade
+          const playerTrade = tradeService.getPlayerTrade(playerId);
+          if (playerTrade) {
+            const otherPlayerId = playerTrade.isInitiator 
+              ? playerTrade.trade.targetId 
+              : playerTrade.trade.initiatorId;
+            tradeService.cancelTrade(playerId);
+            
+            // Notify other player
+            const otherPlayer = gameState.getPlayer(otherPlayerId);
+            if (otherPlayer?.ws) {
+              otherPlayer.ws.send(JSON.stringify({
+                type: 'system',
+                category: 'trade',
+                message: `[${player.username}] đã ngắt kết nối. Giao dịch đã bị hủy.`
+              }));
+            }
+          }
+          
+          // 3. Leave party if in party
+          const partyId = partyService.getPlayerParty(playerId);
+          if (partyId) {
+            partyService.leaveParty(playerId);
+          }
+          
+          // 4. Unsummon pet if active
+          if (dbPlayer?.activePetId) {
+            await unsummonPet(playerId);
+          }
+        } catch (error) {
+          console.error('[WS] Error during disconnect cleanup:', error);
+        }
+        
+        // Clean up rate limiters
+        commandRateLimiter.reset(playerId);
+        chatRateLimiter.reset(playerId);
+        
+        // Remove player from game state
         gameState.removePlayer(playerId);
         peerToPlayer.delete(peer.id);
         
@@ -519,6 +599,10 @@ export default defineWebSocketHandler({
       } else {
         gameState.removePlayer(playerId);
         peerToPlayer.delete(peer.id);
+        
+        // Clean up rate limiters even if player not in game state
+        commandRateLimiter.reset(playerId);
+        chatRateLimiter.reset(playerId);
       }
     }
   },

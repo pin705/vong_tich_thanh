@@ -7,6 +7,7 @@ export const ItemSchema = defineMongooseModel({
     name: {
       type: String,
       required: true,
+      index: true, // Index for faster name lookups
     },
     description: {
       type: String,
@@ -14,8 +15,9 @@ export const ItemSchema = defineMongooseModel({
     },
     type: {
       type: String,
-      enum: ['weapon', 'armor', 'consumable', 'misc', 'craftingMaterial', 'recipe', 'furniture', 'Equipment', 'Recipe', 'Material'],
+      enum: ['weapon', 'armor', 'consumable', 'misc', 'craftingMaterial', 'recipe', 'furniture', 'Equipment', 'Recipe', 'Material', 'upgrade_material', 'PET_EGG', 'PET_FOOD', 'PET_UPGRADE', 'PET_SKILLBOOK', 'PET_CONSUMABLE', 'TITLE_BADGE', 'SKILL_UPGRADE_BOOK', 'ENHANCEMENT_PROTECTION'],
       required: true,
+      index: true, // Index for filtering by type
     },
     value: {
       type: Number,
@@ -113,5 +115,42 @@ export const ItemSchema = defineMongooseModel({
         of: Number,
       },
     }],
+    // Enhancement System - Upgrade material type
+    upgradeType: {
+      type: String,
+      enum: ['enhancement', 'star', 'refine', null],
+      default: null,
+    },
+    itemKey: {
+      type: String,
+      unique: true,
+      required: true,
+      index: true,
+    },
+    // Pet System - Additional data for pet items
+    data: {
+      type: Schema.Types.Mixed,
+      default: null,
+    },
+    // World Boss / Event System - Title badges
+    grantTitle: {
+      type: String,
+      default: null, // Title to grant when using this item
+    },
+    // Arena System - Glory Points price
+    gloryPointsPrice: {
+      type: Number,
+      default: 0,
+    },
+    // World Boss System - Bravery Medal price
+    braveryMedalPrice: {
+      type: Number,
+      default: 0,
+    },
+    // Skill Upgrade Books - Skill to upgrade
+    upgradesSkill: {
+      type: String,
+      default: null, // Skill key that this book upgrades
+    },
   },
 });

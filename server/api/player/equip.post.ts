@@ -1,5 +1,8 @@
 import { PlayerSchema } from '../../../models/Player';
 import { ItemSchema } from '../../../models/Item';
+import { validateObjectId } from '~/server/utils/validation';
+
+const VALID_SLOTS = ['helmet', 'chest', 'legs', 'boots', 'weapon'];
 
 export default defineEventHandler(async (event) => {
   const user = await getUserSession(event);
@@ -17,6 +20,23 @@ export default defineEventHandler(async (event) => {
     throw createError({
       statusCode: 400,
       statusMessage: 'Item ID and slot are required.'
+    });
+  }
+
+  // Validate itemId format
+  const idValidation = validateObjectId(itemId);
+  if (!idValidation.valid) {
+    throw createError({
+      statusCode: 400,
+      statusMessage: idValidation.error || 'Item ID không hợp lệ.'
+    });
+  }
+
+  // Validate slot
+  if (!VALID_SLOTS.includes(slot)) {
+    throw createError({
+      statusCode: 400,
+      statusMessage: 'Vị trí trang bị không hợp lệ.'
     });
   }
 

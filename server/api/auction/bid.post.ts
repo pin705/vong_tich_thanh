@@ -1,5 +1,6 @@
 import { AuctionItemSchema } from '../../../models/AuctionItem';
 import { PlayerSchema } from '../../../models/Player';
+import { validateObjectId, validateNumber } from '~/server/utils/validation';
 
 const MIN_BID_INCREMENT = 5; // Minimum bid increment
 
@@ -15,14 +16,33 @@ export default defineEventHandler(async (event) => {
   const body = await readBody(event);
   const { auctionId, bidAmount } = body;
 
-  if (!auctionId || !bidAmount) {
+  if (!auctionId || bidAmount === undefined || bidAmount === null) {
     throw createError({
       statusCode: 400,
       statusMessage: 'Auction ID và số tiền đặt giá là bắt buộc.'
     });
   }
 
+  // Validate auctionId format
+  const idValidation = validateObjectId(auctionId);
+  if (!idValidation.valid) {
+    throw createError({
+      statusCode: 400,
+      statusMessage: idValidation.error || 'Auction ID không hợp lệ.'
+    });
+  }
+
+  // Validate bid amount
+  const amountValidation = validateNumber(bidAmount, 'Số tiền đặt giá', { min: 1, integer: true });
+  if (!amountValidation.valid) {
+    throw createError({
+      statusCode: 400,
+      statusMessage: amountValidation.error || 'Số tiền đặt giá không hợp lệ.'
+    });
+  }
+
   const playerId = user.user.id;
+  const validatedBidAmount = amountValidation.value!; // Use validated value
 
   try {
     // Get player
@@ -64,7 +84,7 @@ export default defineEventHandler(async (event) => {
       ? auction.currentBid + MIN_BID_INCREMENT 
       : auction.startingPrice;
 
-    if (bidAmount < minBid) {
+    if (validatedBidAmount < minBid) {
       throw createError({
         statusCode: 400,
         statusMessage: `Giá đặt phải ít nhất ${minBid} vàng.`
@@ -72,42 +92,64 @@ export default defineEventHandler(async (event) => {
     }
 
     // Check if player has enough gold
-    if (player.gold < bidAmount) {
+    if (player.gold < validatedBidAmount) {
       throw createError({
         statusCode: 400,
         statusMessage: 'Không đủ vàng để đặt giá.'
       });
     }
 
-    // Refund previous bidder
-    if (auction.currentBidder) {
-      const previousBidder = await PlayerSchema.findById(auction.currentBidder);
+    // Update auction atomically to prevent race conditions
+    // Use findOneAndUpdate to get the OLD document with previous bidder info
+    const oldAuction = await AuctionItemSchema.findOneAndUpdate(
+      { 
+        _id: auctionId, 
+        status: 'active',
+        expiresAt: { $gte: new Date() },
+        currentBid: { $lt: validatedBidAmount } // Ensure new bid is higher than current bid
+      },
+      { 
+        currentBid: validatedBidAmount,
+        currentBidder: player._id,
+        $push: {
+          bidHistory: {
+            bidder: player._id,
+            amount: validatedBidAmount,
+            timestamp: new Date()
+          }
+        }
+      },
+      { new: false } // Return OLD document to get previous bidder info
+    );
+
+    // If update failed, another bid was placed or auction ended
+    if (!oldAuction) {
+      throw createError({
+        statusCode: 400,
+        statusMessage: 'Đấu giá đã kết thúc hoặc có người đặt giá cao hơn.'
+      });
+    }
+
+    // Now process refunds and payments using data from old auction document
+    // Refund previous bidder (from old auction state)
+    if (oldAuction.currentBidder) {
+      const previousBidder = await PlayerSchema.findById(oldAuction.currentBidder);
       if (previousBidder) {
-        previousBidder.gold += auction.currentBid;
+        previousBidder.gold += oldAuction.currentBid;
         await previousBidder.save();
       }
     }
 
     // Deduct gold from new bidder
-    player.gold -= bidAmount;
+    player.gold -= validatedBidAmount;
     await player.save();
-
-    // Update auction
-    auction.currentBid = bidAmount;
-    auction.currentBidder = player._id;
-    auction.bidHistory.push({
-      bidder: player._id,
-      amount: bidAmount,
-      timestamp: new Date()
-    });
-    await auction.save();
 
     return {
       success: true,
-      message: `Đã đặt giá ${bidAmount} vàng.`,
+      message: `Đã đặt giá ${validatedBidAmount} vàng.`,
       auction: {
-        id: auction._id,
-        currentBid: auction.currentBid
+        id: auctionId,
+        currentBid: validatedBidAmount // Use validated bid amount since that's what was set
       }
     };
   } catch (error: any) {

@@ -4,9 +4,11 @@ import { RoomSchema } from '../../models/Room';
 import { ItemSchema } from '../../models/Item';
 import { AgentSchema } from '../../models/Agent';
 import { BuffSchema } from '../../models/Buff';
+import { PetSchema } from '../../models/Pet';
+import { PetTemplateSchema } from '../../models/PetTemplate';
 import { gameState } from './gameState';
 import { DEV_FEATURE_MESSAGE, SMALL_POTION_HEALING } from './constants';
-import { startCombat, fleeCombat } from './combatSystem';
+import { startCombat, fleeCombat, updateQuestProgress } from './combatSystem';
 import { partyService } from './partyService';
 import { tradeService } from './tradeService';
 import { handleMovementCommand, handleGotoCommand } from '../commands/movement';
@@ -19,6 +21,8 @@ import { deduplicateItemsById } from './itemDeduplication';
 import { BUILT_IN_COMMANDS } from './commandParser';
 import { transferItem, transferGold, addItemToPlayer, removeItemFromPlayer } from './inventoryService';
 import { findItemOnGround, findItemInInventory, findTargetInRoom } from './entityFinder';
+import { getHelpText } from './helpSystem';
+import { determinePetQuality, summonPet, unsummonPet, addExp } from './petService';
 
 // Command routing configuration
 const MOVEMENT_COMMANDS = ['go', 'n', 's', 'e', 'w', 'u', 'd', 
@@ -30,6 +34,28 @@ const COMBAT_COMMANDS = ['attack', 'a', 'kill', 'flee', 'run'];
 const ITEM_COMMANDS = ['inventory', 'i', 'get', 'g', 'drop', 'use', 
                        'list', 'buy', 'sell'];
 
+// Helper function to get currency info for shop transactions
+function getCurrencyInfo(vendor: any, player: any) {
+  const isPremiumShop = vendor.shopType === 'premium';
+  const isDungeonShop = vendor.shopCurrency === 'dungeon_coin';
+  
+  let currencySymbol = '💰';
+  let playerCurrency = player.gold;
+  let currencyName = 'vàng';
+  
+  if (isPremiumShop) {
+    currencySymbol = '💎';
+    playerCurrency = player.premiumCurrency;
+    currencyName = 'Cổ Thạch';
+  } else if (isDungeonShop) {
+    currencySymbol = '🎫';
+    playerCurrency = player.dungeonCoin || 0;
+    currencyName = 'Xu Hầm Ngục';
+  }
+  
+  return { isPremiumShop, isDungeonShop, currencySymbol, playerCurrency, currencyName };
+}
+
 // Helper function to format trade status display
 async function formatTradeStatus(
   playerTrade: { tradeId: string; trade: any; isInitiator: boolean },
@@ -38,7 +64,7 @@ async function formatTradeStatus(
   const responses: string[] = [];
   const { trade, isInitiator } = playerTrade;
   const otherPlayerId = isInitiator ? trade.targetId : trade.initiatorId;
-  const otherPlayer = await PlayerSchema.findById(otherPlayerId);
+  const otherPlayer = await PlayerSchema.findById(otherPlayerId).select('username').lean();
   
   responses.push('═══════════════════════════════════════════════════');
   responses.push('            GIAO DỊCH ĐANG HOẠT ĐỘNG              ');
@@ -47,7 +73,7 @@ async function formatTradeStatus(
   responses.push('');
   
   // Show initiator's offer
-  const initiatorItems = await ItemSchema.find({ _id: { $in: trade.initiatorItems } });
+  const initiatorItems = await ItemSchema.find({ _id: { $in: trade.initiatorItems } }).select('name').lean();
   responses.push(`${isInitiator ? 'Bạn' : otherPlayer?.username || 'Đối tác'} đưa ra:`);
   if (initiatorItems.length > 0) {
     initiatorItems.forEach((item: any) => {
@@ -63,7 +89,7 @@ async function formatTradeStatus(
   responses.push('');
   
   // Show target's offer
-  const targetItems = await ItemSchema.find({ _id: { $in: trade.targetItems } });
+  const targetItems = await ItemSchema.find({ _id: { $in: trade.targetItems } }).select('name').lean();
   responses.push(`${!isInitiator ? 'Bạn' : otherPlayer?.username || 'Đối tác'} đưa ra:`);
   if (targetItems.length > 0) {
     targetItems.forEach((item: any) => {
@@ -120,79 +146,12 @@ export async function handleCommandDb(command: Command, playerId: string): Promi
     }
 
     switch (action) {
-      case 'help':
-        responses.push('');
-        responses.push('═══════════════════════════════════════════════════');
-        responses.push('            DANH SÁCH LỆNH                         ');
-        responses.push('═══════════════════════════════════════════════════');
-        responses.push('');
-        responses.push('DI CHUYỂN:');
-        responses.push('  go [hướng] hoặc [n/s/e/w/u/d]');
-        responses.push('  Ví dụ: go bắc, n, s, e, w');
-        responses.push('');
-        responses.push('QUAN SÁT:');
-        responses.push('  look [đối tượng]    (l)  - Quan sát phòng/vật/người');
-        responses.push('  inventory           (i)  - Xem túi đồ');
-        responses.push('');
-        responses.push('TƯƠNG TÁC:');
-        responses.push('  talk [tên]          (t)  - Nói chuyện với NPC');
-        responses.push('  say [text]               - Nói với người chơi khác');
-        responses.push('  get [vật]           (g)  - Nhặt vật phẩm');
-        responses.push('  drop [vật]               - Thả vật phẩm');
-        responses.push('  use [vật]                - Sử dụng vật phẩm');
-        responses.push('');
-        responses.push('CHIẾN ĐẤU:');
-        responses.push('  attack [tên]        (a)  - Tấn công mục tiêu');
-        responses.push('  flee                     - Bỏ chạy khỏi chiến đấu');
-        responses.push('');
-        responses.push('MUA BÁN:');
-        responses.push('  list                     - Xem hàng hóa');
-        responses.push('  buy [vật]                - Mua vật phẩm');
-        responses.push('  sell [vật]               - Bán vật phẩm');
-        responses.push('');
-        responses.push('CLASS & THIÊN PHÚ:');
-        responses.push('  skills          (sk)     - Xem sổ kỹ năng');
-        responses.push('  talents    (thienphu)    - Xem bảng thiên phú');
-        responses.push('');
-        responses.push('TỔ ĐỘI (PARTY):');
-        responses.push('  party invite [tên]  (moi)- Mời người chơi vào nhóm');
-        responses.push('  party accept             - Chấp nhận lời mời');
-        responses.push('  party decline            - Từ chối lời mời');
-        responses.push('  party leave        (roi) - Rời nhóm');
-        responses.push('  party kick [tên]         - Đuổi thành viên (trưởng nhóm)');
-        responses.push('  party promote [tên]      - Trao quyền trưởng nhóm');
-        responses.push('  party loot [rule]        - Đặt quy tắc nhặt đồ');
-        responses.push('  p [tin nhắn]             - Chat với nhóm');
-        responses.push('');
-        responses.push('BANG HỘI (GUILD):');
-        responses.push('  guild                    - Xem lệnh bang hội');
-        responses.push('  guild invite [tên]       - Mời người chơi vào bang');
-        responses.push('  guild deposit gold [số]  - Gửi vàng vào kho bang');
-        responses.push('  guild withdraw gold [số] - Rút vàng (lãnh đạo và sĩ quan)');
-        responses.push('  g [tin nhắn]             - Chat với bang');
-        responses.push('');
-        responses.push('PvP:');
-        responses.push('  pvp [on/off]             - Bật/tắt chế độ PvP');
-        responses.push('  attack [tên người chơi]  - Tấn công người chơi (cần PvP)');
-        responses.push('');
-        responses.push('GIAO DỊCH:');
-        responses.push('  trade invite [tên]       - Mời người chơi giao dịch');
-        responses.push('  trade accept             - Chấp nhận lời mời giao dịch');
-        responses.push('  trade decline            - Từ chối lời mời giao dịch');
-        responses.push('  trade add [vật]          - Thêm vật phẩm vào giao dịch');
-        responses.push('  trade gold [số]          - Thêm vàng vào giao dịch');
-        responses.push('  trade lock               - Khóa giao dịch');
-        responses.push('  trade confirm            - Xác nhận giao dịch');
-        responses.push('  trade cancel             - Hủy giao dịch');
-        responses.push('');
-        responses.push('KHÁC:');
-        responses.push('  help                     - Hiển thị trợ giúp');
-        responses.push('  alias add [tên] [lệnh]   - Tạo lệnh tắt tùy chỉnh');
-        responses.push('  alias remove [tên]       - Xóa lệnh tắt');
-        responses.push('  alias list               - Xem danh sách lệnh tắt');
-        responses.push('  quit                     - Thoát game');
-        responses.push('');
+      case 'help': {
+        // Use the new help system with topic support
+        const helpResponses = getHelpText(target);
+        responses.push(...helpResponses);
         break;
+      }
 
       case 'look':
       case 'l':
@@ -226,8 +185,8 @@ export async function handleCommandDb(command: Command, playerId: string): Promi
               
               // Show loot items
               if (agent.loot && agent.loot.length > 0) {
-                // Populate loot items if not already populated
-                const populatedAgent = await AgentSchema.findById(agent._id).populate('loot');
+                // Populate loot items if not already populated (optimized: only select name field)
+                const populatedAgent = await AgentSchema.findById(agent._id).populate('loot', 'name').lean();
                 if (populatedAgent && populatedAgent.loot) {
                   const lootNames = populatedAgent.loot.map((item: any) => `[${item.name}]`).join(', ');
                   responses.push(`Vật phẩm: ${lootNames}`);
@@ -290,6 +249,10 @@ export async function handleCommandDb(command: Command, playerId: string): Promi
         } else {
           responses.push(`[${talkAgent.name}] không có gì để nói với bạn.`);
         }
+        
+        // Update quest progress for talk objectives
+        const questMessages = await updateQuestProgress(playerId, 'talk', talkAgent.name);
+        responses.push(...questMessages);
         break;
 
       case 'say':
@@ -307,7 +270,7 @@ export async function handleCommandDb(command: Command, playerId: string): Promi
         
         if (player.inventory && player.inventory.length > 0) {
           responses.push('Vật phẩm:');
-          const inventory = await ItemSchema.find({ _id: { $in: player.inventory } });
+          const inventory = await ItemSchema.find({ _id: { $in: player.inventory } }).select('name value').lean();
           inventory.forEach((item: any) => {
             responses.push(`  - [${item.name}] (${item.value} vàng)`);
           });
@@ -442,11 +405,11 @@ export async function handleCommandDb(command: Command, playerId: string): Promi
           break;
         }
 
-        // Phase 25: Use new vendor system
+        // Phase 25: Use new vendor system (optimized: only populate needed fields)
         const vendors = await AgentSchema.find({ 
           _id: { $in: listRoom.agents },
           isVendor: true
-        }).populate('shopInventory').populate('shopItems');
+        }).populate('shopInventory', 'name price premiumPrice').populate('shopItems', 'name price premiumPrice');
 
         if (vendors.length === 0) {
           responses.push('Không có ai ở đây để bán hàng.');
@@ -488,11 +451,11 @@ export async function handleCommandDb(command: Command, playerId: string): Promi
           break;
         }
 
-        // Phase 25: Use new vendor system
+        // Phase 25: Use new vendor system (optimized: only populate needed fields)
         const buyVendors = await AgentSchema.find({ 
           _id: { $in: buyRoom.agents },
           isVendor: true
-        }).populate('shopInventory').populate('shopItems');
+        }).populate('shopInventory', 'name price premiumPrice type').populate('shopItems', 'name price premiumPrice type');
 
         if (buyVendors.length === 0) {
           responses.push('Không có ai ở đây để bán hàng.');
@@ -514,10 +477,9 @@ export async function handleCommandDb(command: Command, playerId: string): Promi
           break;
         }
 
-        // Check price based on shop type
-        const isPremiumShop = buyVendor.shopType === 'premium';
-        const itemPrice = isPremiumShop ? (buyItem.premiumPrice ?? 0) : (buyItem.price ?? 0);
-        const buyCurrencySymbol = isPremiumShop ? '💎' : '💰';
+        // Check price based on shop type and currency
+        const currencyInfo = getCurrencyInfo(buyVendor, player);
+        const itemPrice = currencyInfo.isPremiumShop ? (buyItem.premiumPrice ?? 0) : (buyItem.price ?? 0);
 
         // Validate that item has a valid price
         if (itemPrice <= 0) {
@@ -525,16 +487,9 @@ export async function handleCommandDb(command: Command, playerId: string): Promi
           break;
         }
 
-        if (isPremiumShop) {
-          if (player.premiumCurrency < itemPrice) {
-            responses.push(`Bạn không có đủ Cổ Thạch để mua [${buyItem.name}]. Cần ${itemPrice} ${buyCurrencySymbol}, bạn chỉ có ${player.premiumCurrency} ${buyCurrencySymbol}.`);
-            break;
-          }
-        } else {
-          if (player.gold < itemPrice) {
-            responses.push(`Bạn không có đủ vàng để mua [${buyItem.name}]. Cần ${itemPrice} ${buyCurrencySymbol}, bạn chỉ có ${player.gold} ${buyCurrencySymbol}.`);
-            break;
-          }
+        if (currencyInfo.playerCurrency < itemPrice) {
+          responses.push(`Bạn không có đủ ${currencyInfo.currencyName} để mua [${buyItem.name}]. Cần ${itemPrice} ${currencyInfo.currencySymbol}, bạn chỉ có ${currencyInfo.playerCurrency} ${currencyInfo.currencySymbol}.`);
+          break;
         }
 
         // Create a new item instance for the player
@@ -553,12 +508,16 @@ export async function handleCommandDb(command: Command, playerId: string): Promi
           slot: buyItem.slot,
           requiredLevel: buyItem.requiredLevel,
           recipe: buyItem.recipe,
-          resultItem: buyItem.resultItem
+          resultItem: buyItem.resultItem,
+          upgradeType: buyItem.upgradeType,
+          itemKey: buyItem.itemKey
         });
 
         // Deduct currency
-        if (isPremiumShop) {
+        if (currencyInfo.isPremiumShop) {
           player.premiumCurrency -= itemPrice;
+        } else if (currencyInfo.isDungeonShop) {
+          player.dungeonCoin = (player.dungeonCoin || 0) - itemPrice;
         } else {
           player.gold -= itemPrice;
         }
@@ -566,11 +525,13 @@ export async function handleCommandDb(command: Command, playerId: string): Promi
         player.inventory.push(newBuyItem._id);
         await player.save();
 
-        responses.push(`Bạn đã mua [${buyItem.name}] với giá ${itemPrice} ${buyCurrencySymbol}!`);
-        if (isPremiumShop) {
-          responses.push(`Cổ Thạch còn lại: ${player.premiumCurrency} ${buyCurrencySymbol}`);
+        responses.push(`Bạn đã mua [${buyItem.name}] với giá ${itemPrice} ${currencyInfo.currencySymbol}!`);
+        if (currencyInfo.isPremiumShop) {
+          responses.push(`${currencyInfo.currencyName} còn lại: ${player.premiumCurrency} ${currencyInfo.currencySymbol}`);
+        } else if (currencyInfo.isDungeonShop) {
+          responses.push(`${currencyInfo.currencyName} còn lại: ${player.dungeonCoin || 0} ${currencyInfo.currencySymbol}`);
         } else {
-          responses.push(`Vàng còn lại: ${player.gold} ${buyCurrencySymbol}`);
+          responses.push(`${currencyInfo.currencyName} còn lại: ${player.gold} ${currencyInfo.currencySymbol}`);
         }
         break;
 
@@ -598,7 +559,7 @@ export async function handleCommandDb(command: Command, playerId: string): Promi
           break;
         }
 
-        const sellItems = await ItemSchema.find({ _id: { $in: player.inventory } });
+        const sellItems = await ItemSchema.find({ _id: { $in: player.inventory } }).select('name value sellValue').lean();
         const sellItem = sellItems.find((i: any) => 
           i.name.toLowerCase().includes(target.toLowerCase())
         );
@@ -809,7 +770,254 @@ export async function handleCommandDb(command: Command, playerId: string): Promi
           } else {
             responses.push(`Bạn không thể sử dụng [${useItem.name}] ngay bây giờ.`);
           }
-        } else {
+        }
+        // Handle pet egg items
+        else if (useItem.type === 'PET_EGG') {
+          if (!useItem.data || !useItem.data.grantsPetKey) {
+            responses.push('Trứng này có vẻ bị hỏng...');
+            break;
+          }
+
+          // Find pet template
+          const petTemplate = await PetTemplateSchema.findOne({ petKey: useItem.data.grantsPetKey });
+          if (!petTemplate) {
+            responses.push('Không tìm thấy thông tin loài thú cưng.');
+            break;
+          }
+
+          // Determine pet quality
+          const quality = determinePetQuality();
+          
+          // Create new pet
+          const newPet = await PetSchema.create({
+            ownerId: player._id,
+            templateId: petTemplate._id,
+            nickname: petTemplate.name,
+            level: 1,
+            exp: 0,
+            expToNextLevel: 100,
+            currentStats: {
+              hp: petTemplate.baseStats.hp,
+              maxHp: petTemplate.baseStats.hp,
+              attack: petTemplate.baseStats.attack,
+              defense: petTemplate.baseStats.defense
+            },
+            skills: [],
+            quality
+          });
+
+          // Add pet to player's stable
+          if (!player.petStable) {
+            player.petStable = [];
+          }
+          player.petStable.push(newPet._id);
+          
+          // Remove egg from inventory
+          player.inventory = player.inventory.filter((id: any) => id.toString() !== useItem._id.toString());
+          await player.save();
+          
+          // Delete the consumed egg
+          await ItemSchema.findByIdAndDelete(useItem._id);
+
+          // Quality names in Vietnamese
+          const qualityNames: { [key: string]: string } = {
+            COMMON: 'Thường',
+            UNCOMMON: 'Không Phổ Biến',
+            RARE: 'Hiếm',
+            EPIC: 'Sử Thi',
+            LEGENDARY: 'Huyền Thoại'
+          };
+
+          responses.push('═══════════════════════════════════════════════════');
+          responses.push(`Trứng nở! Bạn nhận được [${newPet.nickname}]!`);
+          responses.push(`Phẩm chất: ${qualityNames[quality] || quality}`);
+          responses.push(`HP: ${newPet.currentStats.maxHp} | Tấn Công: ${newPet.currentStats.attack} | Phòng Thủ: ${newPet.currentStats.defense}`);
+          responses.push('═══════════════════════════════════════════════════');
+          responses.push(`Sử dụng lệnh "summon ${newPet.nickname}" để triệu hồi thú cưng!`);
+
+          // Broadcast to room
+          const eggRoom = await RoomSchema.findById(player.currentRoomId);
+          if (eggRoom) {
+            gameState.broadcastToRoom(
+              eggRoom._id.toString(),
+              {
+                type: 'message',
+                payload: {
+                  text: `[${player.username}] đã nở một quả trứng và nhận được [${newPet.nickname}]!`,
+                  messageType: 'action'
+                }
+              },
+              player._id.toString()
+            );
+          }
+        }
+        // Handle pet food items
+        else if (useItem.type === 'PET_FOOD') {
+          if (!player.activePetId) {
+            responses.push('Bạn cần triệu hồi thú cưng trước khi cho ăn!');
+            break;
+          }
+
+          if (!useItem.data || !useItem.data.expValue) {
+            responses.push('Vật phẩm này không thể cho thú cưng ăn.');
+            break;
+          }
+
+          const pet = await PetSchema.findById(player.activePetId);
+          if (!pet) {
+            responses.push('Không tìm thấy thú cưng.');
+            break;
+          }
+
+          // Add exp to pet
+          const expValue = useItem.data.expValue;
+          const result = await addExp(pet._id.toString(), expValue);
+
+          // Remove food from inventory
+          player.inventory = player.inventory.filter((id: any) => id.toString() !== useItem._id.toString());
+          await player.save();
+          
+          // Delete the consumed food
+          await ItemSchema.findByIdAndDelete(useItem._id);
+
+          responses.push(`[${pet.nickname}] đã ăn [${useItem.name}] và nhận được ${expValue} EXP!`);
+          
+          if (result.leveledUp && result.leveledUp.length > 0) {
+            for (const level of result.leveledUp) {
+              responses.push('═══════════════════════════════════════════════════');
+              responses.push(`[${pet.nickname}] ĐÃ LÊN CẤP ${level}!`);
+              responses.push(`HP: ${result.pet.currentStats.maxHp} | Tấn Công: ${result.pet.currentStats.attack} | Phòng Thủ: ${result.pet.currentStats.defense}`);
+              responses.push('═══════════════════════════════════════════════════');
+            }
+          } else {
+            responses.push(`EXP: ${result.pet.exp}/${result.pet.expToNextLevel}`);
+          }
+
+          // Broadcast to room
+          const foodRoom = await RoomSchema.findById(player.currentRoomId);
+          if (foodRoom) {
+            gameState.broadcastToRoom(
+              foodRoom._id.toString(),
+              {
+                type: 'message',
+                payload: {
+                  text: `[${player.username}] cho [${pet.nickname}] ăn [${useItem.name}].`,
+                  messageType: 'action'
+                }
+              },
+              player._id.toString()
+            );
+          }
+        }
+        // Handle pet consumables (healing potions, buff potions)
+        else if (useItem.type === 'PET_CONSUMABLE') {
+          if (!player.activePetId) {
+            responses.push('Bạn cần triệu hồi thú cưng trước khi sử dụng vật phẩm này!');
+            break;
+          }
+
+          const pet = await PetSchema.findById(player.activePetId);
+          if (!pet) {
+            responses.push('Không tìm thấy thú cưng.');
+            break;
+          }
+
+          const petState = gameState.getPet(player.activePetId.toString());
+          if (!petState) {
+            responses.push('Thú cưng chưa được khởi tạo.');
+            break;
+          }
+
+          // Handle pet healing potions
+          if (useItem.data && useItem.data.healAmount) {
+            const healAmount = useItem.data.healAmount;
+            const oldHp = petState.currentStats.hp;
+            petState.currentStats.hp = Math.min(petState.currentStats.maxHp, petState.currentStats.hp + healAmount);
+            const actualHeal = petState.currentStats.hp - oldHp;
+
+            // Update pet HP in database
+            pet.currentStats.hp = petState.currentStats.hp;
+            await pet.save();
+
+            // Remove item from inventory
+            player.inventory = player.inventory.filter((id: any) => id.toString() !== useItem._id.toString());
+            await player.save();
+
+            // Delete the consumed item
+            await ItemSchema.findByIdAndDelete(useItem._id);
+
+            responses.push(`Bạn sử dụng [${useItem.name}] cho [${pet.nickname}], hồi phục ${actualHeal} HP.`);
+            responses.push(`HP thú cưng: ${petState.currentStats.hp}/${petState.currentStats.maxHp}`);
+
+            // Broadcast to room
+            const healRoom = await RoomSchema.findById(player.currentRoomId);
+            if (healRoom) {
+              gameState.broadcastToRoom(
+                healRoom._id.toString(),
+                {
+                  type: 'normal',
+                  message: `[${player.username}] cho [${pet.nickname}] uống [${useItem.name}].`
+                },
+                player._id.toString()
+              );
+            }
+          }
+          // Handle pet buff potions
+          else if (useItem.data && useItem.data.buffKey) {
+            const buffKey = useItem.data.buffKey;
+            const duration = useItem.data.duration || 30000; // Default 30 seconds
+
+            // Check if pet already has this buff
+            const existingBuff = await BuffSchema.findOne({
+              playerId: pet._id, // Use pet ID as playerId for pet buffs
+              buffKey: buffKey,
+              active: true,
+            });
+
+            if (existingBuff) {
+              responses.push(`[${pet.nickname}] đã có buff này đang hoạt động!`);
+              break;
+            }
+
+            // Create buff for pet
+            await BuffSchema.create({
+              playerId: pet._id, // Use pet ID as playerId for pet buffs
+              buffKey: buffKey,
+              duration: duration,
+              active: true,
+              startTime: new Date(),
+              metadata: {
+                description: `Buff từ ${useItem.name}`,
+              },
+            });
+
+            // Remove item from inventory
+            player.inventory = player.inventory.filter((id: any) => id.toString() !== useItem._id.toString());
+            await player.save();
+
+            // Delete the consumed item
+            await ItemSchema.findByIdAndDelete(useItem._id);
+
+            responses.push(`[+] [${pet.nickname}] đã nhận buff từ [${useItem.name}]!`);
+            responses.push(`Hiệu ứng kéo dài ${duration / 1000} giây.`);
+
+            // Broadcast to room
+            const buffRoom = await RoomSchema.findById(player.currentRoomId);
+            if (buffRoom) {
+              gameState.broadcastToRoom(
+                buffRoom._id.toString(),
+                {
+                  type: 'normal',
+                  message: `[${player.username}] sử dụng [${useItem.name}] cho [${pet.nickname}]!`
+                },
+                player._id.toString()
+              );
+            }
+          } else {
+            responses.push(`Không thể sử dụng [${useItem.name}] cho thú cưng.`);
+          }
+        }
+        else {
           responses.push(`[${useItem.name}] không phải là vật phẩm có thể sử dụng.`);
         }
         break;
@@ -1656,6 +1864,200 @@ export async function handleCommandDb(command: Command, playerId: string): Promi
             responses.push('Lệnh không hợp lệ. Sử dụng: alias [add/remove/list]');
             break;
         }
+        break;
+      }
+
+      case 'dungeon': {
+        // Dungeon system commands
+        const subCommand = target?.toLowerCase();
+        const { getDungeonStatus, startChallenge } = await import('./dungeonService');
+
+        if (!subCommand || subCommand === 'status') {
+          // Show dungeon status
+          const statusResult = await getDungeonStatus(playerId);
+          if (statusResult.success) {
+            const { currentFloor, highestFloor, dungeonCoin, lastWeeklyReset } = statusResult.data;
+            responses.push('═══════════════════════════════════════════════════');
+            responses.push('            HẦM NGỤC                               ');
+            responses.push('═══════════════════════════════════════════════════');
+            responses.push(`Tầng hiện tại: ${currentFloor}`);
+            responses.push(`Tầng cao nhất: ${highestFloor}`);
+            responses.push(`Xu Hầm Ngục: ${dungeonCoin}`);
+            responses.push('');
+            responses.push('Lệnh:');
+            responses.push('  dungeon enter    - Bắt đầu thử thách');
+            responses.push('  dungeon status   - Xem trạng thái');
+          } else {
+            responses.push(statusResult.message);
+          }
+          break;
+        }
+
+        if (subCommand === 'enter') {
+          // Start dungeon challenge
+          const statusResult = await getDungeonStatus(playerId);
+          if (!statusResult.success) {
+            responses.push(statusResult.message);
+            break;
+          }
+
+          const currentFloor = statusResult.data.currentFloor;
+          const challengeResult = await startChallenge(playerId, currentFloor);
+          
+          if (challengeResult.success) {
+            responses.push(challengeResult.message);
+            responses.push('Sử dụng lệnh "attack" hoặc "a" để chiến đấu!');
+          } else {
+            responses.push(challengeResult.message);
+          }
+          break;
+        }
+
+        responses.push('Lệnh không hợp lệ. Sử dụng: dungeon [enter/status]');
+        break;
+      }
+
+      case 'trial':
+      case 'thử luyện':
+      case 'thu luyen': {
+        // Pet Trial Tower commands
+        const subCommand = target?.toLowerCase();
+        const { getPetTrialStatus, startTrial } = await import('./petTrialService');
+
+        if (!subCommand || subCommand === 'status') {
+          // Show pet trial status
+          const statusResult = await getPetTrialStatus(playerId);
+          if (statusResult.success) {
+            const { currentFloor, highestFloor, tamerBadge, lastWeeklyReset } = statusResult.data;
+            responses.push('═══════════════════════════════════════════════════');
+            responses.push('         THÁP THỬ LUYỆN THÚ CƯNG                  ');
+            responses.push('═══════════════════════════════════════════════════');
+            responses.push(`Tầng hiện tại: ${currentFloor}`);
+            responses.push(`Tầng cao nhất: ${highestFloor}`);
+            responses.push(`Huy Hiệu Huấn Luyện: ${tamerBadge} 🎖️`);
+            responses.push('');
+            responses.push('Lưu ý:');
+            responses.push('  - Chỉ thú cưng mới có thể chiến đấu');
+            responses.push('  - Bạn sẽ bị PACIFIED (không thể tấn công)');
+            responses.push('  - Dùng vật phẩm để hỗ trợ thú cưng');
+            responses.push('');
+            responses.push('Lệnh:');
+            responses.push('  trial enter      - Bắt đầu thử luyện');
+            responses.push('  trial status     - Xem trạng thái');
+          } else {
+            responses.push(statusResult.message);
+          }
+          break;
+        }
+
+        if (subCommand === 'enter') {
+          // Start pet trial challenge
+          const trialResult = await startTrial(playerId);
+          
+          if (trialResult.success) {
+            responses.push(trialResult.message);
+          } else {
+            responses.push(trialResult.message);
+          }
+          break;
+        }
+
+        responses.push('Lệnh không hợp lệ. Sử dụng: trial [enter/status]');
+        break;
+      }
+
+      case 'tiếp':
+      case 'tiep':
+      case 'next': {
+        // Continue to next floor (dungeon or pet trial)
+        // Check which system the player is in based on room
+        const room = await RoomSchema.findById(player.currentRoomId);
+        
+        if (room && room.name === 'Tháp Thử Luyện - Đấu Trường') {
+          // In Pet Trial Tower
+          const { startTrial } = await import('./petTrialService');
+          const trialResult = await startTrial(playerId);
+          
+          if (trialResult.success) {
+            responses.push(trialResult.message);
+          } else {
+            responses.push(trialResult.message);
+          }
+        } else {
+          // In Dungeon
+          const { getDungeonStatus, startChallenge } = await import('./dungeonService');
+          
+          const statusResult = await getDungeonStatus(playerId);
+          if (!statusResult.success) {
+            responses.push(statusResult.message);
+            break;
+          }
+
+          const currentFloor = statusResult.data.currentFloor;
+          const challengeResult = await startChallenge(playerId, currentFloor);
+          
+          if (challengeResult.success) {
+            responses.push(challengeResult.message);
+            responses.push('Sử dụng lệnh "attack" hoặc "a" để chiến đấu!');
+          } else {
+            responses.push(challengeResult.message);
+          }
+        }
+        break;
+      }
+
+      case 'pet': {
+        // Pet management commands
+        responses.push('═══════════════════════════════════════════════════');
+        responses.push('            HỆ THỐNG THÚ CƯNG                      ');
+        responses.push('═══════════════════════════════════════════════════');
+        responses.push('summon [tên]       - Triệu hồi thú cưng');
+        responses.push('unsummon           - Thu hồi thú cưng');
+        responses.push('pet attack [tên]   - Ra lệnh pet tấn công');
+        responses.push('pet follow         - Ra lệnh pet theo sau');
+        responses.push('use [trứng]        - Nở trứng thú cưng');
+        responses.push('use [thức ăn]      - Cho pet ăn để lên cấp');
+        responses.push('');
+        responses.push('Mở menu Pet từ UI để xem chi tiết chuồng thú cưng!');
+        responses.push('═══════════════════════════════════════════════════');
+        break;
+      }
+
+      case 'summon': {
+        if (!target) {
+          responses.push('Bạn muốn triệu hồi thú cưng nào?');
+          responses.push('Cú pháp: summon [tên pet]');
+          break;
+        }
+
+        // Find pet in player's stable
+        const pets = await PetSchema.find({ _id: { $in: player.petStable || [] } });
+        const pet = pets.find((p: any) => 
+          p.nickname.toLowerCase().includes(target.toLowerCase())
+        );
+
+        if (!pet) {
+          responses.push(`Bạn không có thú cưng nào tên "${target}" trong chuồng.`);
+          break;
+        }
+
+        const summonResult = await summonPet(player._id.toString(), pet._id.toString());
+        responses.push(summonResult.message);
+        
+        if (summonResult.success) {
+          responses.push(`[${pet.nickname}] (Cấp ${pet.level}) đã xuất hiện bên cạnh bạn!`);
+        }
+        break;
+      }
+
+      case 'unsummon': {
+        if (!player.activePetId) {
+          responses.push('Bạn không có thú cưng nào được triệu hồi.');
+          break;
+        }
+
+        const unsummonResult = await unsummonPet(player._id.toString());
+        responses.push(unsummonResult.message);
         break;
       }
 

@@ -12,6 +12,15 @@
         (P) {{ player.name }}
       </div>
       <div
+        v-for="pet in pets"
+        :key="'pet-' + pet.id"
+        class="occupant-item pet-item"
+        :class="{ selected: selectedTarget?.id === pet.id && selectedTarget?.type === 'pet' }"
+        @click="selectTarget('pet', pet.id, pet.name)"
+      >
+        (Pet) {{ pet.name }} <span class="pet-owner">của [{{ pet.ownerName }}]</span>
+      </div>
+      <div
         v-for="npc in npcs"
         :key="'npc-' + npc.id"
         class="occupant-item"
@@ -40,7 +49,7 @@
           ({{ respawn.type === 'mob' ? 'M' : 'N' }}) {{ respawn.name }} - {{ formatRespawnTime(respawn.respawnTime) }}
         </div>
       </div>
-      <div v-if="players.length === 0 && npcs.length === 0 && mobs.length === 0 && (!respawns || respawns.length === 0)" class="occupant-empty">
+      <div v-if="players.length === 0 && npcs.length === 0 && mobs.length === 0 && pets.length === 0 && (!respawns || respawns.length === 0)" class="occupant-empty">
         (Không có ai)
       </div>
     </div>
@@ -55,6 +64,12 @@ interface Occupant {
   name: string;
 }
 
+interface Pet {
+  id: string;
+  name: string;
+  ownerName: string;
+}
+
 interface Respawn {
   name: string;
   respawnTime: string;
@@ -62,7 +77,7 @@ interface Respawn {
 }
 
 interface SelectedTarget {
-  type: 'player' | 'npc' | 'mob';
+  type: 'player' | 'npc' | 'mob' | 'pet';
   id: string;
   name: string;
 }
@@ -71,15 +86,16 @@ const props = defineProps<{
   players: Occupant[];
   npcs: Occupant[];
   mobs: Occupant[];
+  pets?: Pet[];
   respawns?: Respawn[];
   selectedTarget: SelectedTarget | null;
 }>();
 
 const emit = defineEmits<{
-  selectTarget: [type: 'player' | 'npc' | 'mob', id: string, name: string];
+  selectTarget: [type: 'player' | 'npc' | 'mob' | 'pet', id: string, name: string];
 }>();
 
-const selectTarget = (type: 'player' | 'npc' | 'mob', id: string, name: string) => {
+const selectTarget = (type: 'player' | 'npc' | 'mob' | 'pet', id: string, name: string) => {
   emit('selectTarget', type, id, name);
 };
 
@@ -149,6 +165,15 @@ const formatRespawnTooltip = (respawn: Respawn): string => {
 .occupant-item.selected {
   background-color: rgba(0, 255, 0, 0.2);
   color: var(--text-accent);
+}
+
+.pet-item {
+  color: rgba(255, 200, 100, 0.9);
+}
+
+.pet-owner {
+  color: var(--text-dim);
+  font-size: 0.9em;
 }
 
 .occupant-empty {

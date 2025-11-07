@@ -91,6 +91,14 @@
     <!-- Footer Tab Bar (5-10%) -->
     <FooterTabBar @tabClick="handleTabClick" :hasUnreadMail="playerState.hasUnreadMail" />
 
+    <!-- Mobile Floating Action Menu (Mobile/Tablet Only) -->
+    <MobileFloatingMenu
+      :isMobileOrTablet="isMobile || isTablet"
+      @openOccupants="occupantsPopupOpen = true"
+      @openMap="handleTabClick('map')"
+      @openInventory="inventoryPopupOpen = true"
+    />
+
     <!-- Popups/Modals -->
     <Popover
       :isOpen="inventoryPopupOpen"
@@ -192,6 +200,12 @@
       @abandonQuest="handleAbandonQuest"
       @repeatQuest="handleRepeatQuest"
       @trackQuest="handleTrackQuest"
+    />
+
+    <!-- Leaderboard Overlay -->
+    <LeaderboardOverlay
+      :isOpen="leaderboardOpen"
+      @close="leaderboardOpen = false"
     />
 
     <!-- Profession Choice Overlay -->
@@ -369,6 +383,7 @@ import CraftingPopup from '~/components/CraftingPopup.vue';
 import PremiumShopPopup from '~/components/PremiumShopPopup.vue';
 import ShopPopup from '~/components/ShopPopup.vue';
 import MailPopup from '~/components/MailPopup.vue';
+import LeaderboardOverlay from '~/components/LeaderboardOverlay.vue';
 import TabSelector from '~/components/TabSelector.vue';
 import MainLogPane from '~/components/MainLogPane.vue';
 import CombatLogPane from '~/components/CombatLogPane.vue';
@@ -376,6 +391,7 @@ import ChatLogPane from '~/components/ChatLogPane.vue';
 import RoomOccupantsPane from '~/components/RoomOccupantsPane.vue';
 import LoadingIndicator from '~/components/LoadingIndicator.vue';
 import CombatView from '~/components/CombatView.vue';
+import MobileFloatingMenu from '~/components/MobileFloatingMenu.vue';
 
 definePageMeta({
   middleware: 'auth'
@@ -533,6 +549,7 @@ const settingsOpen = ref(false);
 const worldMapOpen = ref(false);
 const questsOpen = ref(false);
 const professionChoiceOpen = ref(false);
+const leaderboardOpen = ref(false);
 
 // Player settings state
 const playerAutoCombat = ref(false);
@@ -885,11 +902,8 @@ const handleTabClick = async (tabId: string) => {
         await loadTalents();
         characterMenuOpen.value = true;
         break;
-      case 'crafting':
-        isLoading.value = true;
-        loadingText.value = 'Đang tải công thức chế tạo...';
-        await loadCraftingRecipes();
-        craftingPopupOpen.value = true;
+      case 'leaderboard':
+        leaderboardOpen.value = true;
         break;
       case 'settings':
         settingsOpen.value = true;
@@ -955,6 +969,13 @@ const handleContextualAction = async (action: { command: string }) => {
       shopType
     };
     shopPopupOpen.value = true;
+  } else if (action.command.startsWith('__crafting__:')) {
+    // Open crafting menu
+    isLoading.value = true;
+    loadingText.value = 'Đang tải công thức chế tạo...';
+    await loadCraftingRecipes();
+    craftingPopupOpen.value = true;
+    isLoading.value = false;
   } else {
     // Execute normal command
     currentInput.value = action.command;
@@ -972,6 +993,15 @@ const getActionsForEntity = (type: 'player' | 'npc' | 'mob', name: string, entit
         { label: 'Giao Dịch (Trade)', command: `__trade__:${entityId}:${name}`, disabled: false },
         { label: 'Tấn Công (Attack)', command: `attack ${name}`, disabled: false }
       ];
+      
+      // Add crafting action for Blacksmith
+      if (name === 'Thợ Rèn') {
+        actions.splice(2, 0, { 
+          label: 'Chế Tạo (Craft)', 
+          command: `__crafting__:${entityId}:${name}`, 
+          disabled: false 
+        });
+      }
       
       // Phase 25: Add vendor shop action for known vendors
       if (name === 'Thương Gia') {
