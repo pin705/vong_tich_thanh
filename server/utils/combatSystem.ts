@@ -582,7 +582,14 @@ export async function executeCombatTick(playerId: string, agentId: string): Prom
       // Phase 19: Boss rewards
       let totalExp = agent.experience;
       const isBoss = agent.agentType === 'boss';
-      const messageCategory = isBoss ? 'boss' : (agent.agentType === 'elite' ? 'elite' : 'mob');
+      
+      // Determine message category based on agent type
+      let messageCategory = 'mob'; // default
+      if (isBoss) {
+        messageCategory = 'boss';
+      } else if (agent.agentType === 'elite') {
+        messageCategory = 'elite';
+      }
       
       if (isBoss) {
         // Boss kills give 50x EXP
@@ -775,7 +782,7 @@ export async function executeCombatTick(playerId: string, agentId: string): Prom
             type: messageType, 
             message: msg,
             channel: 'main',
-            category: isBoss ? 'boss' : messageCategory
+            category: messageCategory
           }));
         });
         
