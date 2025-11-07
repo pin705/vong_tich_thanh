@@ -989,6 +989,15 @@ const handleContextualAction = async (action: { command: string }) => {
     await loadCraftingRecipes();
     craftingPopupOpen.value = true;
     isLoading.value = false;
+  } else if (action.command.startsWith('__pet_menu__:')) {
+    // Open pet menu
+    petPopupOpen.value = true;
+  } else if (action.command.startsWith('__arena__:')) {
+    // Open arena (could add arena popup in the future)
+    addMessage('Tính năng đấu trường đang được phát triển.', 'system');
+  } else if (action.command.startsWith('__guild_menu__:')) {
+    // Open guild menu
+    guildPopupOpen.value = true;
   } else {
     // Execute normal command
     currentInput.value = action.command;
@@ -1002,37 +1011,65 @@ const getActionsForEntity = (type: 'player' | 'npc' | 'mob', name: string, entit
     case 'npc':
       const actions = [
         { label: 'Nói Chuyện (Talk)', command: `talk ${name}`, disabled: false },
-        { label: 'Xem Xét (Look)', command: `look ${name}`, disabled: false },
-        { label: 'Giao Dịch (Trade)', command: `__trade__:${entityId}:${name}`, disabled: false },
-        { label: 'Tấn Công (Attack)', command: `attack ${name}`, disabled: false }
+        { label: 'Xem Xét (Look)', command: `look ${name}`, disabled: false }
       ];
       
-      // Add crafting action for Blacksmith
-      if (name === 'Thợ Rèn') {
-        actions.splice(2, 0, { 
-          label: 'Chế Tạo (Craft)', 
-          command: `__crafting__:${entityId}:${name}`, 
-          disabled: false 
-        });
-      }
-      
-      // Phase 25: Add vendor shop action for known vendors
+      // Add specific actions based on NPC name
+      // Vendors and shops
       if (name === 'Thương Gia') {
-        actions.splice(2, 0, { 
+        actions.push({ 
           label: 'Xem Cửa Hàng (Shop)', 
           command: `__vendor_shop__:${entityId}:${name}:gold`, 
           disabled: false 
         });
       }
       
-      // Add premium shop action for "Thương Gia Bí Ẩn"
       if (name === 'Thương Gia Bí Ẩn') {
-        actions.splice(2, 0, { 
+        actions.push({ 
           label: 'Cửa Hàng Cao Cấp', 
           command: `__vendor_shop__:${entityId}:${name}:premium`, 
           disabled: false 
         });
       }
+      
+      if (name === 'Thợ Rèn') {
+        actions.push({ 
+          label: 'Chế Tạo (Craft)', 
+          command: `__crafting__:${entityId}:${name}`, 
+          disabled: false 
+        });
+      }
+      
+      // Pet related NPCs
+      if (name === 'Huấn Luyện Sư Kito' || name.includes('Huấn Luyện')) {
+        actions.push({ 
+          label: 'Quản Lý Thú Cưng', 
+          command: `__pet_menu__:${entityId}:${name}`, 
+          disabled: false 
+        });
+      }
+      
+      // Arena manager
+      if (name === 'Quản Lý Đấu Trường' || name.includes('Arena')) {
+        actions.push({ 
+          label: 'Tham Gia Đấu Trường', 
+          command: `__arena__:${entityId}:${name}`, 
+          disabled: false 
+        });
+      }
+      
+      // Guild related NPCs
+      if (name === 'Già Làng' || name.includes('Guild')) {
+        actions.push({ 
+          label: 'Quản Lý Bang Hội', 
+          command: `__guild_menu__:${entityId}:${name}`, 
+          disabled: false 
+        });
+      }
+      
+      // Add trade and attack as default options for most NPCs
+      actions.push({ label: 'Giao Dịch (Trade)', command: `__trade__:${entityId}:${name}`, disabled: false });
+      actions.push({ label: 'Tấn Công (Attack)', command: `attack ${name}`, disabled: false });
       
       return actions;
     case 'mob':
