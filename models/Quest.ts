@@ -4,6 +4,9 @@ import type { Types } from 'mongoose';
 export interface QuestReward {
   exp?: number;
   gold?: number;
+  dungeonCoin?: number;
+  tamerBadge?: number;
+  gloryPoints?: number;
   items?: Types.ObjectId[];
 }
 
@@ -63,6 +66,9 @@ export const QuestSchema = defineMongooseModel<IQuest>({
     rewards: {
       exp: { type: Number, default: 0 },
       gold: { type: Number, default: 0 },
+      dungeonCoin: { type: Number, default: 0 },
+      tamerBadge: { type: Number, default: 0 },
+      gloryPoints: { type: Number, default: 0 },
       items: [{ type: 'ObjectId', ref: 'Item' }]
     },
     levelRequirement: { type: Number, default: 1 },

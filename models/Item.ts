@@ -15,7 +15,7 @@ export const ItemSchema = defineMongooseModel({
     },
     type: {
       type: String,
-      enum: ['weapon', 'armor', 'consumable', 'misc', 'craftingMaterial', 'recipe', 'furniture', 'Equipment', 'Recipe', 'Material', 'upgrade_material', 'PET_EGG', 'PET_FOOD', 'PET_UPGRADE', 'PET_SKILLBOOK', 'PET_CONSUMABLE', 'TITLE_BADGE', 'SKILL_UPGRADE_BOOK', 'ENHANCEMENT_PROTECTION'],
+      enum: ['weapon', 'armor', 'consumable', 'misc', 'craftingMaterial', 'recipe', 'furniture', 'Equipment', 'Recipe', 'Material', 'upgrade_material', 'PET_EGG', 'PET_FOOD', 'PET_UPGRADE', 'PET_SKILLBOOK', 'PET_CONSUMABLE', 'TITLE_BADGE', 'SKILL_UPGRADE_BOOK', 'ENHANCEMENT_PROTECTION', 'ENHANCE_STONE', 'LEGENDARY_MATERIAL', 'PVP_EQUIPMENT', 'QUEST_ITEM'],
       required: true,
       index: true, // Index for filtering by type
     },
