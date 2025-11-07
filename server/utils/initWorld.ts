@@ -1728,6 +1728,18 @@ export async function initializeWorld() {
     await arena1v1RoomA.save();
     await arena1v1RoomB.save();
 
+    // Party Dungeon System: Create entrance
+    const partyDungeonEntrance = await RoomSchema.create({
+      name: 'Lối Vào Di Tích Cổ',
+      description: 'Một lối vào đầy bụi với những cột đá cổ đại. Có vẻ như nơi đây đã bị lãng quên từ lâu. Một nhà khảo cổ đang nghiên cứu những bức tường.',
+      exits: {},
+      isSafeZone: true,
+    });
+
+    partyDungeonEntrance.exits.west = rừngRậm._id; // Link from forest
+    rừngRậm.exits.east = partyDungeonEntrance._id; // Link to dungeon
+    await partyDungeonEntrance.save();
+
     // Create NPCs
     const linhGac = await AgentSchema.create({
       name: 'Lính Gác',
@@ -1842,6 +1854,25 @@ export async function initializeWorld() {
       ],
       shopType: 'glory_points',
       shopCurrency: 'glory_points'
+    });
+
+    const archaeologist = await AgentSchema.create({
+      name: 'Nhà Khảo Cổ',
+      description: 'Một người đàn ông cao với áo choàng bụi bặm và kính mắt dày. Ông đang ghi chép điều gì đó vào một cuốn sổ cũ.',
+      type: 'npc',
+      agentKey: 'archaeologist',
+      currentRoomId: partyDungeonEntrance._id,
+      hp: 100,
+      maxHp: 100,
+      level: 20,
+      damage: 15,
+      behavior: 'passive',
+      dialogue: [
+        'Chào! Tôi đang nghiên cứu Di Tích Cổ này.',
+        'Nếu nhóm của bạn muốn khám phá, gõ "talk nhà khảo cổ" và chọn "explore".',
+        'Hãy cẩn thận! Bên trong đầy rẫy bí ẩn và nguy hiểm.',
+        'Những người giải được các câu đố sẽ nhận được phần thưởng quý giá!',
+      ],
     });
 
     const chuotBienDi = await AgentSchema.create({
@@ -2437,7 +2468,14 @@ export async function initializeWorld() {
     // Add agents to rooms
     // Zone 1
     cổngThành.agents.push(linhGac._id, giaLang._id);
+    cổngThành.agents.push(petTamer._id); // Pet system
     khuCho.agents.push(thuongGia._id, thuongGiaBiAn._id);
+    
+    // Arena system
+    arenaLobby.agents.push(arenaManager._id);
+    
+    // Party dungeon system
+    partyDungeonEntrance.agents.push(archaeologist._id);
     hẻmTối.agents.push(chuotBienDi._id, chuotCong._id);
     rừngRậm.agents.push(sóiRừng._id, thayMaYeu._id, keCuopDuong._id);
     hang.agents.push(goblin._id, thuLinhKeCuop._id); // Phase 26: Added Level 10 boss
