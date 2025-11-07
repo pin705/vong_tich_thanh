@@ -1,6 +1,7 @@
 import { AuctionItemSchema } from '../../../models/AuctionItem';
 import { PlayerSchema } from '../../../models/Player';
 import { ItemSchema } from '../../../models/Item';
+import { validateObjectId } from '~/server/utils/validation';
 
 export default defineEventHandler(async (event) => {
   const user = await getUserSession(event);
@@ -18,6 +19,15 @@ export default defineEventHandler(async (event) => {
     throw createError({
       statusCode: 400,
       statusMessage: 'Auction ID is required.'
+    });
+  }
+
+  // Validate auctionId format
+  const validation = validateObjectId(auctionId);
+  if (!validation.valid) {
+    throw createError({
+      statusCode: 400,
+      statusMessage: validation.error || 'Auction ID không hợp lệ.'
     });
   }
 

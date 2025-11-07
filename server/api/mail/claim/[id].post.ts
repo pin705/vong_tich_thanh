@@ -47,6 +47,38 @@ export default defineEventHandler(async (event) => {
       });
     }
 
+    // Store attachment data before clearing (for atomic operation)
+    const goldToTransfer = mail.attachedGold;
+    const premiumToTransfer = mail.attachedPremium;
+    const itemsToTransfer = [...mail.attachedItems];
+
+    // Clear attachments from mail atomically to prevent duplicate claims
+    const clearedMail = await MailSchema.findOneAndUpdate(
+      { 
+        _id: mailId,
+        recipientId: playerId,
+        $or: [
+          { attachedGold: { $gt: 0 } },
+          { attachedPremium: { $gt: 0 } },
+          { attachedItems: { $ne: [] } }
+        ]
+      },
+      {
+        attachedItems: [],
+        attachedGold: 0,
+        attachedPremium: 0
+      },
+      { new: false } // Return old document
+    );
+
+    // If update failed, mail was already claimed
+    if (!clearedMail || (clearedMail.attachedItems.length === 0 && clearedMail.attachedGold === 0 && clearedMail.attachedPremium === 0)) {
+      throw createError({
+        statusCode: 400,
+        statusMessage: 'Thư này đã được nhận thưởng rồi.'
+      });
+    }
+
     // Get player
     const player = await PlayerSchema.findById(playerId);
     if (!player) {
@@ -60,19 +92,19 @@ export default defineEventHandler(async (event) => {
     const rewards = [];
 
     // Transfer gold
-    if (mail.attachedGold > 0) {
-      player.gold += mail.attachedGold;
-      rewards.push(`${mail.attachedGold} Vàng`);
+    if (goldToTransfer > 0) {
+      player.gold += goldToTransfer;
+      rewards.push(`${goldToTransfer} Vàng`);
     }
 
     // Transfer premium currency
-    if (mail.attachedPremium > 0) {
-      player.premiumCurrency = (player.premiumCurrency || 0) + mail.attachedPremium;
-      rewards.push(`${mail.attachedPremium} Kim Cương`);
+    if (premiumToTransfer > 0) {
+      player.premiumCurrency = (player.premiumCurrency || 0) + premiumToTransfer;
+      rewards.push(`${premiumToTransfer} Kim Cương`);
     }
 
     // Transfer items
-    for (const attachedItem of mail.attachedItems) {
+    for (const attachedItem of itemsToTransfer) {
       const itemId = (attachedItem.itemId as any)?._id || attachedItem.itemId;
       const item = await ItemSchema.findById(itemId);
       
@@ -88,12 +120,6 @@ export default defineEventHandler(async (event) => {
 
     // Save player
     await player.save();
-
-    // Clear attachments from mail
-    mail.attachedItems = [];
-    mail.attachedGold = 0;
-    mail.attachedPremium = 0;
-    await mail.save();
 
     return {
       success: true,
