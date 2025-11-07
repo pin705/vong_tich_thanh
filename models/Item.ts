@@ -188,7 +188,6 @@ export const ItemSchema = defineMongooseModel({
     socketedGems: [{
       type: Schema.Types.ObjectId,
       ref: 'Item',
-      default: [],
     }],
     // Socket Punch Item
     canAddSocket: {
