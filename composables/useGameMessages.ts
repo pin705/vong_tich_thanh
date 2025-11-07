@@ -1,5 +1,10 @@
 import { ref, type Ref } from 'vue';
 
+export interface MessageSpan {
+  text: string;
+  category: 'default' | 'highlight' | 'accent' | 'error' | 'system' | 'damage' | 'heal' | 'loot' | 'xp';
+}
+
 export interface Message {
   id?: string;
   text: string;
@@ -11,6 +16,7 @@ export interface Message {
   timestamp: Date | string;
   user?: string;
   channel?: 'main' | 'chat';
+  spans?: MessageSpan[];
 }
 
 const MAX_MAIN_LOG_MESSAGES = 800; // Increased to accommodate both main and combat messages
@@ -44,7 +50,8 @@ export function useGameMessages() {
     type: string,
     user?: string,
     channel: 'main' | 'chat' = 'main',
-    category?: string
+    category?: string,
+    spans?: MessageSpan[]
   ) {
     // Add category prefix based on message category
     let prefixedText = text;
@@ -62,7 +69,8 @@ export function useGameMessages() {
       user,
       channel: channel,
       category,
-      timestamp: new Date()
+      timestamp: new Date(),
+      spans
     };
     
     if (channel === 'chat' || type === 'chat_log') {
