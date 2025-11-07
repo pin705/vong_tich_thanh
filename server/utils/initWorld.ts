@@ -1516,7 +1516,10 @@ export async function initializeWorld() {
       description: 'Lối xuống tối tăm với các bậc đá ẩm ướt. Mùi hôi thối nồng nặc thoát lên từ bên dưới.',
       exits: {},
       items: [],
-      agents: []
+      agents: [],
+      requirements: {
+        minLevel: 5  // Requires level 5 to enter the sewers
+      }
     });
 
     const hamNgam2 = await RoomSchema.create({
@@ -1556,13 +1559,16 @@ export async function initializeWorld() {
     }
     const sewerRooms = await RoomSchema.insertMany(sewerRoomDocs);
 
-    // Phase 22: Zone 3 - Nhà Máy Lắp Ráp Cũ (Old Assembly Plant) - 9 rooms total
+    // Phase 22: Zone 3 - Nhà Máy Lắp Ráp Cũ (Old Assembly Plant) - 9 rooms total - Requires level 10
     const loiVaoNhaMay = await RoomSchema.create({
       name: 'Cổng Nhà Máy',
       description: 'Cổng sắt khổng lồ đã rỉ sét nửa mở. Biển báo "Nguy Hiểm - Cấm Vào" đã phai màu.',
       exits: {},
       items: [],
-      agents: []
+      agents: [],
+      requirements: {
+        minLevel: 10  // Requires level 10 to enter the factory
+      }
     });
 
     const nhaMay2 = await RoomSchema.create({
@@ -1608,7 +1614,11 @@ export async function initializeWorld() {
       description: 'Lối vào bị ngập nước. Cửa kim loại dày bị cong vênh. Cảnh báo sinh học phát sáng đỏ.',
       exits: {},
       items: [],
-      agents: []
+      agents: [],
+      requirements: {
+        requiredItemKey: 'dungeon_key',  // Requires Dungeon Key to enter
+        consumeItem: false  // Key is not consumed (can be reused)
+      }
     });
 
     const phongLab1 = await RoomSchema.create({
