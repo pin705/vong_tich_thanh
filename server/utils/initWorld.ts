@@ -1700,6 +1700,34 @@ export async function initializeWorld() {
     await trialLobby.save();
     await trialInstance.save();
 
+    // Arena System: Create arena rooms
+    const arenaLobby = await RoomSchema.create({
+      name: 'Phòng Chờ Đấu Trường',
+      description: 'Một phòng chờ rộng rãi với các băng ghế đá. Trên tường treo những tấm bảng ghi tên những chiến binh nổi tiếng. Không khí nơi đây căng thẳng nhưng đầy hứng khởi.',
+      exits: {},
+      isSafeZone: true,
+    });
+
+    const arena1v1RoomA = await RoomSchema.create({
+      name: 'Đấu Trường 1v1 - Phòng A',
+      description: 'Một đấu trường tròn với sàn đá cứng. Xung quanh là các hàng ghế cao chót vót, dù giờ đây đã trống rỗng. Đây là nơi quyết định người chiến thắng.',
+      exits: {},
+      isSafeZone: false,
+    });
+
+    const arena1v1RoomB = await RoomSchema.create({
+      name: 'Đấu Trường 1v1 - Phòng B',
+      description: 'Một đấu trường tròn với sàn đá cứng. Xung quanh là các hàng ghế cao chót vót, dù giờ đây đã trống rỗng. Đây là nơi quyết định người chiến thắng.',
+      exits: {},
+      isSafeZone: false,
+    });
+
+    arenaLobby.exits.south = khuCho._id; // Link back to main area
+    khuCho.exits.down = arenaLobby._id; // Link from marketplace
+    await arenaLobby.save();
+    await arena1v1RoomA.save();
+    await arena1v1RoomB.save();
+
     // Create NPCs
     const linhGac = await AgentSchema.create({
       name: 'Lính Gác',
@@ -1788,6 +1816,32 @@ export async function initializeWorld() {
       ],
       shopType: 'gold',
       shopCurrency: 'tamer_badge'
+    });
+
+    const arenaManager = await AgentSchema.create({
+      name: 'Quản Lý Đấu Trường',
+      description: 'Một người đàn ông cao lớn với bộ giáp lấp lánh. Ông là người quản lý các trận đấu trong đấu trường.',
+      type: 'npc',
+      agentKey: 'arena_manager',
+      currentRoomId: arenaLobby._id,
+      hp: 200,
+      maxHp: 200,
+      level: 30,
+      damage: 50,
+      behavior: 'passive',
+      dialogue: [
+        'Chào mừng đến đấu trường! Gõ "list" để xem cửa hàng vinh quang.',
+        'Muốn chiến đấu? Gõ "queue 1v1" để tham gia hàng chờ.',
+        'Điểm Vinh Quang chỉ có thể kiếm được từ chiến thắng PvP!',
+        'Những chiến binh mạnh nhất sẽ được vinh danh!'
+      ],
+      isVendor: true,
+      shopInventory: [
+        giapDauSi._id,
+        huyHieuVoSi._id,
+      ],
+      shopType: 'glory_points',
+      shopCurrency: 'glory_points'
     });
 
     const chuotBienDi = await AgentSchema.create({
