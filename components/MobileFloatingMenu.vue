@@ -7,8 +7,8 @@
       @click="toggleMenu"
       aria-label="Toggle quick menu"
     >
-      <span v-if="!isMenuOpen">☰</span>
-      <span v-else>✕</span>
+      <span v-if="!isMenuOpen">[≡]</span>
+      <span v-else">[X]</span>
     </button>
 
     <!-- Floating Menu Items -->
@@ -19,7 +19,7 @@
           @click="openOccupants"
           title="Xem người xung quanh"
         >
-          <span class="menu-icon">👥</span>
+          <span class="menu-icon">[👤]</span>
           <span class="menu-label">Xung Quanh</span>
         </button>
         <button 
@@ -27,7 +27,7 @@
           @click="openMap"
           title="Mở bản đồ"
         >
-          <span class="menu-icon">🗺️</span>
+          <span class="menu-icon">[Map]</span>
           <span class="menu-label">Bản Đồ</span>
         </button>
         <button 
@@ -35,7 +35,7 @@
           @click="openInventory"
           title="Mở túi đồ"
         >
-          <span class="menu-icon">🎒</span>
+          <span class="menu-icon">[Bag]</span>
           <span class="menu-label">Túi Đồ</span>
         </button>
       </div>

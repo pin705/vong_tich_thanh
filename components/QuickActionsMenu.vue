@@ -2,8 +2,8 @@
   <Transition name="quick-menu">
     <div v-if="isOpen" class="quick-actions-menu">
       <div class="menu-header">
-        <h3 class="menu-title">⚡ Hành Động Nhanh</h3>
-        <button class="close-btn" @click="$emit('close')" aria-label="Đóng">×</button>
+        <h3 class="menu-title">Hành Động Nhanh</h3>
+        <button class="close-btn" @click="$emit('close')" aria-label="Đóng">[X]</button>
       </div>
 
       <div class="menu-content">
@@ -61,7 +61,7 @@
             class="action-btn"
             @click="executeAction(`goto ${location.id}`)"
           >
-            <span class="action-icon">📍</span>
+            <span class="action-icon">[Go]</span>
             <span class="action-label">{{ location.name }}</span>
           </button>
         </div>
@@ -69,7 +69,7 @@
 
       <div class="menu-footer">
         <button class="footer-btn" @click="openSettings">
-          ⚙️ Tùy Chỉnh Menu
+          [Cfg] Tùy Chỉnh Menu
         </button>
       </div>
     </div>
@@ -109,25 +109,25 @@ const emit = defineEmits<{
 }>();
 
 const commonActions: Action[] = [
-  { command: 'look', label: 'Xem Xét', icon: '👁️', key: 'l' },
-  { command: 'inventory', label: 'Túi Đồ', icon: '🎒', key: 'i' },
-  { command: 'rest', label: 'Nghỉ Ngơi', icon: '🛏️' },
-  { command: 'meditate', label: 'Thiền Định', icon: '🧘' },
-  { command: 'status', label: 'Trạng Thái', icon: '📊' },
+  { command: 'look', label: 'Xem Xét', icon: '[Xem]', key: 'l' },
+  { command: 'inventory', label: 'Túi Đồ', icon: '[Túi]', key: 'i' },
+  { command: 'rest', label: 'Nghỉ Ngơi', icon: '[Rest]' },
+  { command: 'meditate', label: 'Thiền Định', icon: '[Med]' },
+  { command: 'status', label: 'Trạng Thái', icon: '[Stat]' },
 ];
 
 const combatActions: Action[] = [
-  { command: 'attack', label: 'Tấn Công', icon: '⚔️', key: 'a' },
-  { command: 'flee', label: 'Chạy Trốn', icon: '🏃' },
-  { command: 'auto', label: 'Auto Combat', icon: '🤖' },
-  { command: 'use potion', label: 'Dùng Thuốc', icon: '🧪' },
+  { command: 'attack', label: 'Tấn Công', icon: '[ATK]', key: 'a' },
+  { command: 'flee', label: 'Chạy Trốn', icon: '[Flee]' },
+  { command: 'auto', label: 'Auto Combat', icon: '[Auto]' },
+  { command: 'use potion', label: 'Dùng Thuốc', icon: '[Pot]' },
 ];
 
 const socialActions: Action[] = [
-  { command: 'say Hello!', label: 'Chào Hỏi', icon: '👋' },
-  { command: 'party list', label: 'Nhóm', icon: '👥' },
-  { command: 'guild', label: 'Bang Hội', icon: '🏰' },
-  { command: 'who', label: 'Người Chơi', icon: '🌐' },
+  { command: 'say Hello!', label: 'Chào Hỏi', icon: '[Say]' },
+  { command: 'party list', label: 'Nhóm', icon: '[Pty]' },
+  { command: 'guild', label: 'Bang Hội', icon: '[Hội]' },
+  { command: 'who', label: 'Người Chơi', icon: '[Who]' },
 ];
 
 const executeAction = (command: string) => {

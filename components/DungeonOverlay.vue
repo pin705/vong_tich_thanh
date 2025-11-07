@@ -13,7 +13,7 @@
         </div>
         <div class="dungeon-stat-box">
           <div class="stat-label">Xu Hầm Ngục</div>
-          <div class="stat-value">🎫 {{ dungeonStatus.dungeonCoin }}</div>
+          <div class="stat-value">{{ dungeonStatus.dungeonCoin }}</div>
         </div>
       </div>
 
@@ -58,13 +58,13 @@
           @click="enterDungeon"
           :disabled="loading"
         >
-          {{ loading ? '⏳ Đang tải...' : '⚔️ VÀO KHIÊU CHIẾN' }}
+          {{ loading ? 'Đang tải...' : 'VÀO KHIÊU CHIẾN' }}
         </button>
         <button 
           class="dungeon-btn dungeon-btn-secondary"
           @click="openShop"
         >
-          🏪 MỞ CỬA HÀNG
+          MỞ CỬA HÀNG
         </button>
       </div>
 

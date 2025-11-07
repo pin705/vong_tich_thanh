@@ -23,8 +23,8 @@
               +{{ item.enhancementLevel }}
             </div>
             <div class="item-stats">
-              <span v-if="item.stats?.damage">⚔️ {{ item.stats.damage }}</span>
-              <span v-if="item.stats?.defense">🛡️ {{ item.stats.defense }}</span>
+              <span v-if="item.stats?.damage">ATK: {{ item.stats.damage }}</span>
+              <span v-if="item.stats?.defense">DEF: {{ item.stats.defense }}</span>
             </div>
           </div>
         </div>
@@ -71,10 +71,10 @@
             </span>
           </div>
           <div class="preview-item">
-            <strong>Chi phí:</strong> {{ getGoldCost() }} 💰
+            <strong>Chi phí:</strong> {{ getGoldCost() }} Vàng
           </div>
           <div class="preview-warning">
-            ⚠️ Nếu thất bại, trang bị sẽ không thay đổi (không mất cấp)
+            [!] Nếu thất bại, trang bị sẽ không thay đổi (không mất cấp)
           </div>
         </div>
 
@@ -86,10 +86,10 @@
             @click="handleEnhance"
           >
             <template v-if="enhancing">
-              [⚙️] Đang cường hóa...
+              Đang cường hóa...
             </template>
             <template v-else>
-              [✨] CƯỜNG HÓA
+              CƯỜNG HÓA
             </template>
           </button>
           <div v-if="!canEnhance()" class="insufficient-notice">
@@ -105,7 +105,7 @@
 
       <!-- Help Text -->
       <div class="help-section">
-        <div class="help-title">💡 Hướng Dẫn</div>
+        <div class="help-title">[Hướng Dẫn]</div>
         <ul class="help-list">
           <li>Chọn trang bị muốn cường hóa và vật liệu nâng cấp</li>
           <li>Mỗi lần cường hóa sẽ tốn Vàng và vật liệu</li>
