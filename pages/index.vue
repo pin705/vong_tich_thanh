@@ -325,6 +325,20 @@
       @close="petPopupOpen = false"
     />
 
+    <!-- Achievement Popup -->
+    <AchievementOverlay
+      :isOpen="achievementPopupOpen"
+      @close="achievementPopupOpen = false"
+    />
+
+    <!-- Title Popup -->
+    <TitleOverlay
+      :isOpen="titlePopupOpen"
+      :playerState="playerState"
+      @close="titlePopupOpen = false"
+      @refresh="handleTitleRefresh"
+    />
+
     <!-- Crafting Popup -->
     <CraftingPopup
       :isOpen="craftingPopupOpen"
@@ -384,6 +398,8 @@ import PremiumShopPopup from '~/components/PremiumShopPopup.vue';
 import ShopPopup from '~/components/ShopPopup.vue';
 import MailPopup from '~/components/MailPopup.vue';
 import PetOverlay from '~/components/PetOverlay.vue';
+import AchievementOverlay from '~/components/AchievementOverlay.vue';
+import TitleOverlay from '~/components/TitleOverlay.vue';
 import LeaderboardOverlay from '~/components/LeaderboardOverlay.vue';
 import BlacksmithPopup from '~/components/BlacksmithPopup.vue';
 import TabSelector from '~/components/TabSelector.vue';
@@ -420,7 +436,8 @@ const {
   tradingPopupOpen, partyPopupOpen, partyInvitationPopupOpen, guildPopupOpen,
   auctionHousePopupOpen, premiumShopPopupOpen, craftingPopupOpen, shopPopupOpen,
   mailPopupOpen, petPopupOpen, blacksmithPopupOpen, leaderboardOpen,
-  guildInvitationPopupOpen, toggleHelp
+  guildInvitationPopupOpen, achievementPopupOpen, titlePopupOpen,
+  toggleHelp, openAchievements, openTitles
 } = useGamePopups();
 const {
   isMobile, isTablet, isDesktop, updateDeviceType,
@@ -1300,6 +1317,13 @@ const handleMailUpdated = async () => {
   } catch (error) {
     console.error('Error checking unread mails:', error);
   }
+};
+
+// Handle title refresh (Achievement System)
+const handleTitleRefresh = () => {
+  // Refresh player state after equipping/unequipping a title
+  currentInput.value = 'look';
+  sendCommand();
 };
 
 // Phase 25: Vendor System - Shop handlers

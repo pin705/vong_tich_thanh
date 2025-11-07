@@ -3,6 +3,7 @@ import { QuestSchema } from '~/models/Quest';
 import { PlayerSchema } from '~/models/Player';
 import { ItemSchema } from '~/models/Item';
 import { applyExpBuff } from '~/server/utils/buffSystem';
+import { postEvent as postAchievementEvent } from '~/server/utils/achievementService';
 
 export default defineEventHandler(async (event) => {
   try {
@@ -102,6 +103,11 @@ export default defineEventHandler(async (event) => {
     playerQuest.status = 'completed';
     playerQuest.completedAt = new Date();
     await playerQuest.save();
+    
+    // Achievement system - post COMPLETE_QUEST event
+    if (quest.questKey) {
+      await postAchievementEvent(playerId, 'COMPLETE_QUEST', { key: quest.questKey });
+    }
 
     return {
       success: true,

@@ -15,6 +15,7 @@ import { addGoldToPlayer, addPremiumCurrencyToPlayer } from './inventoryService'
 import { addExp as addPetExp, petDefeated } from './petService';
 import { COMBAT_TICK_INTERVAL, FLEE_SUCCESS_CHANCE, getExpForLevel, HP_GAIN_PER_LEVEL, MINIMUM_DAMAGE, TALENT_POINTS_PER_LEVEL, SKILL_POINTS_PER_LEVEL } from './constants';
 import { trackBossContribution, isWorldBoss, distributeWorldBossRewards } from './worldBossService';
+import { postEvent as postAchievementEvent } from './achievementService';
 
 // Boss reward constants
 const BOSS_PREMIUM_CURRENCY_MULTIPLIER = 10;
@@ -671,6 +672,11 @@ export async function executeCombatTick(playerId: string, agentId: string): Prom
       // Update quest progress for killing this mob
       const questMessages = await updateQuestProgress(playerId, 'kill', agent.name);
       messages.push(...questMessages);
+      
+      // Achievement system - post KILL_AGENT event
+      if (agent.agentKey) {
+        await postAchievementEvent(playerId, 'KILL_AGENT', { key: agent.agentKey });
+      }
       
       // Dungeon System - Handle dungeon boss completion
       if (agent.isDungeonBoss && agent.dungeonFloor) {

@@ -126,11 +126,31 @@ export async function calculateStats(playerId: string): Promise<PlayerStats> {
     }
   }
 
-  // Calculate total stats
-  const totalHp = baseHp + equipmentStats.hp;
-  const totalMaxHp = baseMaxHp + equipmentStats.hp;
-  const totalDamage = baseDamage + equipmentStats.damage + equipmentStats.strength;
-  const totalDefense = baseDefense + equipmentStats.defense + Math.floor(equipmentStats.agility * 0.5);
+  // Calculate total stats (before title bonuses)
+  let totalHp = baseHp + equipmentStats.hp;
+  let totalMaxHp = baseMaxHp + equipmentStats.hp;
+  let totalDamage = baseDamage + equipmentStats.damage + equipmentStats.strength;
+  let totalDefense = baseDefense + equipmentStats.defense + Math.floor(equipmentStats.agility * 0.5);
+
+  // Apply title bonuses if player has an active title
+  if (player.activeTitleKey && player.unlockedTitles) {
+    const activeTitle = player.unlockedTitles.find((t: any) => t.key === player.activeTitleKey);
+    if (activeTitle && activeTitle.stats) {
+      // Apply title stat bonuses
+      if (activeTitle.stats.hp) {
+        totalHp += activeTitle.stats.hp;
+        totalMaxHp += activeTitle.stats.hp;
+      }
+      if (activeTitle.stats.attack) {
+        totalDamage += activeTitle.stats.attack;
+      }
+      if (activeTitle.stats.defense) {
+        totalDefense += activeTitle.stats.defense;
+      }
+      // Note: Other title stats (critChance, critDamage, dodge, lifesteal) 
+      // would need to be added to the PlayerStats interface if we want to track them
+    }
+  }
 
   return {
     baseHp,
@@ -194,4 +214,12 @@ export async function applyStatsToPlayer(playerId: string): Promise<{ success: b
   }
 
   return { success: true, messages };
+}
+
+/**
+ * Recalculate and apply player stats (alias for applyStatsToPlayer)
+ * Used after equipping/unequipping items or titles
+ */
+export async function recalculateStats(playerId: string): Promise<{ success: boolean; messages: string[] }> {
+  return await applyStatsToPlayer(playerId);
 }

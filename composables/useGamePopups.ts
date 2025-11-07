@@ -25,6 +25,8 @@ export function useGamePopups() {
   const blacksmithPopupOpen = ref(false);
   const leaderboardOpen = ref(false);
   const guildInvitationPopupOpen = ref(false);
+  const achievementPopupOpen = ref(false);
+  const titlePopupOpen = ref(false);
   
   function toggleHelp() {
     helpOpen.value = !helpOpen.value;
@@ -101,6 +103,14 @@ export function useGamePopups() {
   function openLeaderboard() {
     leaderboardOpen.value = true;
   }
+
+  function openAchievements() {
+    achievementPopupOpen.value = true;
+  }
+
+  function openTitles() {
+    titlePopupOpen.value = true;
+  }
   
   function closeAllPopups() {
     helpOpen.value = false;
@@ -126,6 +136,8 @@ export function useGamePopups() {
     petPopupOpen.value = false;
     blacksmithPopupOpen.value = false;
     leaderboardOpen.value = false;
+    achievementPopupOpen.value = false;
+    titlePopupOpen.value = false;
   }
   
   return {
@@ -153,6 +165,8 @@ export function useGamePopups() {
     petPopupOpen,
     blacksmithPopupOpen,
     leaderboardOpen,
+    achievementPopupOpen,
+    titlePopupOpen,
     
     // Actions
     toggleHelp,
@@ -174,6 +188,8 @@ export function useGamePopups() {
     openPet,
     openBlacksmith,
     openLeaderboard,
+    openAchievements,
+    openTitles,
     closeAllPopups
   };
 }
