@@ -2122,8 +2122,11 @@ export async function handleCommandDb(command: Command, playerId: string): Promi
         const gemName = target.toLowerCase();
         const equipName = args.join(' ').toLowerCase();
 
+        // Get all items from inventory
+        const inventoryItems = await ItemSchema.find({ _id: { $in: player.inventory } });
+
         // Find gem in inventory
-        const gemItem = await findItemInInventory(player, gemName);
+        const gemItem = await findItemInInventory(inventoryItems, gemName);
         if (!gemItem) {
           responses.push(`Không tìm thấy ngọc "${target}" trong túi đồ.`);
           break;
@@ -2135,7 +2138,7 @@ export async function handleCommandDb(command: Command, playerId: string): Promi
         }
 
         // Find equipment in inventory or equipped items
-        const equipItem = await findItemInInventory(player, equipName);
+        const equipItem = await findItemInInventory(inventoryItems, equipName);
         if (!equipItem) {
           responses.push(`Không tìm thấy trang bị "${args.join(' ')}" trong túi đồ.`);
           break;
@@ -2156,8 +2159,13 @@ export async function handleCommandDb(command: Command, playerId: string): Promi
 
         // Check current socketed gems
         const currentGems = equipItem.socketedGems || [];
-        if (currentGems.length >= equipItem.currentSockets) {
-          responses.push(`[${equipItem.name}] đã đầy lỗ khảm (${currentGems.length}/${equipItem.currentSockets}).`);
+        const currentSocketsCount = equipItem.currentSockets || 0;
+        if (currentSocketsCount === 0) {
+          responses.push(`[${equipItem.name}] chưa được đục lỗ. Sử dụng [Đục Khảm] để thêm lỗ.`);
+          break;
+        }
+        if (currentGems.length >= currentSocketsCount) {
+          responses.push(`[${equipItem.name}] đã đầy lỗ khảm (${currentGems.length}/${currentSocketsCount}).`);
           break;
         }
 
@@ -2168,7 +2176,7 @@ export async function handleCommandDb(command: Command, playerId: string): Promi
         await player.save();
 
         responses.push(`✨ Đã khảm [${gemItem.name}] vào [${equipItem.name}]!`);
-        responses.push(`Lỗ khảm: ${equipItem.socketedGems.length}/${equipItem.currentSockets}`);
+        responses.push(`Lỗ khảm: ${equipItem.socketedGems.length}/${currentSocketsCount}`);
         
         // Show bonus stats
         const gemTypeName = gemItem.gemType === 'attack' ? 'Sát Thương' :
@@ -2196,8 +2204,11 @@ export async function handleCommandDb(command: Command, playerId: string): Promi
 
         const equipName = target.toLowerCase();
 
+        // Get all items from inventory
+        const inventoryItems = await ItemSchema.find({ _id: { $in: player.inventory } });
+
         // Find equipment in inventory
-        const equipItem = await findItemInInventory(player, equipName);
+        const equipItem = await findItemInInventory(inventoryItems, equipName);
         if (!equipItem) {
           responses.push(`Không tìm thấy trang bị "${target}" trong túi đồ.`);
           break;
@@ -2372,8 +2383,11 @@ export async function handleCommandDb(command: Command, playerId: string): Promi
           break;
         }
 
+        // Get all items from inventory
+        const inventoryItems = await ItemSchema.find({ _id: { $in: player.inventory } });
+
         // Find equipment in inventory
-        const equipItem = await findItemInInventory(player, equipName);
+        const equipItem = await findItemInInventory(inventoryItems, equipName);
         if (!equipItem) {
           responses.push(`Không tìm thấy trang bị "${target}" trong túi đồ.`);
           break;
@@ -2385,14 +2399,24 @@ export async function handleCommandDb(command: Command, playerId: string): Promi
           break;
         }
 
+        // Initialize currentSockets if not set
+        const currentSocketsCount = equipItem.currentSockets || 0;
+        const maxSocketsCount = equipItem.maxSockets || 0;
+
+        // Check if equipment can have sockets
+        if (maxSocketsCount === 0) {
+          responses.push(`[${equipItem.name}] không thể đục lỗ khảm.`);
+          break;
+        }
+
         // Check if equipment has reached max sockets
-        if (equipItem.currentSockets >= equipItem.maxSockets) {
-          responses.push(`[${equipItem.name}] đã đạt số lỗ khảm tối đa (${equipItem.maxSockets}).`);
+        if (currentSocketsCount >= maxSocketsCount) {
+          responses.push(`[${equipItem.name}] đã đạt số lỗ khảm tối đa (${maxSocketsCount}).`);
           break;
         }
 
         // Add a socket
-        equipItem.currentSockets = (equipItem.currentSockets || 0) + 1;
+        equipItem.currentSockets = currentSocketsCount + 1;
 
         // Remove Socket Punch from inventory
         player.inventory = player.inventory.filter((id: any) => id.toString() !== punchItem._id.toString());
