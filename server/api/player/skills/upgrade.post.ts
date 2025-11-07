@@ -74,6 +74,9 @@ export default defineEventHandler(async (event) => {
       player.learnedSkills = new Map();
     }
     player.learnedSkills.set(skillId.toString(), currentLevel + 1);
+    
+    // Mark the learnedSkills field as modified to ensure Mongoose saves it
+    player.markModified('learnedSkills');
 
     await player.save();
 
