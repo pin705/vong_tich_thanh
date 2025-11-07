@@ -2,9 +2,11 @@ import { AuctionItemSchema } from '../../../models/AuctionItem';
 import { PlayerSchema } from '../../../models/Player';
 import { ItemSchema } from '../../../models/Item';
 import { removeItemFromPlayer, removeGoldFromPlayer, addItemToPlayer } from '../../utils/inventoryService';
+import { validateObjectId, validateNumber } from '~/server/utils/validation';
 
 const AUCTION_FEE = 10; // 10 gold to create auction
 const DEFAULT_DURATION = 24 * 60 * 60 * 1000; // 24 hours
+const MAX_AUCTION_DURATION = 7 * 24 * 60 * 60 * 1000; // 7 days
 
 export default defineEventHandler(async (event) => {
   const user = await getUserSession(event);
@@ -18,25 +20,57 @@ export default defineEventHandler(async (event) => {
   const body = await readBody(event);
   const { itemId, startingPrice, buyoutPrice, duration } = body;
 
-  if (!itemId || !startingPrice) {
+  if (!itemId || startingPrice === undefined || startingPrice === null) {
     throw createError({
       statusCode: 400,
       statusMessage: 'Item ID và giá khởi điểm là bắt buộc.'
     });
   }
 
-  if (startingPrice < 1) {
+  // Validate itemId format
+  const idValidation = validateObjectId(itemId);
+  if (!idValidation.valid) {
     throw createError({
       statusCode: 400,
-      statusMessage: 'Giá khởi điểm phải lớn hơn 0.'
+      statusMessage: idValidation.error || 'Item ID không hợp lệ.'
     });
   }
 
-  if (buyoutPrice && buyoutPrice <= startingPrice) {
+  // Validate starting price
+  const priceValidation = validateNumber(startingPrice, 'Giá khởi điểm', { min: 1, integer: true });
+  if (!priceValidation.valid) {
     throw createError({
       statusCode: 400,
-      statusMessage: 'Giá mua ngay phải lớn hơn giá khởi điểm.'
+      statusMessage: priceValidation.error || 'Giá khởi điểm không hợp lệ.'
     });
+  }
+
+  // Validate buyout price if provided
+  if (buyoutPrice !== undefined && buyoutPrice !== null) {
+    const buyoutValidation = validateNumber(buyoutPrice, 'Giá mua ngay', { min: 1, integer: true });
+    if (!buyoutValidation.valid) {
+      throw createError({
+        statusCode: 400,
+        statusMessage: buyoutValidation.error || 'Giá mua ngay không hợp lệ.'
+      });
+    }
+    if (buyoutValidation.value! <= priceValidation.value!) {
+      throw createError({
+        statusCode: 400,
+        statusMessage: 'Giá mua ngay phải lớn hơn giá khởi điểm.'
+      });
+    }
+  }
+
+  // Validate duration if provided
+  if (duration !== undefined && duration !== null) {
+    const durationValidation = validateNumber(duration, 'Thời gian đấu giá', { min: 60000, max: MAX_AUCTION_DURATION, integer: true });
+    if (!durationValidation.valid) {
+      throw createError({
+        statusCode: 400,
+        statusMessage: durationValidation.error || 'Thời gian đấu giá không hợp lệ.'
+      });
+    }
   }
 
   const playerId = user.user.id;
