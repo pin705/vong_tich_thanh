@@ -546,25 +546,32 @@ export async function handleCommandDb(command: Command, playerId: string): Promi
         });
 
         // Deduct currency
+        let remainingCurrency = 0;
         if (currencyInfo.isPremiumShop) {
           player.premiumCurrency -= itemPrice;
+          remainingCurrency = player.premiumCurrency;
         } else if (currencyInfo.isDungeonShop) {
           player.dungeonCoin = (player.dungeonCoin || 0) - itemPrice;
+          remainingCurrency = player.dungeonCoin;
         } else if (currencyInfo.isTamerShop) {
           player.tamerBadge = (player.tamerBadge || 0) - itemPrice;
+          remainingCurrency = player.tamerBadge;
         } else if (currencyInfo.isGloryShop) {
           player.gloryPoints = (player.gloryPoints || 0) - itemPrice;
+          remainingCurrency = player.gloryPoints;
         } else if (currencyInfo.isBraveryShop) {
           player.braveryMedals = (player.braveryMedals || 0) - itemPrice;
+          remainingCurrency = player.braveryMedals;
         } else {
           player.gold -= itemPrice;
+          remainingCurrency = player.gold;
         }
         
         player.inventory.push(newBuyItem._id);
         await player.save();
 
         responses.push(`Bạn đã mua [${buyItem.name}] với giá ${itemPrice} ${currencyInfo.currencySymbol}!`);
-        responses.push(`${currencyInfo.currencyName} còn lại: ${currencyInfo.playerCurrency - itemPrice} ${currencyInfo.currencySymbol}`);
+        responses.push(`${currencyInfo.currencyName} còn lại: ${remainingCurrency} ${currencyInfo.currencySymbol}`);
         break;
       }
 
