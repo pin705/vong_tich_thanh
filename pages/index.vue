@@ -76,8 +76,8 @@
         @keydown.enter="sendCommand"
         @keydown.up="navigateHistory(-1)"
         @keydown.down="navigateHistory(1)"
-        @keydown.tab.prevent="handleTabCompletion"
-        @input="resetTabCompletion"
+        @keydown.tab.prevent="handleTabCompletionWrapper"
+        @input="resetTabCompletionWrapper"
         @keydown.ctrl.h.prevent="toggleHelp"
         @keydown.meta.h.prevent="toggleHelp"
         @keydown.f1.prevent="toggleHelp"
@@ -363,21 +363,8 @@
 
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, nextTick, watch, computed } from 'vue';
-import type { Message, ChatMessage, PlayerState, TargetState, ExitsState, RoomOccupantsState, SelectedTarget, Skill } from '~/types';
-
-// Recipe interface for crafting
-interface Recipe {
-  id: string;
-  name: string;
-  description: string;
-  quality?: string;
-  resultName: string;
-  materials: Array<{
-    id: string;
-    name: string;
-    quantity: number;
-  }>;
-}
+import type { Message, ChatMessage, TargetState, Skill } from '~/types';
+import type { Recipe } from '~/composables/useGameState';
 
 import PlayerStatusHeader from '~/components/PlayerStatusHeader.vue';
 import InventoryPane from '~/components/InventoryPane.vue';
@@ -407,6 +394,11 @@ import RoomOccupantsPane from '~/components/RoomOccupantsPane.vue';
 import LoadingIndicator from '~/components/LoadingIndicator.vue';
 import CombatView from '~/components/CombatView.vue';
 import MobileFloatingMenu from '~/components/MobileFloatingMenu.vue';
+import PartyPopup from '~/components/PartyPopup.vue';
+import PartyInvitationPopup from '~/components/PartyInvitationPopup.vue';
+import GuildOverlay from '~/components/GuildOverlay.vue';
+import GuildInvitationPopup from '~/components/GuildInvitationPopup.vue';
+import AuctionHouseOverlay from '~/components/AuctionHouseOverlay.vue';
 
 definePageMeta({
   middleware: 'auth'
@@ -415,43 +407,40 @@ definePageMeta({
 const { user, clear } = useUserSession();
 const router = useRouter();
 
-// Responsive layout detection (Phase 15.1)
-const isMobile = ref(false);
-const isTablet = ref(false);
-const isDesktop = ref(false);
+// Use composables for state management
+const { playerState, updatePlayerState } = usePlayerState();
+const { 
+  mainLog, combatLog, chatLog, 
+  mainUnread, combatUnread, chatUnread,
+  currentChannel, addMessage, setCurrentChannel 
+} = useGameMessages();
+const {
+  helpOpen, characterMenuOpen, settingsOpen, questsOpen, professionChoiceOpen,
+  inventoryPopupOpen, mapPopupOpen, occupantsPopupOpen, contextualPopupOpen,
+  tradingPopupOpen, partyPopupOpen, partyInvitationPopupOpen, guildPopupOpen,
+  auctionHousePopupOpen, premiumShopPopupOpen, craftingPopupOpen, shopPopupOpen,
+  mailPopupOpen, petPopupOpen, blacksmithPopupOpen, leaderboardOpen,
+  guildInvitationPopupOpen, toggleHelp
+} = useGamePopups();
+const {
+  isMobile, isTablet, isDesktop, updateDeviceType,
+  exits, currentRoomName, worldRooms, roomOccupants, selectedTarget,
+  isInCombat, combatTarget, playerCombatSkills, playerCooldowns, commandInputFocus,
+  combatStatusText, playerAutoCombat, playerCustomAliases,
+  playerSkills, talentBranches, allocatedTalents, playerQuests,
+  tradingData, shopData, craftingData, partyState, partyInvitationData,
+  guildInvitationData, contextualPopupData, isLoading, loadingText
+} = useGameState();
+const {
+  currentInput, commandHistory, historyIndex,
+  tabCompletionMatches, tabCompletionIndex, tabCompletionPrefix,
+  navigateHistory, addToHistory, resetTabCompletion, handleTabCompletion
+} = useCommandHistory();
 
-// Detect device type
-const updateDeviceType = () => {
-  if (typeof window !== 'undefined') {
-    const width = window.innerWidth;
-    isMobile.value = width < 768;
-    isTablet.value = width >= 768 && width < 1024;
-    isDesktop.value = width >= 1024;
-  }
-};
-
-// Channel tabs state (Phase 27)
-const currentChannel = ref<'main' | 'combat' | 'chat'>('main');
-const mainLog = ref<Message[]>([]);
-const combatLog = ref<Message[]>([]);
-const chatLog = ref<Message[]>([]);
-const mainUnread = ref(false);
-const combatUnread = ref(false);
-const chatUnread = ref(false);
-
-// Chat persistence constants
+// Load chat from storage
 const CHAT_STORAGE_KEY = 'vong-tich-thanh-chat-log';
-const MAX_CHAT_MESSAGES = 200; // Limit stored messages to prevent localStorage overflow
+const MAX_CHAT_MESSAGES = 200;
 
-// Command history constants
-const COMMAND_HISTORY_STORAGE_KEY = 'vong-tich-thanh-command-history';
-const MAX_COMMAND_HISTORY = 100; // Limit stored commands
-
-// Message limits to prevent accumulation
-const MAX_MAIN_LOG_MESSAGES = 500; // Keep last 500 messages in main log
-const MAX_COMBAT_LOG_MESSAGES = 100; // Keep last 100 messages in combat log for better performance
-
-// Load chat messages from localStorage
 const loadChatFromStorage = () => {
   if (typeof window === 'undefined') return;
   
@@ -459,7 +448,7 @@ const loadChatFromStorage = () => {
     const stored = localStorage.getItem(CHAT_STORAGE_KEY);
     if (stored) {
       const parsed = JSON.parse(stored);
-      // Restore messages with Date objects
+      // Restore messages directly to chatLog
       chatLog.value = parsed.map((msg: Message) => ({
         ...msg,
         timestamp: new Date(msg.timestamp)
@@ -470,44 +459,14 @@ const loadChatFromStorage = () => {
   }
 };
 
-// Save chat messages to localStorage
 const saveChatToStorage = () => {
   if (typeof window === 'undefined') return;
   
   try {
-    // Keep only the most recent messages
     const messagesToSave = chatLog.value.slice(-MAX_CHAT_MESSAGES);
     localStorage.setItem(CHAT_STORAGE_KEY, JSON.stringify(messagesToSave));
   } catch (error) {
     console.error('Failed to save chat to storage:', error);
-  }
-};
-
-// Load command history from localStorage
-const loadCommandHistoryFromStorage = () => {
-  if (typeof window === 'undefined') return;
-  
-  try {
-    const stored = localStorage.getItem(COMMAND_HISTORY_STORAGE_KEY);
-    if (stored) {
-      const parsed = JSON.parse(stored);
-      commandHistory.value = Array.isArray(parsed) ? parsed : [];
-    }
-  } catch (error) {
-    console.error('Failed to load command history from storage:', error);
-  }
-};
-
-// Save command history to localStorage
-const saveCommandHistoryToStorage = () => {
-  if (typeof window === 'undefined') return;
-  
-  try {
-    // Keep only the most recent commands
-    const commandsToSave = commandHistory.value.slice(-MAX_COMMAND_HISTORY);
-    localStorage.setItem(COMMAND_HISTORY_STORAGE_KEY, JSON.stringify(commandsToSave));
-  } catch (error) {
-    console.error('Failed to save command history to storage:', error);
   }
 };
 
@@ -518,211 +477,19 @@ const channelTabs = computed(() => [
   { id: 'chat', label: 'Chat', hasUnread: chatUnread.value }
 ]);
 
-// Combat status text
-const combatStatusText = computed(() => {
-  if (!isInCombat.value) return '';
-  if (commandInputFocus.value) {
-    return 'Đang chờ lệnh... (Gõ "auto" để bật tự động tấn công)';
-  }
-  return 'Tự động tấn công đang hoạt động';
-});
-
 // Handle channel tab change
 const handleChannelChange = (channelId: string) => {
-  currentChannel.value = channelId as 'main' | 'combat' | 'chat';
-  
-  // Clear unread indicator for the selected channel
-  if (channelId === 'main') {
-    mainUnread.value = false;
-  } else if (channelId === 'combat') {
-    combatUnread.value = false;
-  } else if (channelId === 'chat') {
-    chatUnread.value = false;
-  }
+  setCurrentChannel(channelId as 'main' | 'combat' | 'chat');
 };
 
 // State
 const messages = ref<Message[]>([]);
 const chatMessages = ref<ChatMessage[]>([]);
-const currentInput = ref('');
-const commandHistory = ref<string[]>([]);
-const historyIndex = ref(-1);
-const tempInput = ref(''); // Store current input when navigating history
 
-// Tab completion state
-const tabCompletionMatches = ref<string[]>([]);
-const tabCompletionIndex = ref(-1);
-const tabCompletionPrefix = ref('');
-
-const outputArea = ref<HTMLElement | null>(null);
 const inputField = ref<HTMLInputElement | null>(null);
 const ws = ref<WebSocket | null>(null);
 const isConnected = ref(false);
-const helpOpen = ref(false);
-const characterMenuOpen = ref(false);
-const settingsOpen = ref(false);
-const worldMapOpen = ref(false);
-const questsOpen = ref(false);
-const professionChoiceOpen = ref(false);
-const leaderboardOpen = ref(false);
-
-// Player settings state
-const playerAutoCombat = ref(false);
-const playerCustomAliases = ref<Record<string, string>>({});
-
-// Popup states
-const inventoryPopupOpen = ref(false);
-const mapPopupOpen = ref(false);
-const occupantsPopupOpen = ref(false);
-const contextualPopupOpen = ref(false);
-const tradingPopupOpen = ref(false);
-const partyPopupOpen = ref(false);
-const partyInvitationPopupOpen = ref(false);
-const guildPopupOpen = ref(false);
-const guildInvitationPopupOpen = ref(false);
-const auctionHousePopupOpen = ref(false);
-const premiumShopPopupOpen = ref(false);
-const craftingPopupOpen = ref(false);
-const shopPopupOpen = ref(false);
-const mailPopupOpen = ref(false);
-const petPopupOpen = ref(false);
-const blacksmithPopupOpen = ref(false);
 const shopPopupRef = ref<InstanceType<typeof ShopPopup> | null>(null);
-
-// Loading state
-const isLoading = ref(false);
-const loadingText = ref('Đang tải...');
-
-const contextualPopupData = ref<{
-  title: string;
-  entityType: 'npc' | 'mob' | 'player' | null;
-  entityData?: any;
-  actions?: any[];
-}>({
-  title: '',
-  entityType: null,
-  entityData: {},
-  actions: []
-});
-
-// Trading popup state
-const tradingData = ref<{
-  merchantName: string;
-  merchantId: string;
-  merchantItems: any[];
-}>({
-  merchantName: '',
-  merchantId: '',
-  merchantItems: []
-});
-
-// Shop popup state (Phase 25: Vendor System)
-const shopData = ref<{
-  vendorId: string;
-  vendorName: string;
-  shopType: 'gold' | 'premium';
-}>({
-  vendorId: '',
-  vendorName: '',
-  shopType: 'gold'
-});
-
-// Crafting state
-const craftingData = ref<{
-  knownRecipes: Recipe[];
-  loading: boolean;
-}>({
-  knownRecipes: [],
-  loading: false
-});
-
-// Party state
-const partyState = ref<{
-  hasParty: boolean;
-  members: any[];
-  lootRule: 'leader-only' | 'round-robin';
-  isLeader: boolean;
-}>({
-  hasParty: false,
-  members: [],
-  lootRule: 'round-robin',
-  isLeader: false
-});
-
-// Party invitation data
-const partyInvitationData = ref<{
-  inviterId: string;
-  inviterName: string;
-  inviterClass: string;
-  partyId: string;
-}>({
-  inviterId: '',
-  inviterName: '',
-  inviterClass: 'mutant_warrior',
-  partyId: ''
-});
-
-// Guild invitation data
-const guildInvitationData = ref<{
-  guildId: string;
-  guildName: string;
-  guildTag: string;
-  inviterId: string;
-  inviterName: string;
-}>({
-  guildId: '',
-  guildName: '',
-  guildTag: '',
-  inviterId: '',
-  inviterName: ''
-});
-
-// Skills and talents state
-const playerSkills = ref<Skill[]>([]);
-const talentBranches = ref<any[]>([]);
-const allocatedTalents = ref<Record<string, number>>({});
-
-// Room occupants state
-const roomOccupants = ref<RoomOccupantsState>({
-  players: [],
-  npcs: [],
-  mobs: [],
-  respawns: []
-});
-
-// Selected target for actions
-const selectedTarget = ref<SelectedTarget | null>(null);
-
-// Combat state
-const isInCombat = ref(false);
-const combatTarget = ref<any>(null);
-const playerCombatSkills = ref<Skill[]>([]);
-const playerCooldowns = ref<any[]>([]);
-const commandInputFocus = ref(false);
-
-// Player state
-const playerState = ref<PlayerState>({
-  name: user.value?.username || 'Player',
-  hp: 100,
-  maxHp: 100,
-  mp: 50,
-  maxMp: 50,
-  level: 1,
-  exp: 0,
-  nextLevelExp: 100,
-  gold: 0,
-  premiumCurrency: 0,
-  inCombat: false,
-  stats: {
-    damage: 5,
-    defense: 0,
-    critChance: 5,
-    critDamage: 150,
-    lifesteal: 0,
-    dodge: 5
-  },
-  inventoryItems: Array(20).fill(null)
-});
 
 // Target state
 const targetState = ref<TargetState>({
@@ -731,77 +498,15 @@ const targetState = ref<TargetState>({
   maxHp: 0
 });
 
-// Exits state
-const exits = ref<ExitsState>({
-  north: false,
-  south: false,
-  east: false,
-  west: false,
-  up: false,
-  down: false
-});
+// Initialize player state with username
+if (user.value?.username) {
+  updatePlayerState({ name: user.value.username });
+}
 
-// World map state
-const currentRoomName = ref('Không rõ');
-const worldRooms = ref<any[]>([]);
-
-// Quest state
-const playerQuests = ref<any[]>([]);
-
-// Generate unique message ID
-const generateId = () => `msg-${Date.now()}-${Math.random()}`;
-
-// Add message to appropriate channel
-const addMessage = (text: string, type: Message['type'] = 'normal', user?: string, channel?: 'main' | 'combat' | 'chat', category?: string) => {
-  const message: Message = {
-    id: generateId(),
-    text,
-    type,
-    timestamp: new Date(),
-    user,
-    channel,
-    category
-  };
-  
-  // Route to appropriate log based on channel
-  if (channel === 'combat') {
-    combatLog.value.push(message);
-    // Trim combat log if it exceeds limit
-    if (combatLog.value.length > MAX_COMBAT_LOG_MESSAGES) {
-      combatLog.value = combatLog.value.slice(-MAX_COMBAT_LOG_MESSAGES);
-    }
-    // Set unread indicator if not on combat tab
-    if (currentChannel.value !== 'combat') {
-      combatUnread.value = true;
-    }
-  } else if (channel === 'chat' || type === 'chat_log') {
-    chatLog.value.push(message);
-    // Trim chat log if it exceeds limit
-    if (chatLog.value.length > MAX_CHAT_MESSAGES) {
-      chatLog.value = chatLog.value.slice(-MAX_CHAT_MESSAGES);
-    }
-    // Save chat to localStorage
-    saveChatToStorage();
-    // Set unread indicator if not on chat tab
-    if (currentChannel.value !== 'chat') {
-      chatUnread.value = true;
-    }
-  } else {
-    // Default to main channel
-    mainLog.value.push(message);
-    // Trim main log if it exceeds limit
-    if (mainLog.value.length > MAX_MAIN_LOG_MESSAGES) {
-      mainLog.value = mainLog.value.slice(-MAX_MAIN_LOG_MESSAGES);
-    }
-    // Set unread indicator if not on main tab
-    if (currentChannel.value !== 'main') {
-      mainUnread.value = true;
-    }
-  }
-  
-  // Keep legacy messages array for backward compatibility
-  messages.value.push(message);
-};
+// Watch for chat changes to persist
+watch(chatLog, () => {
+  saveChatToStorage();
+}, { deep: true });
 
 // Get CSS class for message type
 const getMessageClass = (message: Message) => {
@@ -1248,9 +953,6 @@ const handleClickableElement = (element: string, type: 'direction' | 'entity' | 
 };
 
 // Toggle help overlay
-const toggleHelp = () => {
-  helpOpen.value = !helpOpen.value;
-};
 
 // Load player skills
 const loadSkills = async () => {
@@ -1615,118 +1317,22 @@ const handleShopTransaction = () => {
 };
 
 // Navigate command history
-const navigateHistory = (direction: number) => {
-  if (commandHistory.value.length === 0) return;
-  
-  // Save current input when first navigating up from typing
-  if (historyIndex.value === -1 && direction === -1) {
-    tempInput.value = currentInput.value;
-  }
-  
-  historyIndex.value += direction;
-  
-  // Going down past the end - restore temp input and reset index
-  if (historyIndex.value < -1) {
-    historyIndex.value = -1;
-    currentInput.value = tempInput.value;
-    return;
-  }
-  
-  // Going up past the beginning - stay at first command
-  if (historyIndex.value >= commandHistory.value.length) {
-    historyIndex.value = commandHistory.value.length - 1;
-    return;
-  }
-  
-  // At position -1 (no history selected) - show temp input
-  if (historyIndex.value === -1) {
-    currentInput.value = tempInput.value;
-    return;
-  }
-  
-  // Show command from history (newest = 0, oldest = length-1)
-  currentInput.value = commandHistory.value[commandHistory.value.length - 1 - historyIndex.value];
-};
 
-// Handle tab completion
-const handleTabCompletion = (event: KeyboardEvent) => {
+// Handle tab completion wrapper
+const handleTabCompletionWrapper = (event: KeyboardEvent) => {
   event.preventDefault();
-  
-  const input = currentInput.value.trim();
-  if (!input) return;
-  
-  // Parse the input to get command and target prefix
-  const parts = input.split(' ');
-  if (parts.length < 2) return; // Need at least "command target"
-  
-  const command = parts[0];
-  const targetPrefix = parts[parts.length - 1].toLowerCase();
-  
-  // If this is a new tab press (different prefix or first time)
-  if (tabCompletionPrefix.value !== targetPrefix) {
-    // Collect all possible targets from the room
-    const targets: string[] = [];
-    
-    // Add players
-    roomOccupants.value.players.forEach((player: any) => {
-      if (player.name.toLowerCase().startsWith(targetPrefix)) {
-        targets.push(player.name);
-      }
-    });
-    
-    // Add NPCs
-    roomOccupants.value.npcs.forEach((npc: any) => {
-      if (npc.name.toLowerCase().startsWith(targetPrefix)) {
-        targets.push(npc.name);
-      }
-    });
-    
-    // Add mobs
-    roomOccupants.value.mobs.forEach((mob: any) => {
-      if (mob.name.toLowerCase().startsWith(targetPrefix)) {
-        targets.push(mob.name);
-      }
-    });
-    
-    // Add items from inventory if command is "use", "drop", or "equip"
-    if (['use', 'sử', 'dụng', 'drop', 'vứt', 'equip', 'trang'].includes(command.toLowerCase())) {
-      playerState.value.inventoryItems.forEach((item: any) => {
-        if (item?.name?.toLowerCase().startsWith(targetPrefix)) {
-          targets.push(item.name);
-        }
-      });
-    }
-    
-    // Remove duplicates and sort
-    tabCompletionMatches.value = [...new Set(targets)].sort();
-    tabCompletionIndex.value = 0;
-    tabCompletionPrefix.value = targetPrefix;
-  } else if (tabCompletionMatches.value.length > 0) {
-    // Cycle to next match (only if we have matches)
-    tabCompletionIndex.value = (tabCompletionIndex.value + 1) % tabCompletionMatches.value.length;
-  }
-  
-  // Apply completion if we have matches
-  if (tabCompletionMatches.value.length > 0) {
-    const completedTarget = tabCompletionMatches.value[tabCompletionIndex.value];
-    // Replace the last word with the completed target
-    const commandParts = parts.slice(0, -1);
-    commandParts.push(completedTarget);
-    currentInput.value = commandParts.join(' ');
-  }
+  handleTabCompletion(roomOccupants.value, playerState.value.inventoryItems);
 };
 
 // Reset tab completion state when user types
-const resetTabCompletion = (event: Event) => {
+const resetTabCompletionWrapper = (event: Event) => {
   // Only reset on actual text input changes
   const inputEvent = event as InputEvent;
   const inputType = inputEvent.inputType;
   
   // Reset only for text insertion or deletion events
   if (inputType && (inputType === 'insertText' || inputType === 'deleteContentBackward' || inputType === 'deleteContentForward')) {
-    tabCompletionMatches.value = [];
-    tabCompletionIndex.value = -1;
-    tabCompletionPrefix.value = '';
+    resetTabCompletion();
   }
 };
 
@@ -1748,23 +1354,12 @@ const sendCommand = async () => {
     input = remainder ? `${playerCustomAliases.value[firstWord]} ${remainder}` : playerCustomAliases.value[firstWord];
   }
 
-  // Add to command history (store original command, not alias-expanded)
-  const originalInput = currentInput.value.trim();
-  if (commandHistory.value[commandHistory.value.length - 1] !== originalInput) {
-    commandHistory.value.push(originalInput);
-    // Limit history size
-    if (commandHistory.value.length > MAX_COMMAND_HISTORY) {
-      commandHistory.value = commandHistory.value.slice(-MAX_COMMAND_HISTORY);
-    }
-    // Save to localStorage
-    saveCommandHistoryToStorage();
-  }
-  historyIndex.value = -1;
-  tempInput.value = '';
+  // Add to command history using composable
+  addToHistory(currentInput.value.trim());
 
   // Echo command (show expanded version if alias was used)
-  if (input !== originalInput) {
-    addMessage(`> ${originalInput} → ${input}`, 'system');
+  if (input !== currentInput.value.trim()) {
+    addMessage(`> ${currentInput.value.trim()} → ${input}`, 'system');
   } else {
     addMessage(`> ${input}`, 'system');
   }
@@ -1779,7 +1374,7 @@ const sendCommand = async () => {
 
   // Handle help command
   if (input.toLowerCase() === 'help') {
-    helpOpen.value = true;
+    toggleHelp();
     currentInput.value = '';
     return;
   }
@@ -2201,8 +1796,7 @@ onMounted(() => {
   // Load chat history from localStorage
   loadChatFromStorage();
   
-  // Load command history from localStorage
-  loadCommandHistoryFromStorage();
+  // Command history is now loaded automatically by useCommandHistory composable
   
   // Load player settings
   loadPlayerSettings();

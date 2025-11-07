@@ -21,6 +21,10 @@ export function useGamePopups() {
   const craftingPopupOpen = ref(false);
   const shopPopupOpen = ref(false);
   const mailPopupOpen = ref(false);
+  const petPopupOpen = ref(false);
+  const blacksmithPopupOpen = ref(false);
+  const leaderboardOpen = ref(false);
+  const guildInvitationPopupOpen = ref(false);
   
   function toggleHelp() {
     helpOpen.value = !helpOpen.value;
@@ -85,6 +89,18 @@ export function useGamePopups() {
   function openMail() {
     mailPopupOpen.value = true;
   }
+
+  function openPet() {
+    petPopupOpen.value = true;
+  }
+
+  function openBlacksmith() {
+    blacksmithPopupOpen.value = true;
+  }
+
+  function openLeaderboard() {
+    leaderboardOpen.value = true;
+  }
   
   function closeAllPopups() {
     helpOpen.value = false;
@@ -101,11 +117,15 @@ export function useGamePopups() {
     partyPopupOpen.value = false;
     partyInvitationPopupOpen.value = false;
     guildPopupOpen.value = false;
+    guildInvitationPopupOpen.value = false;
     auctionHousePopupOpen.value = false;
     premiumShopPopupOpen.value = false;
     craftingPopupOpen.value = false;
     shopPopupOpen.value = false;
     mailPopupOpen.value = false;
+    petPopupOpen.value = false;
+    blacksmithPopupOpen.value = false;
+    leaderboardOpen.value = false;
   }
   
   return {
@@ -124,11 +144,15 @@ export function useGamePopups() {
     partyPopupOpen,
     partyInvitationPopupOpen,
     guildPopupOpen,
+    guildInvitationPopupOpen,
     auctionHousePopupOpen,
     premiumShopPopupOpen,
     craftingPopupOpen,
     shopPopupOpen,
     mailPopupOpen,
+    petPopupOpen,
+    blacksmithPopupOpen,
+    leaderboardOpen,
     
     // Actions
     toggleHelp,
@@ -147,6 +171,9 @@ export function useGamePopups() {
     openCrafting,
     openShop,
     openMail,
+    openPet,
+    openBlacksmith,
+    openLeaderboard,
     closeAllPopups
   };
 }
