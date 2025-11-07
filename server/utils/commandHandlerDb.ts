@@ -284,6 +284,45 @@ export async function handleCommandDb(command: Command, playerId: string): Promi
         // Update quest progress for talk objectives
         const questMessages = await updateQuestProgress(playerId, 'talk', talkAgent.name);
         responses.push(...questMessages);
+
+        // Tutorial completion logic: When player talks to "Già Làng" and hasn't completed tutorial
+        if (talkAgent.agentKey === 'gia_lang' && !player.hasCompletedTutorial) {
+          // Mark tutorial as completed
+          player.hasCompletedTutorial = true;
+          
+          // Get starter items by itemKey
+          const starterItems = await ItemSchema.find({
+            itemKey: { $in: ['starter_sword', 'starter_chest', 'starter_legs', 'starter_boots'] }
+          }).lean();
+          
+          // Add items to player inventory concurrently for better performance
+          await Promise.all(starterItems.map(item => addItemToPlayer(playerId, item._id.toString())));
+          
+          // Reload player to get updated inventory
+          await player.reload();
+          
+          // Prepare reward data to be stored in gameState for WebSocket to pick up
+          const itemsAwarded = starterItems.map(item => ({
+            name: item.name,
+            itemKey: item.itemKey
+          }));
+          
+          // Store the tutorial completion event in player's session
+          // The WebSocket handler will check for this and send the custom event
+          const playerState = gameState.getPlayer(playerId);
+          if (playerState) {
+            playerState.tutorialRewardData = itemsAwarded;
+          } else {
+            // Player state not in memory yet - log warning but continue
+            console.warn(`[Tutorial] Player state not found for ${playerId}, reward popup may not display`);
+          }
+          
+          responses.push('');
+          responses.push('════════════════════════════════════');
+          responses.push('[Hướng dẫn hoàn tất!]');
+          responses.push('Bạn đã nhận được trang bị tân thủ.');
+          responses.push('════════════════════════════════════');
+        }
         break;
 
       case 'say':

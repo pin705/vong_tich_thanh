@@ -217,6 +217,71 @@ export async function initializeWorld() {
       { upsert: true, new: true, setDefaultsOnInsert: true }
     );
 
+    // Starter Items (Level 1) - Awarded upon tutorial completion
+    const starterSword = await ItemSchema.findOneAndUpdate(
+      { itemKey: 'starter_sword' },
+      {
+        itemKey: 'starter_sword',
+        name: 'Kiếm Tân Thủ',
+        description: 'Một thanh kiếm đơn giản dành cho người mới. Nhẹ và dễ sử dụng.',
+        type: 'weapon',
+        slot: 'weapon',
+        value: 5,
+        stats: { damage: 5 },
+        requiredLevel: 1,
+        quality: 'Thường'
+      },
+      { upsert: true, new: true, setDefaultsOnInsert: true }
+    );
+
+    const starterChest = await ItemSchema.findOneAndUpdate(
+      { itemKey: 'starter_chest' },
+      {
+        itemKey: 'starter_chest',
+        name: 'Áo Tân Thủ',
+        description: 'Một bộ áo da đơn giản dành cho người mới. Cung cấp phòng thủ cơ bản.',
+        type: 'armor',
+        slot: 'chest',
+        value: 5,
+        stats: { defense: 3 },
+        requiredLevel: 1,
+        quality: 'Thường'
+      },
+      { upsert: true, new: true, setDefaultsOnInsert: true }
+    );
+
+    const starterLegs = await ItemSchema.findOneAndUpdate(
+      { itemKey: 'starter_legs' },
+      {
+        itemKey: 'starter_legs',
+        name: 'Quần Tân Thủ',
+        description: 'Một chiếc quần da đơn giản dành cho người mới. Bảo vệ chân bạn.',
+        type: 'armor',
+        slot: 'legs',
+        value: 5,
+        stats: { defense: 2 },
+        requiredLevel: 1,
+        quality: 'Thường'
+      },
+      { upsert: true, new: true, setDefaultsOnInsert: true }
+    );
+
+    const starterBoots = await ItemSchema.findOneAndUpdate(
+      { itemKey: 'starter_boots' },
+      {
+        itemKey: 'starter_boots',
+        name: 'Giày Tân Thủ',
+        description: 'Một đôi giày da đơn giản dành cho người mới. Giúp bạn di chuyển dễ dàng.',
+        type: 'armor',
+        slot: 'boots',
+        value: 5,
+        stats: { defense: 1 },
+        requiredLevel: 1,
+        quality: 'Thường'
+      },
+      { upsert: true, new: true, setDefaultsOnInsert: true }
+    );
+
     // Premium Shop Items
     const theExpX2 = await ItemSchema.findOneAndUpdate(
       { itemKey: 'the_exp_x2' },

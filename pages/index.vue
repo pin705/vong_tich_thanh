@@ -372,6 +372,15 @@
       @itemPurchased="handleShopTransaction"
     />
 
+    <!-- Reward Popup (Tutorial Completion) -->
+    <RewardPopup
+      v-if="rewardData"
+      :title="rewardData.title"
+      :message="rewardData.message"
+      :items="rewardData.items"
+      @close="rewardData = null"
+    />
+
     <!-- Loading Indicator -->
     <LoadingIndicator :isLoading="isLoading" :text="loadingText" />
   </div>
@@ -417,6 +426,7 @@ import PartyInvitationPopup from '~/components/PartyInvitationPopup.vue';
 import GuildOverlay from '~/components/GuildOverlay.vue';
 import GuildInvitationPopup from '~/components/GuildInvitationPopup.vue';
 import AuctionHouseOverlay from '~/components/AuctionHouseOverlay.vue';
+import RewardPopup from '~/components/RewardPopup.vue';
 
 definePageMeta({
   middleware: 'auth'
@@ -509,6 +519,9 @@ const inputField = ref<HTMLInputElement | null>(null);
 const ws = ref<WebSocket | null>(null);
 const isConnected = ref(false);
 const shopPopupRef = ref<InstanceType<typeof ShopPopup> | null>(null);
+
+// Tutorial reward popup data
+const rewardData = ref<{ title: string; message: string; items: Array<{ itemKey: string; name: string }> } | null>(null);
 
 // Target state
 const targetState = ref<TargetState>({
@@ -1670,6 +1683,16 @@ const connectWebSocket = () => {
           // Update skill cooldowns
           if (data.cooldowns || payload?.cooldowns) {
             playerCooldowns.value = data.cooldowns || payload.cooldowns;
+          }
+          break;
+        case 'tutorial-complete-reward':
+          // Handle tutorial completion with reward popup
+          if (data.items) {
+            rewardData.value = {
+              title: 'HƯỚNG DẪN HOÀN TẤT',
+              message: 'Kết nối thành công. Trang bị cơ bản đã được gửi tới kho của bạn.',
+              items: data.items
+            };
           }
           break;
         default:

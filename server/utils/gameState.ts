@@ -5,6 +5,7 @@ interface ActivePlayer {
   roomId: string;
   ws?: any;
   partyId?: string | null;
+  tutorialRewardData?: Array<{ itemKey: string; name: string }>;
 }
 
 // Active pet state
