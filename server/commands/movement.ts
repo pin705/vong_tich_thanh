@@ -69,10 +69,67 @@ export async function handleMovementCommand(command: Command, playerId: string):
     // ACCESS CONTROL CHECKS
     // ==============================
     
+    // Check if room is locked and show hint
+    if (nextRoom.isLocked && nextRoom.unlockHint) {
+      // Check if player meets requirements before showing generic locked message
+      const meetsRequirements = await checkRoomRequirements();
+      if (!meetsRequirements) {
+        responses.push(`🔒 ${nextRoom.name} đang bị khóa.`);
+        responses.push(`💡 ${nextRoom.unlockHint}`);
+        return responses;
+      }
+    }
+    
     // Check level requirement
     if (nextRoom.requirements?.minLevel && player.level < nextRoom.requirements.minLevel) {
       responses.push(`Bạn cảm thấy một luồng năng lượng ngăn cản bạn. (Yêu cầu Cấp ${nextRoom.requirements.minLevel})`);
+      if (nextRoom.unlockHint) {
+        responses.push(`💡 ${nextRoom.unlockHint}`);
+      }
       return responses;
+    }
+    
+    // Helper function to check all requirements
+    async function checkRoomRequirements(): Promise<boolean> {
+      // Check level
+      if (nextRoom.requirements?.minLevel && player.level < nextRoom.requirements.minLevel) {
+        return false;
+      }
+      
+      // Check quests
+      if (nextRoom.requirements?.requiredQuestKey || nextRoom.requirements?.blockedByQuestKey) {
+        const playerQuests = await PlayerQuestSchema.find({ playerId: player._id }).lean();
+        
+        if (nextRoom.requirements?.requiredQuestKey) {
+          const requiredQuest = await QuestSchema.findOne({ questKey: nextRoom.requirements.requiredQuestKey }).lean();
+          if (!requiredQuest) return false;
+          const playerQuest = playerQuests.find(q => q.questId.toString() === requiredQuest._id.toString());
+          if (!playerQuest || playerQuest.status !== 'completed') return false;
+        }
+        
+        if (nextRoom.requirements?.blockedByQuestKey) {
+          const blockedQuest = await QuestSchema.findOne({ questKey: nextRoom.requirements.blockedByQuestKey }).lean();
+          if (!blockedQuest) return false;
+          const playerQuest = playerQuests.find(q => q.questId.toString() === blockedQuest._id.toString());
+          if (!playerQuest || playerQuest.status !== 'completed') return false;
+        }
+      }
+      
+      // Check items
+      if (nextRoom.requirements?.requiredItemKey) {
+        await player.populate('inventory');
+        interface InventoryItem {
+          _id: Types.ObjectId;
+          itemKey?: string;
+          name: string;
+        }
+        const itemInInventory = (player.inventory as unknown as InventoryItem[]).find(
+          (item) => item.itemKey === nextRoom.requirements?.requiredItemKey
+        );
+        if (!itemInInventory) return false;
+      }
+      
+      return true;
     }
 
     // Check quest requirements
@@ -93,6 +150,9 @@ export async function handleMovementCommand(command: Command, playerId: string):
         
         if (!playerQuest || playerQuest.status !== 'completed') {
           responses.push('Bạn chưa hoàn thành nhiệm vụ cần thiết để vào đây.');
+          if (nextRoom.unlockHint) {
+            responses.push(`💡 ${nextRoom.unlockHint}`);
+          }
           return responses;
         }
       }
@@ -104,6 +164,9 @@ export async function handleMovementCommand(command: Command, playerId: string):
         if (!blockedQuest) {
           console.error(`Blocked quest with key ${nextRoom.requirements.blockedByQuestKey} not found`);
           responses.push('Bạn chưa hoàn thành nhiệm vụ cần thiết để vào đây.');
+          if (nextRoom.unlockHint) {
+            responses.push(`💡 ${nextRoom.unlockHint}`);
+          }
           return responses;
         }
         
@@ -111,6 +174,9 @@ export async function handleMovementCommand(command: Command, playerId: string):
         
         if (!playerQuest || playerQuest.status !== 'completed') {
           responses.push('Bạn chưa hoàn thành nhiệm vụ cần thiết để vào đây.');
+          if (nextRoom.unlockHint) {
+            responses.push(`💡 ${nextRoom.unlockHint}`);
+          }
           return responses;
         }
       }
@@ -134,6 +200,9 @@ export async function handleMovementCommand(command: Command, playerId: string):
         const requiredItem = await ItemSchema.findOne({ itemKey: nextRoom.requirements.requiredItemKey }).lean();
         const itemName = requiredItem ? requiredItem.name : 'vật phẩm đặc biệt';
         responses.push(`Cánh cửa bị khóa. Bạn cần [${itemName}] để mở.`);
+        if (nextRoom.unlockHint) {
+          responses.push(`💡 ${nextRoom.unlockHint}`);
+        }
         return responses;
       }
       

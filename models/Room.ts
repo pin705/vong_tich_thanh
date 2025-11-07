@@ -63,6 +63,14 @@ export const RoomSchema = defineMongooseModel({
       default: 5, // 5 seconds default, bosses can have 3600 (1 hour)
     },
     // Phase 27: Access Control System
+    isLocked: {
+      type: Boolean,
+      default: false, // Whether the room is locked (has requirements)
+    },
+    unlockHint: {
+      type: String, // Hint text to show players what they need to unlock this room
+      default: null,
+    },
     requirements: {
       minLevel: { type: Number }, // Minimum level to enter room
       requiredQuestKey: { type: String }, // Quest MUST be completed to enter
