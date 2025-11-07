@@ -148,7 +148,7 @@ export default defineEventHandler(async (event) => {
       success: true,
       message: `Đã đặt giá ${validatedBidAmount} vàng.`,
       auction: {
-        id: auction._id,
+        id: auctionId,
         currentBid: validatedBidAmount // Use validated bid amount since that's what was set
       }
     };

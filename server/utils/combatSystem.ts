@@ -278,7 +278,9 @@ async function dropLoot(agent: any, roomId: string): Promise<string[]> {
       // Roll for drop chance
       const roll = Math.random();
       if (roll <= lootEntry.dropChance) {
-        const originalItem = await ItemSchema.findById(lootEntry.itemId).lean();
+        const originalItem = await ItemSchema.findById(lootEntry.itemId)
+          .select('name description type value stats rarity quality slot requiredLevel setKey setBonus recipe resultItem')
+          .lean();
         if (originalItem) {
           const newItem = await ItemSchema.create({
             name: originalItem.name,
