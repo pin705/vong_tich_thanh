@@ -54,7 +54,7 @@ export const RoomSchema = defineMongooseModel({
     },
     respawnTimeSeconds: {
       type: Number,
-      default: 300, // 5 minutes default, bosses can have 3600 (1 hour)
+      default: 5, // 5 seconds default, bosses can have 3600 (1 hour)
     },
   },
 });
