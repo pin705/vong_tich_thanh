@@ -451,7 +451,15 @@ export async function executeCombatTick(playerId: string, agentId: string): Prom
       
       // Check if this is a trial monster
       if (agent.isTrialMonster && agent.trialFloor) {
-        messages.push(`[${pet?.nickname || 'Thú cưng'}] đã hạ gục [${agent.name}]!`);
+        // Get pet name for message
+        let petName = 'Thú cưng';
+        if (player.activePetId) {
+          const trialPet = await PetSchema.findById(player.activePetId);
+          if (trialPet) {
+            petName = trialPet.nickname;
+          }
+        }
+        messages.push(`[${petName}] đã hạ gục [${agent.name}]!`);
         
         // Complete trial floor and grant rewards
         const { completeTrialFloor } = await import('./petTrialService');
