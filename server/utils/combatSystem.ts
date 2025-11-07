@@ -521,7 +521,7 @@ export async function executeCombatTick(playerId: string, agentId: string): Prom
             playerObj.ws.send(JSON.stringify({ 
               type: messageType, 
               message: msg,
-              channel: 'combat',
+              channel: 'main',
               category: 'combat-player'
             }));
           });
@@ -559,7 +559,7 @@ export async function executeCombatTick(playerId: string, agentId: string): Prom
             playerObj.ws.send(JSON.stringify({ 
               type: messageType, 
               message: msg,
-              channel: 'combat',
+              channel: 'main',
               category: 'combat-player'
             }));
           });
@@ -580,7 +580,10 @@ export async function executeCombatTick(playerId: string, agentId: string): Prom
       
       // Phase 19: Boss rewards
       let totalExp = agent.experience;
-      if (agent.agentType === 'boss') {
+      const isBoss = agent.agentType === 'boss';
+      const messageCategory = isBoss ? 'boss' : (agent.agentType === 'elite' ? 'elite' : 'mob');
+      
+      if (isBoss) {
         // Boss kills give 50x EXP
         totalExp = agent.experience * 50;
         messages.push('');
@@ -767,11 +770,13 @@ export async function executeCombatTick(playerId: string, agentId: string): Prom
       if (playerObj && playerObj.ws) {
         messages.forEach(msg => {
           const messageType = getCombatMessageType(msg);
+          // Use boss category for boss-related messages
+          const msgCategory = isBoss ? 'boss' : messageCategory;
           playerObj.ws.send(JSON.stringify({ 
             type: messageType, 
             message: msg,
-            channel: 'combat',
-            category: 'combat-player'
+            channel: 'main',
+            category: msgCategory
           }));
         });
         
@@ -779,7 +784,7 @@ export async function executeCombatTick(playerId: string, agentId: string): Prom
         playerObj.ws.send(JSON.stringify({ 
           type: 'system', 
           message: `HP: ${player.hp}/${player.maxHp} | Level: ${player.level} | XP: ${player.experience}/${getExpForLevel(player.level)}`,
-          channel: 'combat',
+          channel: 'main',
           category: 'combat-stats'
         }));
       }
@@ -942,21 +947,21 @@ export async function executeCombatTick(playerId: string, agentId: string): Prom
             playerObj.ws.send(JSON.stringify({ 
               type: 'normal', 
               message: '',
-              channel: 'combat',
+              channel: 'main',
               category: 'combat-player'
             }));
           } else if (msg.includes('[') && msg.includes(']')) {
             playerObj.ws.send(JSON.stringify({ 
               type: 'accent', 
               message: msg,
-              channel: 'combat',
+              channel: 'main',
               category: 'combat-player'
             }));
           } else {
             playerObj.ws.send(JSON.stringify({ 
               type: 'error', 
               message: msg,
-              channel: 'combat',
+              channel: 'main',
               category: 'combat-player'
             }));
           }
@@ -966,7 +971,7 @@ export async function executeCombatTick(playerId: string, agentId: string): Prom
         playerObj.ws.send(JSON.stringify({ 
           type: 'system', 
           message: `HP: ${player.hp}/${player.maxHp} | Level: ${player.level}`,
-          channel: 'combat',
+          channel: 'main',
           category: 'combat-stats'
         }));
       }
@@ -1034,7 +1039,7 @@ export async function executeCombatTick(playerId: string, agentId: string): Prom
         playerObj.ws.send(JSON.stringify({ 
           type: messageType, 
           message: msg,
-          channel: 'combat',
+          channel: 'main',
           category: 'combat-player'
         }));
       });
@@ -1043,7 +1048,7 @@ export async function executeCombatTick(playerId: string, agentId: string): Prom
       playerObj.ws.send(JSON.stringify({ 
         type: 'system', 
         message: `HP: ${player.hp}/${player.maxHp} | [${agent.name}] HP: ${agent.hp}/${agent.maxHp}`,
-        channel: 'combat',
+        channel: 'main',
         category: 'combat-stats'
       }));
     }

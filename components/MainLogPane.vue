@@ -71,12 +71,18 @@ const parseClickableElements = (text: string): string => {
 
 // Get CSS class for message type
 const getMessageClass = (message: Message) => {
-  return `message message-${message.type}`;
+  // Add category-based class if available
+  let classNames = `message message-${message.type}`;
+  if (message.category) {
+    classNames += ` message-category-${message.category}`;
+  }
+  return classNames;
 };
 
 // Determine if icon should be shown
 const shouldShowIcon = (message: Message) => {
-  const iconTypes = ['accent', 'system', 'action', 'xp', 'loot'];
+  // Only show icons for important message types, not all types
+  const iconTypes = ['accent', 'system', 'xp', 'loot', 'critical'];
   return iconTypes.includes(message.type);
 };
 
@@ -85,9 +91,9 @@ const getMessageIcon = (message: Message) => {
   const icons: Record<string, string> = {
     'accent': '>',
     'system': '[i]',
-    'action': '~',
     'xp': '*',
-    'loot': '$'
+    'loot': '$',
+    'critical': '!!'
   };
   return icons[message.type] || '';
 };
@@ -195,43 +201,79 @@ onUnmounted(() => {
 
 .message-action {
   color: var(--text-bright);
-  font-style: italic;
 }
 
 .message-accent {
   color: var(--text-accent);
   font-weight: bold;
   font-size: 19px;
-  padding: 0.3rem 0.5rem;
-  border-left: 3px solid var(--text-accent);
-  background-color: rgba(255, 176, 0, 0.05);
 }
 
 .message-error {
   color: var(--theme-text-error);
-  border-left: 3px solid var(--theme-text-error);
-  background-color: rgba(170, 0, 0, 0.05);
-  padding: 0.3rem 0.5rem;
+  padding: 0.2rem 0.3rem;
 }
 
 .message-system {
   color: var(--theme-text-system);
-  border-left: 2px solid var(--theme-text-system);
-  background-color: rgba(0, 255, 255, 0.03);
 }
 
 .message-loot {
   color: var(--theme-text-loot);
-  border-left: 3px solid var(--theme-text-loot);
-  background-color: rgba(255, 0, 255, 0.05);
-  padding: 0.2rem 0.5rem;
+  padding: 0.1rem 0.3rem;
 }
 
 .message-xp {
   color: var(--theme-text-xp);
-  border-left: 3px solid var(--theme-text-xp);
-  background-color: rgba(0, 255, 170, 0.05);
-  padding: 0.2rem 0.5rem;
+  padding: 0.1rem 0.3rem;
+}
+
+/* Combat message types - reduced highlighting */
+.message-damage_in {
+  color: #ff6666;
+}
+
+.message-damage_out {
+  color: var(--text-bright);
+}
+
+.message-heal {
+  color: #66ff66;
+}
+
+.message-critical {
+  color: #ffaa00;
+  font-weight: bold;
+}
+
+.message-combat_log {
+  color: var(--text-dim);
+}
+
+/* Category-based styling - only highlight important categories */
+.message-category-boss,
+.message-category-world-boss {
+  border-left: 3px solid #ff0000;
+  background-color: rgba(255, 0, 0, 0.08);
+  padding: 0.3rem 0.5rem;
+  font-weight: bold;
+  animation: bossGlow 2s ease-in-out infinite;
+}
+
+@keyframes bossGlow {
+  0%, 100% {
+    box-shadow: 0 0 5px rgba(255, 0, 0, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 10px rgba(255, 0, 0, 0.5);
+  }
+}
+
+.message-category-level {
+  border-left: 3px solid var(--text-accent);
+  background-color: rgba(255, 176, 0, 0.08);
+  padding: 0.3rem 0.5rem;
+  font-weight: bold;
 }
 
 /* Mobile responsiveness */
