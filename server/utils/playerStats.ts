@@ -74,6 +74,41 @@ export async function calculateStats(playerId: string): Promise<PlayerStats> {
         equipmentStats.defense += item.stats.defense || 0;
       }
 
+      // Add socketed gems bonuses
+      if (item.socketedGems && item.socketedGems.length > 0) {
+        // Populate socketed gems to get their properties
+        const populatedItem = await ItemSchema.findById(item._id)
+          .populate('socketedGems');
+        
+        if (populatedItem && populatedItem.socketedGems) {
+          for (const gem of populatedItem.socketedGems) {
+            if (!gem) continue;
+            
+            const gemValue = (gem as any).gemValue || 0;
+            const gemType = (gem as any).gemType;
+            
+            switch (gemType) {
+              case 'attack':
+                equipmentStats.damage += gemValue;
+                break;
+              case 'hp':
+                equipmentStats.hp += gemValue;
+                break;
+              case 'defense':
+                equipmentStats.defense += gemValue;
+                break;
+              case 'critChance':
+              case 'critDamage':
+              case 'dodge':
+              case 'lifesteal':
+                // These stats would need additional tracking in equipmentStats
+                // For now, they are not applied but could be added in future
+                break;
+            }
+          }
+        }
+      }
+
       // Track set pieces
       if (item.setKey) {
         if (!setCounts.has(item.setKey)) {

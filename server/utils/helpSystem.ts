@@ -273,6 +273,47 @@ export const helpTopics: Record<string, HelpTopic> = {
         examples: ['alias list']
       }
     ]
+  },
+  
+  socketing: {
+    title: 'HỆ THỐNG KHẢM NGỌC (SOCKETING)',
+    description: 'Khảm ngọc vào trang bị để tăng sức mạnh. Thu thập ngọc từ quái vật và kết hợp chúng.',
+    commands: [
+      {
+        command: 'socket [ngọc] [trang bị]',
+        description: 'Khảm một viên ngọc vào trang bị',
+        examples: [
+          'socket "ngọc tấn công cấp 1" "kiếm hầm ngục"',
+          'socket "ngọc hp cấp 2" "áo giáp"'
+        ]
+      },
+      {
+        command: 'unsocket [trang bị]',
+        description: 'Tháo tất cả ngọc khỏi trang bị',
+        examples: [
+          'unsocket "kiếm hầm ngục"',
+          'unsocket "áo giáp"'
+        ]
+      },
+      {
+        command: 'addsocket [trang bị]',
+        description: 'Thêm lỗ khảm vào trang bị (cần [Đục Khảm])',
+        examples: [
+          'addsocket "kiếm hầm ngục"',
+          'addsocket "áo giáp"'
+        ]
+      },
+      {
+        command: 'combine gem [loại]',
+        description: 'Kết hợp 3 ngọc cùng loại cùng cấp thành 1 ngọc cấp cao hơn (tại Thợ Kim Hoàn)',
+        examples: [
+          'combine gem attack - Kết hợp 3 Ngọc Tấn Công Cấp 1 → 1 Ngọc Cấp 2',
+          'combine gem hp - Kết hợp ngọc HP',
+          'combine gem defense - Kết hợp ngọc Phòng Thủ',
+          'combine gem critchance - Kết hợp ngọc Tỷ Lệ Chí Mạng'
+        ]
+      }
+    ]
   }
 };
 
@@ -296,6 +337,7 @@ export function getHelpText(topic?: string): string[] {
     responses.push('  help party        - Tổ đội');
     responses.push('  help guild        - Bang hội');
     responses.push('  help alias        - Lệnh tắt tùy chỉnh');
+    responses.push('  help socketing    - Hệ thống khảm ngọc');
     responses.push('');
     responses.push('MẸO CHƠI:');
     responses.push('  • Sử dụng lệnh tắt để gõ nhanh (n, s, e, w, a, i)');

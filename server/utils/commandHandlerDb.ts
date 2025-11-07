@@ -2109,6 +2109,304 @@ export async function handleCommandDb(command: Command, playerId: string): Promi
         break;
       }
 
+      // Socketing System Commands
+      case 'socket': {
+        // Socket a gem into equipment
+        // Usage: socket <gem_name> <equipment_name>
+        if (!target || !args || args.length === 0) {
+          responses.push('Sử dụng: socket <tên ngọc> <tên trang bị>');
+          responses.push('Ví dụ: socket "ngọc tấn công cấp 1" "kiếm hầm ngục"');
+          break;
+        }
+
+        const gemName = target.toLowerCase();
+        const equipName = args.join(' ').toLowerCase();
+
+        // Find gem in inventory
+        const gemItem = await findItemInInventory(player, gemName);
+        if (!gemItem) {
+          responses.push(`Không tìm thấy ngọc "${target}" trong túi đồ.`);
+          break;
+        }
+
+        if (gemItem.type !== 'GEM') {
+          responses.push(`[${gemItem.name}] không phải là ngọc.`);
+          break;
+        }
+
+        // Find equipment in inventory or equipped items
+        const equipItem = await findItemInInventory(player, equipName);
+        if (!equipItem) {
+          responses.push(`Không tìm thấy trang bị "${args.join(' ')}" trong túi đồ.`);
+          break;
+        }
+
+        // Check if item is equipment
+        if (!equipItem.slot) {
+          responses.push(`[${equipItem.name}] không phải là trang bị.`);
+          break;
+        }
+
+        // Check if equipment has sockets
+        if (!equipItem.maxSockets || equipItem.maxSockets === 0) {
+          responses.push(`[${equipItem.name}] không có lỗ khảm nào.`);
+          responses.push('Sử dụng [Đục Khảm] để thêm lỗ khảm vào trang bị.');
+          break;
+        }
+
+        // Check current socketed gems
+        const currentGems = equipItem.socketedGems || [];
+        if (currentGems.length >= equipItem.currentSockets) {
+          responses.push(`[${equipItem.name}] đã đầy lỗ khảm (${currentGems.length}/${equipItem.currentSockets}).`);
+          break;
+        }
+
+        // Socket the gem (remove from inventory, add to equipment)
+        player.inventory = player.inventory.filter((id: any) => id.toString() !== gemItem._id.toString());
+        equipItem.socketedGems = [...currentGems, gemItem._id];
+        await equipItem.save();
+        await player.save();
+
+        responses.push(`✨ Đã khảm [${gemItem.name}] vào [${equipItem.name}]!`);
+        responses.push(`Lỗ khảm: ${equipItem.socketedGems.length}/${equipItem.currentSockets}`);
+        
+        // Show bonus stats
+        const gemTypeName = gemItem.gemType === 'attack' ? 'Sát Thương' :
+                           gemItem.gemType === 'hp' ? 'HP' :
+                           gemItem.gemType === 'defense' ? 'Phòng Thủ' :
+                           gemItem.gemType === 'critChance' ? 'Tỷ Lệ Chí Mạng' :
+                           gemItem.gemType === 'critDamage' ? 'Sát Thương Chí Mạng' :
+                           gemItem.gemType === 'dodge' ? 'Né Tránh' :
+                           gemItem.gemType === 'lifesteal' ? 'Hút Máu' : 'Unknown';
+        const valueStr = gemItem.gemType === 'critChance' || gemItem.gemType === 'dodge' || gemItem.gemType === 'lifesteal'
+                        ? `+${gemItem.gemValue}%`
+                        : `+${gemItem.gemValue}`;
+        responses.push(`Bonus: ${gemTypeName} ${valueStr}`);
+        break;
+      }
+
+      case 'unsocket': {
+        // Remove gems from equipment
+        // Usage: unsocket <equipment_name>
+        if (!target) {
+          responses.push('Sử dụng: unsocket <tên trang bị>');
+          responses.push('Ví dụ: unsocket "kiếm hầm ngục"');
+          break;
+        }
+
+        const equipName = target.toLowerCase();
+
+        // Find equipment in inventory
+        const equipItem = await findItemInInventory(player, equipName);
+        if (!equipItem) {
+          responses.push(`Không tìm thấy trang bị "${target}" trong túi đồ.`);
+          break;
+        }
+
+        // Check if item has socketed gems
+        const currentGems = equipItem.socketedGems || [];
+        if (currentGems.length === 0) {
+          responses.push(`[${equipItem.name}] không có ngọc nào được khảm.`);
+          break;
+        }
+
+        // Get gem details
+        const gems = await ItemSchema.find({ _id: { $in: currentGems } });
+
+        // Remove all gems from equipment, add back to inventory
+        equipItem.socketedGems = [];
+        player.inventory.push(...currentGems);
+        await equipItem.save();
+        await player.save();
+
+        responses.push(`✨ Đã tháo ${gems.length} viên ngọc khỏi [${equipItem.name}]!`);
+        gems.forEach((gem: any) => {
+          responses.push(`  - [${gem.name}]`);
+        });
+        break;
+      }
+
+      case 'combine': {
+        // Combine gems at Jeweler NPC
+        // Usage: combine gem <type>
+        // Example: combine gem attack
+        if (!target || target.toLowerCase() !== 'gem') {
+          responses.push('Sử dụng: combine gem <loại>');
+          responses.push('Loại: attack, hp, defense, critchance');
+          responses.push('Ví dụ: combine gem attack');
+          break;
+        }
+
+        if (!args || args.length === 0) {
+          responses.push('Bạn muốn kết hợp ngọc loại gì?');
+          responses.push('Loại: attack, hp, defense, critchance');
+          break;
+        }
+
+        const gemType = args[0].toLowerCase();
+        const validTypes = ['attack', 'hp', 'defense', 'critchance'];
+        if (!validTypes.includes(gemType)) {
+          responses.push(`Loại ngọc không hợp lệ: "${gemType}"`);
+          responses.push('Loại hợp lệ: attack, hp, defense, critchance');
+          break;
+        }
+
+        // Check if player is at Jeweler
+        const combineRoom = await RoomSchema.findById(player.currentRoomId);
+        if (!combineRoom) {
+          responses.push('Lỗi: Không tìm thấy phòng hiện tại.');
+          break;
+        }
+
+        const jeweler = await AgentSchema.findOne({
+          _id: { $in: combineRoom.agents || [] },
+          agentKey: 'jeweler'
+        });
+
+        if (!jeweler) {
+          responses.push('Bạn cần đến gặp [Thợ Kim Hoàn] để kết hợp ngọc!');
+          break;
+        }
+
+        // Find 3 gems of the same type and tier in inventory
+        const allItems = await ItemSchema.find({ _id: { $in: player.inventory } });
+        const gems = allItems.filter((item: any) => 
+          item.type === 'GEM' && 
+          item.gemType === gemType
+        );
+
+        // Group by tier
+        const tier1Gems = gems.filter((g: any) => g.gemTier === 1);
+        const tier2Gems = gems.filter((g: any) => g.gemTier === 2);
+
+        let sourceTier = 0;
+        let targetTier = 0;
+        let sourceGems: any[] = [];
+        let resultGemKey = '';
+
+        if (tier1Gems.length >= 3) {
+          sourceTier = 1;
+          targetTier = 2;
+          sourceGems = tier1Gems.slice(0, 3);
+          resultGemKey = `gem_${gemType}_t2`;
+        } else if (tier2Gems.length >= 3) {
+          sourceTier = 2;
+          targetTier = 3;
+          sourceGems = tier2Gems.slice(0, 3);
+          resultGemKey = `gem_${gemType}_t3`;
+        } else {
+          responses.push(`Bạn cần ít nhất 3 viên [Ngọc Cấp 1] hoặc [Ngọc Cấp 2] cùng loại.`);
+          responses.push(`Hiện tại có: Cấp 1: ${tier1Gems.length}, Cấp 2: ${tier2Gems.length}`);
+          break;
+        }
+
+        // Check gold cost
+        const goldCost = 50 * targetTier; // 100 for T2, 150 for T3
+        if (player.gold < goldCost) {
+          responses.push(`Không đủ vàng! Cần ${goldCost} vàng để kết hợp.`);
+          break;
+        }
+
+        // Find result gem template
+        const resultTemplate = await ItemSchema.findOne({ itemKey: resultGemKey });
+        if (!resultTemplate) {
+          responses.push(`Lỗi: Không tìm thấy công thức kết hợp.`);
+          break;
+        }
+
+        // Create result gem
+        const resultGem = await ItemSchema.create({
+          name: resultTemplate.name,
+          description: resultTemplate.description,
+          type: resultTemplate.type,
+          value: resultTemplate.value,
+          sellValue: resultTemplate.sellValue,
+          gemType: resultTemplate.gemType,
+          gemTier: resultTemplate.gemTier,
+          gemValue: resultTemplate.gemValue,
+          quality: resultTemplate.quality
+        });
+
+        // Remove source gems from inventory
+        player.inventory = player.inventory.filter((id: any) => 
+          !sourceGems.some(gem => gem._id.toString() === id.toString())
+        );
+
+        // Add result gem to inventory
+        player.inventory.push(resultGem._id);
+
+        // Deduct gold
+        player.gold -= goldCost;
+
+        await player.save();
+
+        responses.push('═══════════════════════════════════════');
+        responses.push(`✨ [Thợ Kim Hoàn] đã kết hợp thành công!`);
+        responses.push('─────────────────────────────────────');
+        responses.push(`3x [${sourceGems[0].name}] → 1x [${resultGem.name}]`);
+        responses.push(`Chi phí: ${goldCost} vàng`);
+        responses.push('═══════════════════════════════════════');
+        break;
+      }
+
+      case 'addsocket': {
+        // Add a socket to equipment using Socket Punch item
+        // Usage: addsocket <equipment_name>
+        if (!target) {
+          responses.push('Sử dụng: addsocket <tên trang bị>');
+          responses.push('Ví dụ: addsocket "kiếm hầm ngục"');
+          break;
+        }
+
+        const equipName = target.toLowerCase();
+
+        // Find Socket Punch item in inventory
+        const punchItem = await ItemSchema.findOne({
+          _id: { $in: player.inventory },
+          type: 'SOCKET_PUNCH',
+          canAddSocket: true
+        });
+
+        if (!punchItem) {
+          responses.push('Bạn cần có [Đục Khảm] để thêm lỗ khảm vào trang bị!');
+          break;
+        }
+
+        // Find equipment in inventory
+        const equipItem = await findItemInInventory(player, equipName);
+        if (!equipItem) {
+          responses.push(`Không tìm thấy trang bị "${target}" trong túi đồ.`);
+          break;
+        }
+
+        // Check if item is equipment
+        if (!equipItem.slot) {
+          responses.push(`[${equipItem.name}] không phải là trang bị.`);
+          break;
+        }
+
+        // Check if equipment has reached max sockets
+        if (equipItem.currentSockets >= equipItem.maxSockets) {
+          responses.push(`[${equipItem.name}] đã đạt số lỗ khảm tối đa (${equipItem.maxSockets}).`);
+          break;
+        }
+
+        // Add a socket
+        equipItem.currentSockets = (equipItem.currentSockets || 0) + 1;
+
+        // Remove Socket Punch from inventory
+        player.inventory = player.inventory.filter((id: any) => id.toString() !== punchItem._id.toString());
+
+        await equipItem.save();
+        await player.save();
+
+        responses.push('═══════════════════════════════════════');
+        responses.push(`✨ Đã thêm lỗ khảm vào [${equipItem.name}]!`);
+        responses.push(`Lỗ khảm: ${equipItem.currentSockets}/${equipItem.maxSockets}`);
+        responses.push('═══════════════════════════════════════');
+        break;
+      }
+
       default:
         responses.push(`Lệnh không hợp lệ: "${action}"`);
         responses.push('Gõ "help" để xem danh sách lệnh.');
