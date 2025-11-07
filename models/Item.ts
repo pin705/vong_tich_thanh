@@ -130,6 +130,26 @@ export const ItemSchema = defineMongooseModel({
       enum: ['enhancement', 'star', 'refine', null],
       default: null,
     },
+    // Enhancement System - Enhancement level tracking
+    enhancementLevel: {
+      type: Number,
+      default: 0,
+      min: 0,
+      max: 20, // Cap at +20
+    },
+    // Enhancement System - Enhancement history
+    enhancementHistory: [{
+      date: {
+        type: Date,
+        default: () => new Date(),
+      },
+      level: Number,
+      success: Boolean,
+      playerId: {
+        type: Schema.Types.ObjectId,
+        ref: 'Player',
+      },
+    }],
     itemKey: {
       type: String,
       unique: true,

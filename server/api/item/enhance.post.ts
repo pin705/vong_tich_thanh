@@ -84,10 +84,16 @@ export default defineEventHandler(async (event) => {
       });
     }
 
-    // Get current enhancement level (for now, we'll track it as a simple counter)
-    // TODO: In a full implementation, this should be stored in a player item instance
-    // with proper tracking using the IPlayerItem interface with instanceId
-    const currentLevel = 0; // TODO: Get from item instance
+    // Get current enhancement level from the item
+    const currentLevel = item.enhancementLevel || 0;
+
+    // Check maximum enhancement level
+    if (currentLevel >= 20) {
+      throw createError({
+        statusCode: 400,
+        message: 'Vật phẩm đã đạt cấp cường hóa tối đa (+20).',
+      });
+    }
 
     // Calculate gold cost based on enhancement level
     const goldCost = calculateGoldCost(currentLevel);
@@ -112,11 +118,64 @@ export default defineEventHandler(async (event) => {
     const newLevel = currentLevel + (isSuccess ? 1 : 0);
 
     if (isSuccess) {
+      // Update item enhancement level
+      item.enhancementLevel = newLevel;
+      
+      // Add to enhancement history
+      if (!item.enhancementHistory) {
+        item.enhancementHistory = [];
+      }
+      item.enhancementHistory.push({
+        date: new Date(),
+        level: newLevel,
+        success: true,
+        playerId: playerId,
+      });
+      
+      await item.save();
+      
       message = `✨ Cường hóa thành công! [${item.name}] đã lên +${newLevel}.`;
-      // TODO: Update item enhancement level in database
     } else {
-      message = `❌ Cường hóa thất bại! [${item.name}] vẫn ở +${currentLevel}.`;
-      // TODO: Handle failure (could reduce level or destroy item based on policy)
+      // Handle failure based on level
+      const shouldDestroy = currentLevel >= 15 && Math.random() < 0.3; // 30% destroy chance at +15 and above
+      const shouldDowngrade = currentLevel >= 10 && !shouldDestroy && Math.random() < 0.5; // 50% downgrade chance at +10 and above
+      
+      if (shouldDestroy) {
+        // Remove item from inventory
+        await removeItemByIdFromPlayer(playerId, itemId, 1);
+        message = `💔 Cường hóa thất bại! [${item.name}] đã bị phá hủy.`;
+      } else if (shouldDowngrade) {
+        // Downgrade by 1 level
+        item.enhancementLevel = Math.max(0, currentLevel - 1);
+        
+        // Add to enhancement history
+        if (!item.enhancementHistory) {
+          item.enhancementHistory = [];
+        }
+        item.enhancementHistory.push({
+          date: new Date(),
+          level: item.enhancementLevel,
+          success: false,
+          playerId: playerId,
+        });
+        
+        await item.save();
+        message = `⚠️ Cường hóa thất bại! [${item.name}] đã giảm xuống +${item.enhancementLevel}.`;
+      } else {
+        // No change
+        if (!item.enhancementHistory) {
+          item.enhancementHistory = [];
+        }
+        item.enhancementHistory.push({
+          date: new Date(),
+          level: currentLevel,
+          success: false,
+          playerId: playerId,
+        });
+        
+        await item.save();
+        message = `❌ Cường hóa thất bại! [${item.name}] vẫn ở +${currentLevel}.`;
+      }
     }
 
     // Reload player
