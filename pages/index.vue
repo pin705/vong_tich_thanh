@@ -655,7 +655,6 @@ const partyInvitationData = ref<{
 });
 
 // Guild invitation data
-const guildInvitationPopupOpen = ref(false);
 const guildInvitationData = ref<{
   guildId: string;
   guildName: string;

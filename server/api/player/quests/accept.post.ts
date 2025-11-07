@@ -2,6 +2,12 @@ import { PlayerQuestSchema } from '~/models/PlayerQuest';
 import { QuestSchema } from '~/models/Quest';
 import { PlayerSchema } from '~/models/Player';
 
+// Simple sanitization to prevent potential issues
+const sanitizeText = (text: string | undefined): string => {
+  if (!text) return '';
+  return text.replace(/[<>]/g, '');
+};
+
 export default defineEventHandler(async (event) => {
   try {
     const session = await getUserSession(event);
@@ -34,7 +40,7 @@ export default defineEventHandler(async (event) => {
     if (quest.levelRequirement && player.level < quest.levelRequirement) {
       return { 
         success: false, 
-        message: `Bạn cần đạt cấp ${quest.levelRequirement} để nhận nhiệm vụ này!` 
+        message: `Bạn cần đạt cấp ${Number(quest.levelRequirement)} để nhận nhiệm vụ này!` 
       };
     }
 
@@ -42,7 +48,7 @@ export default defineEventHandler(async (event) => {
     if (quest.professionRequirement && player.profession !== quest.professionRequirement) {
       return { 
         success: false, 
-        message: `Bạn cần nghề nghiệp ${quest.professionRequirement} để nhận nhiệm vụ này!` 
+        message: `Bạn cần nghề nghiệp ${sanitizeText(quest.professionRequirement)} để nhận nhiệm vụ này!` 
       };
     }
 
@@ -78,7 +84,7 @@ export default defineEventHandler(async (event) => {
 
     return {
       success: true,
-      message: `Đã nhận nhiệm vụ: ${quest.name}`
+      message: `Đã nhận nhiệm vụ: ${sanitizeText(quest.name)}`
     };
   } catch (error) {
     console.error('Error accepting quest:', error);
