@@ -12,22 +12,6 @@
       :premiumCurrency="playerState.premiumCurrency"
     />
 
-    <!-- Combat View (shown when in combat) -->
-    <CombatView
-      v-if="isInCombat"
-      :player="{
-        name: playerState.name,
-        hp: playerState.hp,
-        maxHp: playerState.maxHp,
-        resource: playerState.resource,
-        maxResource: playerState.maxResource
-      }"
-      :target="combatTarget"
-      :combatStatus="combatStatusText"
-      :skills="playerCombatSkills"
-      :cooldowns="playerCooldowns"
-    />
-
     <!-- Main Content Area with Side Panel for Desktop -->
     <div class="main-content-wrapper">
       <!-- Main Output Area with Channel Tabs -->
@@ -48,6 +32,22 @@
             :messages="chatLog" 
             @sendChatCommand="handleChatCommand"
           />
+
+            <!-- Combat View (shown when in combat) -->
+          <!-- <CombatView
+            v-if="isInCombat && currentChannel === 'combat'"
+            :player="{
+              name: playerState.name,
+              hp: playerState.hp,
+              maxHp: playerState.maxHp,
+              resource: playerState.resource,
+              maxResource: playerState.maxResource
+            }"
+            :target="combatTarget"
+            :combatStatus="combatStatusText"
+            :skills="playerCombatSkills"
+            :cooldowns="playerCooldowns"
+          /> -->
         </div>
       </div>
 
