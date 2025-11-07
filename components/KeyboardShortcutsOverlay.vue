@@ -1,7 +1,7 @@
 <template>
   <FullscreenOverlay :isOpen="isOpen" @close="$emit('close')">
     <div class="shortcuts-overlay">
-      <h2 class="shortcuts-title">⌨️ Phím Tắt</h2>
+      <h2 class="shortcuts-title">Phím Tắt</h2>
       
       <div class="shortcuts-sections">
         <!-- General shortcuts -->

@@ -35,7 +35,7 @@
                   class="remove-btn"
                   @click="$emit('removeItem', item.id, 'your')"
                 >
-                  ✕
+                  [X]
                 </button>
               </div>
             </div>
@@ -104,13 +104,13 @@
       <div class="lock-status">
         <div class="lock-row">
           <span :class="['lock-indicator', { locked: isYourLocked }]">
-            {{ isYourLocked ? '🔒' : '🔓' }}
+            {{ isYourLocked ? '[KHÓA]' : '[Mở]' }}
           </span>
           <span class="lock-label">Bạn: {{ isYourLocked ? 'ĐÃ KHÓA' : 'Chưa khóa' }}</span>
         </div>
         <div class="lock-row">
           <span :class="['lock-indicator', { locked: isPartnerLocked }]">
-            {{ isPartnerLocked ? '🔒' : '🔓' }}
+            {{ isPartnerLocked ? '[KHÓA]' : '[Mở]' }}
           </span>
           <span class="lock-label">{{ partnerName }}: {{ isPartnerLocked ? 'ĐÃ KHÓA' : 'Chưa khóa' }}</span>
         </div>
@@ -144,16 +144,16 @@
       <!-- Instructions -->
       <div class="instructions">
         <p v-if="!isLocked">
-          💡 Thêm vật phẩm và vàng của bạn, sau đó nhấn "Khóa Giao Dịch"
+          [!] Thêm vật phẩm và vàng của bạn, sau đó nhấn "Khóa Giao Dịch"
         </p>
         <p v-else-if="!bothLocked">
-          ⏳ Đang chờ đối tác khóa giao dịch...
+          Đang chờ đối tác khóa giao dịch...
         </p>
         <p v-else-if="!bothConfirmed">
-          ✅ Kiểm tra kỹ và nhấn "Xác Nhận" để hoàn tất
+          [OK] Kiểm tra kỹ và nhấn "Xác Nhận" để hoàn tất
         </p>
         <p v-else>
-          🎉 Giao dịch đang được thực hiện...
+          Giao dịch đang được thực hiện...
         </p>
       </div>
     </div>
