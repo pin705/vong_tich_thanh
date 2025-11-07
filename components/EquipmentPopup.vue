@@ -111,13 +111,11 @@ import FullscreenOverlay from './FullscreenOverlay.vue';
 import Popover from './Popover.vue';
 import { getGemTypeClass, getGemTypeName, getGemBonusDisplay, type GemData } from '~/utils/gemHelpers';
 
-interface Gem extends GemData {
+// Gem interface extends GemData with required fields
+interface Gem extends Required<GemData> {
   _id?: string;
   name: string;
   description: string;
-  gemType: string;
-  gemTier: number;
-  gemValue: number;
 }
 
 interface Equipment {
@@ -189,12 +187,19 @@ function getSocketsDisplay(item: any): (Gem | null)[] {
   const validCurrentSockets = Math.min(currentSockets, maxSockets);
   
   // Add socketed gems (should not exceed currentSockets)
+  // Validate each gem to ensure it's not null/undefined
   for (let i = 0; i < Math.min(socketedGems.length, validCurrentSockets); i++) {
-    result.push(socketedGems[i]);
+    const gem = socketedGems[i];
+    if (gem && typeof gem === 'object') {
+      result.push(gem);
+    } else {
+      // If gem is null/undefined, treat as empty socket
+      result.push(null);
+    }
   }
   
-  // Add empty sockets
-  for (let i = socketedGems.length; i < validCurrentSockets; i++) {
+  // Add remaining empty sockets
+  for (let i = result.length; i < validCurrentSockets; i++) {
     result.push(null);
   }
   
@@ -443,7 +448,10 @@ function handleSlotClick(slot: string) {
   color: var(--text-dim);
 }
 
-/* Gem Type Colors */
+/* Gem Type Colors 
+ * These colors are defined in utils/gemHelpers.ts as GEM_TYPE_COLORS
+ * Kept in CSS for performance (avoiding inline styles) 
+ */
 .gem-attack {
   color: #ff4444;
   text-shadow: 0 0 5px #ff0000;

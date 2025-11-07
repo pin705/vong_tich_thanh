@@ -608,7 +608,10 @@ function hasSocketInfo(item: any): boolean {
   color: var(--text-bright);
 }
 
-/* Gem Type Colors (matching EquipmentPopup) */
+/* Gem Type Colors 
+ * These colors match utils/gemHelpers.ts GEM_TYPE_COLORS constant
+ * Kept in CSS for performance (avoiding inline styles)
+ */
 .gem-attack {
   color: #ff4444;
   text-shadow: 0 0 5px #ff0000;
