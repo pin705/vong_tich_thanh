@@ -60,8 +60,23 @@ export async function calculateStats(playerId: string): Promise<PlayerStats> {
   // Track set pieces
   const setCounts = new Map<string, { count: number; items: any[] }>();
 
-  // Collect stats from all equipment slots
+  // Collect all equipment item IDs that need gem population
+  const equipmentItemIds: any[] = [];
   const equipmentSlots = ['helmet', 'chest', 'legs', 'boots', 'weapon'];
+  
+  for (const slot of equipmentSlots) {
+    const item = (player.equipment as any)?.[slot];
+    if (item && item._id) {
+      equipmentItemIds.push(item._id);
+    }
+  }
+
+  // Populate all socketed gems in a single query to avoid N+1 problem
+  const populatedEquipment = await ItemSchema.find({ _id: { $in: equipmentItemIds } })
+    .populate('socketedGems');
+  const equipmentMap = new Map(populatedEquipment.map(item => [item._id.toString(), item]));
+
+  // Collect stats from all equipment slots
   for (const slot of equipmentSlots) {
     const item = (player.equipment as any)?.[slot];
     if (item) {
@@ -72,6 +87,36 @@ export async function calculateStats(playerId: string): Promise<PlayerStats> {
         equipmentStats.hp += item.stats.hp || 0;
         equipmentStats.damage += item.stats.damage || 0;
         equipmentStats.defense += item.stats.defense || 0;
+      }
+
+      // Add socketed gems bonuses (use pre-populated data)
+      const populatedItem = equipmentMap.get(item._id.toString());
+      if (populatedItem && populatedItem.socketedGems && populatedItem.socketedGems.length > 0) {
+        for (const gem of populatedItem.socketedGems) {
+          if (!gem) continue;
+          
+          const gemValue = (gem as any).gemValue || 0;
+          const gemType = (gem as any).gemType;
+          
+          switch (gemType) {
+            case 'attack':
+              equipmentStats.damage += gemValue;
+              break;
+            case 'hp':
+              equipmentStats.hp += gemValue;
+              break;
+            case 'defense':
+              equipmentStats.defense += gemValue;
+              break;
+            case 'critChance':
+            case 'critDamage':
+            case 'dodge':
+            case 'lifesteal':
+              // These stats would need additional tracking in equipmentStats
+              // For now, they are not applied but could be added in future
+              break;
+          }
+        }
       }
 
       // Track set pieces

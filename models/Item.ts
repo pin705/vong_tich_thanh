@@ -15,7 +15,7 @@ export const ItemSchema = defineMongooseModel({
     },
     type: {
       type: String,
-      enum: ['weapon', 'armor', 'consumable', 'misc', 'craftingMaterial', 'recipe', 'furniture', 'Equipment', 'Recipe', 'Material', 'upgrade_material', 'PET_EGG', 'PET_FOOD', 'PET_UPGRADE', 'PET_SKILLBOOK', 'PET_CONSUMABLE', 'TITLE_BADGE', 'SKILL_UPGRADE_BOOK', 'ENHANCEMENT_PROTECTION', 'ENHANCE_STONE', 'LEGENDARY_MATERIAL', 'PVP_EQUIPMENT', 'QUEST_ITEM'],
+      enum: ['weapon', 'armor', 'consumable', 'misc', 'craftingMaterial', 'recipe', 'furniture', 'Equipment', 'Recipe', 'Material', 'upgrade_material', 'PET_EGG', 'PET_FOOD', 'PET_UPGRADE', 'PET_SKILLBOOK', 'PET_CONSUMABLE', 'TITLE_BADGE', 'SKILL_UPGRADE_BOOK', 'ENHANCEMENT_PROTECTION', 'ENHANCE_STONE', 'LEGENDARY_MATERIAL', 'PVP_EQUIPMENT', 'QUEST_ITEM', 'GEM', 'SOCKET_PUNCH'],
       required: true,
       index: true, // Index for filtering by type
     },
@@ -161,6 +161,38 @@ export const ItemSchema = defineMongooseModel({
     upgradesSkill: {
       type: String,
       default: null, // Skill key that this book upgrades
+    },
+    // Socketing System - Gem/Rune properties
+    gemType: {
+      type: String,
+      enum: ['attack', 'hp', 'defense', 'critChance', 'critDamage', 'dodge', 'lifesteal', null],
+      default: null, // Type of stat this gem provides
+    },
+    gemTier: {
+      type: Number,
+      default: null, // 1, 2, 3 for tier levels
+    },
+    gemValue: {
+      type: Number,
+      default: null, // Stat value provided by this gem
+    },
+    // Socketing System - Socket properties for equipment
+    maxSockets: {
+      type: Number,
+      default: 0, // Maximum number of sockets this equipment can have
+    },
+    currentSockets: {
+      type: Number,
+      default: 0, // Current number of available sockets
+    },
+    socketedGems: [{
+      type: Schema.Types.ObjectId,
+      ref: 'Item',
+    }],
+    // Socket Punch Item
+    canAddSocket: {
+      type: Boolean,
+      default: false, // True if this is a Socket Punch item
     },
   },
 });

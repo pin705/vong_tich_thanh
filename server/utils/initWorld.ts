@@ -388,6 +388,231 @@ export async function initializeWorld() {
       { upsert: true, new: true, setDefaultsOnInsert: true }
     );
 
+    // Socketing System - Gems Tier 1
+    const ngocTanCongCap1 = await ItemSchema.findOneAndUpdate(
+      { itemKey: 'gem_attack_t1' },
+      {
+        name: 'Ngọc Tấn Công Cấp 1',
+              description: 'Một viên ngọc màu đỏ phát sáng. Khi khảm vào trang bị, tăng +5 Sát Thương.',
+              type: 'GEM',
+              itemKey: 'gem_attack_t1',
+              value: 10,
+              sellValue: 5,
+              gemType: 'attack',
+              gemTier: 1,
+              gemValue: 5,
+              quality: 'Thường'
+      },
+      { upsert: true, new: true, setDefaultsOnInsert: true }
+    );
+
+    const ngocHpCap1 = await ItemSchema.findOneAndUpdate(
+      { itemKey: 'gem_hp_t1' },
+      {
+        name: 'Ngọc HP Cấp 1',
+              description: 'Một viên ngọc màu xanh lá. Khi khảm vào trang bị, tăng +20 HP Tối Đa.',
+              type: 'GEM',
+              itemKey: 'gem_hp_t1',
+              value: 10,
+              sellValue: 5,
+              gemType: 'hp',
+              gemTier: 1,
+              gemValue: 20,
+              quality: 'Thường'
+      },
+      { upsert: true, new: true, setDefaultsOnInsert: true }
+    );
+
+    const ngocPhongThuCap1 = await ItemSchema.findOneAndUpdate(
+      { itemKey: 'gem_defense_t1' },
+      {
+        name: 'Ngọc Phòng Thủ Cấp 1',
+              description: 'Một viên ngọc màu xanh dương. Khi khảm vào trang bị, tăng +3 Phòng Thủ.',
+              type: 'GEM',
+              itemKey: 'gem_defense_t1',
+              value: 10,
+              sellValue: 5,
+              gemType: 'defense',
+              gemTier: 1,
+              gemValue: 3,
+              quality: 'Thường'
+      },
+      { upsert: true, new: true, setDefaultsOnInsert: true }
+    );
+
+    const ngocChiMangCap1 = await ItemSchema.findOneAndUpdate(
+      { itemKey: 'gem_critchance_t1' },
+      {
+        name: 'Ngọc Tỷ Lệ Chí Mạng Cấp 1',
+              description: 'Một viên ngọc màu vàng. Khi khảm vào trang bị, tăng +2% Tỷ Lệ Chí Mạng.',
+              type: 'GEM',
+              itemKey: 'gem_critchance_t1',
+              value: 10,
+              sellValue: 5,
+              gemType: 'critChance',
+              gemTier: 1,
+              gemValue: 2,
+              quality: 'Thường'
+      },
+      { upsert: true, new: true, setDefaultsOnInsert: true }
+    );
+
+    // Socketing System - Gems Tier 2
+    const ngocTanCongCap2 = await ItemSchema.findOneAndUpdate(
+      { itemKey: 'gem_attack_t2' },
+      {
+        name: 'Ngọc Tấn Công Cấp 2',
+              description: 'Một viên ngọc màu đỏ rực rỡ hơn. Khi khảm vào trang bị, tăng +12 Sát Thương.',
+              type: 'GEM',
+              itemKey: 'gem_attack_t2',
+              value: 30,
+              sellValue: 15,
+              gemType: 'attack',
+              gemTier: 2,
+              gemValue: 12,
+              quality: 'Tốt'
+      },
+      { upsert: true, new: true, setDefaultsOnInsert: true }
+    );
+
+    const ngocHpCap2 = await ItemSchema.findOneAndUpdate(
+      { itemKey: 'gem_hp_t2' },
+      {
+        name: 'Ngọc HP Cấp 2',
+              description: 'Một viên ngọc màu xanh lá rực rỡ hơn. Khi khảm vào trang bị, tăng +50 HP Tối Đa.',
+              type: 'GEM',
+              itemKey: 'gem_hp_t2',
+              value: 30,
+              sellValue: 15,
+              gemType: 'hp',
+              gemTier: 2,
+              gemValue: 50,
+              quality: 'Tốt'
+      },
+      { upsert: true, new: true, setDefaultsOnInsert: true }
+    );
+
+    const ngocPhongThuCap2 = await ItemSchema.findOneAndUpdate(
+      { itemKey: 'gem_defense_t2' },
+      {
+        name: 'Ngọc Phòng Thủ Cấp 2',
+              description: 'Một viên ngọc màu xanh dương rực rỡ hơn. Khi khảm vào trang bị, tăng +8 Phòng Thủ.',
+              type: 'GEM',
+              itemKey: 'gem_defense_t2',
+              value: 30,
+              sellValue: 15,
+              gemType: 'defense',
+              gemTier: 2,
+              gemValue: 8,
+              quality: 'Tốt'
+      },
+      { upsert: true, new: true, setDefaultsOnInsert: true }
+    );
+
+    const ngocChiMangCap2 = await ItemSchema.findOneAndUpdate(
+      { itemKey: 'gem_critchance_t2' },
+      {
+        name: 'Ngọc Tỷ Lệ Chí Mạng Cấp 2',
+              description: 'Một viên ngọc màu vàng rực rỡ hơn. Khi khảm vào trang bị, tăng +5% Tỷ Lệ Chí Mạng.',
+              type: 'GEM',
+              itemKey: 'gem_critchance_t2',
+              value: 30,
+              sellValue: 15,
+              gemType: 'critChance',
+              gemTier: 2,
+              gemValue: 5,
+              quality: 'Tốt'
+      },
+      { upsert: true, new: true, setDefaultsOnInsert: true }
+    );
+
+    // Socketing System - Gems Tier 3
+    const ngocTanCongCap3 = await ItemSchema.findOneAndUpdate(
+      { itemKey: 'gem_attack_t3' },
+      {
+        name: 'Ngọc Tấn Công Cấp 3',
+              description: 'Một viên ngọc màu đỏ tuyệt đẹp. Khi khảm vào trang bị, tăng +25 Sát Thương.',
+              type: 'GEM',
+              itemKey: 'gem_attack_t3',
+              value: 90,
+              sellValue: 45,
+              gemType: 'attack',
+              gemTier: 3,
+              gemValue: 25,
+              quality: 'Hiếm'
+      },
+      { upsert: true, new: true, setDefaultsOnInsert: true }
+    );
+
+    const ngocHpCap3 = await ItemSchema.findOneAndUpdate(
+      { itemKey: 'gem_hp_t3' },
+      {
+        name: 'Ngọc HP Cấp 3',
+              description: 'Một viên ngọc màu xanh lá tuyệt đẹp. Khi khảm vào trang bị, tăng +120 HP Tối Đa.',
+              type: 'GEM',
+              itemKey: 'gem_hp_t3',
+              value: 90,
+              sellValue: 45,
+              gemType: 'hp',
+              gemTier: 3,
+              gemValue: 120,
+              quality: 'Hiếm'
+      },
+      { upsert: true, new: true, setDefaultsOnInsert: true }
+    );
+
+    const ngocPhongThuCap3 = await ItemSchema.findOneAndUpdate(
+      { itemKey: 'gem_defense_t3' },
+      {
+        name: 'Ngọc Phòng Thủ Cấp 3',
+              description: 'Một viên ngọc màu xanh dương tuyệt đẹp. Khi khảm vào trang bị, tăng +18 Phòng Thủ.',
+              type: 'GEM',
+              itemKey: 'gem_defense_t3',
+              value: 90,
+              sellValue: 45,
+              gemType: 'defense',
+              gemTier: 3,
+              gemValue: 18,
+              quality: 'Hiếm'
+      },
+      { upsert: true, new: true, setDefaultsOnInsert: true }
+    );
+
+    const ngocChiMangCap3 = await ItemSchema.findOneAndUpdate(
+      { itemKey: 'gem_critchance_t3' },
+      {
+        name: 'Ngọc Tỷ Lệ Chí Mạng Cấp 3',
+              description: 'Một viên ngọc màu vàng tuyệt đẹp. Khi khảm vào trang bị, tăng +10% Tỷ Lệ Chí Mạng.',
+              type: 'GEM',
+              itemKey: 'gem_critchance_t3',
+              value: 90,
+              sellValue: 45,
+              gemType: 'critChance',
+              gemTier: 3,
+              gemValue: 10,
+              quality: 'Hiếm'
+      },
+      { upsert: true, new: true, setDefaultsOnInsert: true }
+    );
+
+    // Socketing System - Socket Punch Item
+    const ducKham = await ItemSchema.findOneAndUpdate(
+      { itemKey: 'socket_punch' },
+      {
+        name: 'Đục Khảm',
+              description: 'Một công cụ hiếm dùng để thêm lỗ khảm vào trang bị. Chỉ có thể sử dụng khi trang bị chưa đạt số lỗ tối đa.',
+              type: 'SOCKET_PUNCH',
+              itemKey: 'socket_punch',
+              value: 100,
+              sellValue: 50,
+              canAddSocket: true,
+              gloryPointsPrice: 50, // PvP Shop - ~7 wins
+              braveryMedalPrice: 10, // Boss drops
+              quality: 'Hiếm'
+      },
+      { upsert: true, new: true, setDefaultsOnInsert: true }
+    );
+
     // Dungeon Shop - Special items only available for dungeon coins
     const kiemHamNguc = await ItemSchema.findOneAndUpdate(
       { itemKey: 'dungeon_sword' },
@@ -401,7 +626,8 @@ export async function initializeWorld() {
               stats: { damage: 50 },
               quality: 'Sử Thi',
               requiredLevel: 20,
-              dungeonCoinPrice: 10 // ~50 floors - endgame weapon
+              dungeonCoinPrice: 10, // ~50 floors - endgame weapon
+              maxSockets: 3 // Legendary weapons can have up to 3 sockets
       },
       { upsert: true, new: true, setDefaultsOnInsert: true }
     );
@@ -418,7 +644,8 @@ export async function initializeWorld() {
               stats: { defense: 40 },
               quality: 'Sử Thi',
               requiredLevel: 20,
-              dungeonCoinPrice: 10 // ~50 floors - endgame armor
+              dungeonCoinPrice: 10, // ~50 floors - endgame armor
+              maxSockets: 3 // Legendary armor can have up to 3 sockets
       },
       { upsert: true, new: true, setDefaultsOnInsert: true }
     );
@@ -2545,9 +2772,35 @@ export async function initializeWorld() {
                 huyHieuVoSi._id,
                 daCuongHoaCap1._id, // Add enhancement stones to make Arena useful for PvE players
                 binhMauLon._id, // Add potions for PvE utility
+                ducKham._id, // Socket Punch for socketing system
               ],
               shopType: 'glory_points',
               shopCurrency: 'glory_points'
+      },
+      { upsert: true, new: true, setDefaultsOnInsert: true }
+    );
+
+    // Socketing System - Jeweler NPC
+    const jeweler = await AgentSchema.findOneAndUpdate(
+      { agentKey: 'jeweler' },
+      {
+        name: 'Thợ Kim Hoàn',
+              description: 'Một người thợ khéo léo với đôi mắt sắc bén. Bàn làm việc của ông đầy những viên ngọc lấp lánh và công cụ tinh xảo. Ông chuyên kết hợp các viên ngọc để tạo ra những viên ngọc mạnh hơn.',
+              type: 'npc',
+              agentKey: 'jeweler',
+              currentRoomId: khuCho._id,
+              hp: 100,
+              maxHp: 100,
+              level: 10,
+              damage: 10,
+              behavior: 'passive',
+              dialogue: [
+                'Chào mừng đến xưởng kim hoàn! Tôi có thể giúp bạn kết hợp ngọc.',
+                'Đưa tôi 3 viên ngọc cùng loại cùng cấp, tôi sẽ nâng cấp cho bạn!',
+                'Ngọc Cấp 1 + Ngọc Cấp 1 + Ngọc Cấp 1 → Ngọc Cấp 2',
+                'Cần thêm vàng để thực hiện, nhưng không nhiều đâu!',
+                'Gõ "combine gem <loại>" để kết hợp ngọc.'
+              ],
       },
       { upsert: true, new: true, setDefaultsOnInsert: true }
     );
@@ -2593,7 +2846,9 @@ export async function initializeWorld() {
               lootTable: [
                 { itemId: daChuot._id, dropChance: 0.5 }, // 50% chance
                 { itemId: vaiRach._id, dropChance: 0.3 },  // 30% chance
-                { itemId: ruongGoNho._id, dropChance: 0.01 } // Phase 26: 1% chance for container
+                { itemId: ruongGoNho._id, dropChance: 0.01 }, // Phase 26: 1% chance for container
+                { itemId: ngocTanCongCap1._id, dropChance: 0.05 }, // 5% chance for Tier 1 gem
+                { itemId: ngocHpCap1._id, dropChance: 0.05 }, // 5% chance for Tier 1 gem
               ]
       },
       { upsert: true, new: true, setDefaultsOnInsert: true }
@@ -2616,7 +2871,8 @@ export async function initializeWorld() {
               experience: 20,
               lootTable: [
                 { itemId: daChuot._id, dropChance: 0.4 },
-                { itemId: vaiRach._id, dropChance: 0.4 }
+                { itemId: vaiRach._id, dropChance: 0.4 },
+                { itemId: ngocPhongThuCap1._id, dropChance: 0.05 }, // 5% chance for Tier 1 gem
               ]
       },
       { upsert: true, new: true, setDefaultsOnInsert: true }
@@ -2640,7 +2896,8 @@ export async function initializeWorld() {
               lootTable: [
                 { itemId: daChuot._id, dropChance: 0.6 },
                 { itemId: vaiRach._id, dropChance: 0.5 },
-                { itemId: loiCoNguHong._id, dropChance: 0.1 } // 10% chance for rare
+                { itemId: loiCoNguHong._id, dropChance: 0.1 }, // 10% chance for rare
+                { itemId: ngocChiMangCap1._id, dropChance: 0.08 }, // 8% chance for Tier 1 gem
               ]
       },
       { upsert: true, new: true, setDefaultsOnInsert: true }
@@ -2897,7 +3154,8 @@ export async function initializeWorld() {
                 { itemId: vaiRach._id, dropChance: 0.9 },
                 { itemId: daCuongHoaCap1._id, dropChance: 0.3 }, // 30% chance for enhancement stone
                 { itemId: daTinhLuyen._id, dropChance: 0.15 }, // 15% chance for refine stone
-                { itemId: ruongGoNho._id, dropChance: 0.15 } // Small chance for container
+                { itemId: ruongGoNho._id, dropChance: 0.15 }, // Small chance for container
+                { itemId: ducKham._id, dropChance: 0.1 }, // 10% chance for Socket Punch
               ]
       },
       { upsert: true, new: true, setDefaultsOnInsert: true }
