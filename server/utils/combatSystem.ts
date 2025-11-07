@@ -534,7 +534,8 @@ export async function executeCombatTick(playerId: string, agentId: string): Prom
       messages.push(`Bạn đã hạ gục [${agent.name}]!`);
       
       // World Boss: Special handling for world bosses
-      if (isWorldBoss(agent._id.toString())) {
+      const isWorldBossEntity = isWorldBoss(agent._id.toString());
+      if (isWorldBossEntity) {
         // Distribute world boss rewards to all contributors
         await distributeWorldBossRewards(agent._id.toString());
         
@@ -551,7 +552,7 @@ export async function executeCombatTick(playerId: string, agentId: string): Prom
         
         gameState.stopCombat(playerId);
         
-        // Send messages to player
+        // Send messages to player with world-boss category
         const playerObj = gameState.getPlayer(playerId);
         if (playerObj && playerObj.ws) {
           messages.forEach(msg => {
@@ -560,7 +561,7 @@ export async function executeCombatTick(playerId: string, agentId: string): Prom
               type: messageType, 
               message: msg,
               channel: 'main',
-              category: 'combat-player'
+              category: 'world-boss'
             }));
           });
         }
