@@ -38,22 +38,53 @@ const ITEM_COMMANDS = ['inventory', 'i', 'get', 'g', 'drop', 'use',
 function getCurrencyInfo(vendor: any, player: any) {
   const isPremiumShop = vendor.shopType === 'premium';
   const isDungeonShop = vendor.shopCurrency === 'dungeon_coin';
+  const isTamerShop = vendor.shopCurrency === 'tamer_badge';
+  const isGloryShop = vendor.shopCurrency === 'glory_points';
+  const isBraveryShop = vendor.shopCurrency === 'bravery_medal';
   
   let currencySymbol = '💰';
   let playerCurrency = player.gold;
   let currencyName = 'vàng';
+  let priceField = 'price';
   
   if (isPremiumShop) {
     currencySymbol = '💎';
     playerCurrency = player.premiumCurrency;
     currencyName = 'Cổ Thạch';
+    priceField = 'premiumPrice';
   } else if (isDungeonShop) {
     currencySymbol = '🎫';
     playerCurrency = player.dungeonCoin || 0;
     currencyName = 'Xu Hầm Ngục';
+    priceField = 'dungeonCoinPrice';
+  } else if (isTamerShop) {
+    currencySymbol = '🏅';
+    playerCurrency = player.tamerBadge || 0;
+    currencyName = 'Huy Hiệu Huấn Luyện';
+    priceField = 'tamerBadgePrice';
+  } else if (isGloryShop) {
+    currencySymbol = '⚔️';
+    playerCurrency = player.gloryPoints || 0;
+    currencyName = 'Điểm Vinh Quang';
+    priceField = 'gloryPointsPrice';
+  } else if (isBraveryShop) {
+    currencySymbol = '🎖️';
+    playerCurrency = player.braveryMedals || 0;
+    currencyName = 'Huy Chương Dũng Cảm';
+    priceField = 'braveryMedalPrice';
   }
   
-  return { isPremiumShop, isDungeonShop, currencySymbol, playerCurrency, currencyName };
+  return { 
+    isPremiumShop, 
+    isDungeonShop, 
+    isTamerShop,
+    isGloryShop,
+    isBraveryShop,
+    currencySymbol, 
+    playerCurrency, 
+    currencyName,
+    priceField
+  };
 }
 
 // Helper function to format trade status display
@@ -398,7 +429,7 @@ export async function handleCommandDb(command: Command, playerId: string): Promi
         );
         break;
 
-      case 'list':
+      case 'list': {
         const listRoom = await RoomSchema.findById(player.currentRoomId);
         if (!listRoom || !listRoom.agents || listRoom.agents.length === 0) {
           responses.push('Không có ai ở đây để bán hàng.');
@@ -409,7 +440,7 @@ export async function handleCommandDb(command: Command, playerId: string): Promi
         const vendors = await AgentSchema.find({ 
           _id: { $in: listRoom.agents },
           isVendor: true
-        }).populate('shopInventory', 'name price premiumPrice').populate('shopItems', 'name price premiumPrice');
+        }).populate('shopInventory', 'name price premiumPrice dungeonCoinPrice tamerBadgePrice gloryPointsPrice braveryMedalPrice').populate('shopItems', 'name price premiumPrice dungeonCoinPrice tamerBadgePrice gloryPointsPrice braveryMedalPrice');
 
         if (vendors.length === 0) {
           responses.push('Không có ai ở đây để bán hàng.');
@@ -428,18 +459,19 @@ export async function handleCommandDb(command: Command, playerId: string): Promi
           break;
         }
 
-        const currencySymbol = vendor.shopType === 'premium' ? '💎' : '💰';
+        const currencyInfo = getCurrencyInfo(vendor, player);
         responses.push(`════════ HÀNG CỦA ${vendor.name.toUpperCase()} ════════`);
         uniqueItems.forEach((item: any, index: number) => {
-          const itemPrice = vendor.shopType === 'premium' ? (item.premiumPrice ?? 0) : (item.price ?? 0);
+          const itemPrice = item[currencyInfo.priceField] ?? 0;
           const spaces = ' '.repeat(Math.max(20 - item.name.length, 1));
-          responses.push(`${index + 1}. [${item.name}]${spaces}- ${itemPrice} ${currencySymbol}`);
+          responses.push(`${index + 1}. [${item.name}]${spaces}- ${itemPrice} ${currencyInfo.currencySymbol}`);
         });
         responses.push('═══════════════════════════════════════');
         responses.push('Gõ \'buy [tên vật phẩm]\' để mua.');
         break;
+      }
 
-      case 'buy':
+      case 'buy': {
         if (!target) {
           responses.push('Bạn muốn mua gì?');
           break;
@@ -455,7 +487,7 @@ export async function handleCommandDb(command: Command, playerId: string): Promi
         const buyVendors = await AgentSchema.find({ 
           _id: { $in: buyRoom.agents },
           isVendor: true
-        }).populate('shopInventory', 'name price premiumPrice type').populate('shopItems', 'name price premiumPrice type');
+        }).populate('shopInventory', 'name price premiumPrice dungeonCoinPrice tamerBadgePrice gloryPointsPrice braveryMedalPrice type').populate('shopItems', 'name price premiumPrice dungeonCoinPrice tamerBadgePrice gloryPointsPrice braveryMedalPrice type');
 
         if (buyVendors.length === 0) {
           responses.push('Không có ai ở đây để bán hàng.');
@@ -479,7 +511,7 @@ export async function handleCommandDb(command: Command, playerId: string): Promi
 
         // Check price based on shop type and currency
         const currencyInfo = getCurrencyInfo(buyVendor, player);
-        const itemPrice = currencyInfo.isPremiumShop ? (buyItem.premiumPrice ?? 0) : (buyItem.price ?? 0);
+        const itemPrice = buyItem[currencyInfo.priceField] ?? 0;
 
         // Validate that item has a valid price
         if (itemPrice <= 0) {
@@ -518,6 +550,12 @@ export async function handleCommandDb(command: Command, playerId: string): Promi
           player.premiumCurrency -= itemPrice;
         } else if (currencyInfo.isDungeonShop) {
           player.dungeonCoin = (player.dungeonCoin || 0) - itemPrice;
+        } else if (currencyInfo.isTamerShop) {
+          player.tamerBadge = (player.tamerBadge || 0) - itemPrice;
+        } else if (currencyInfo.isGloryShop) {
+          player.gloryPoints = (player.gloryPoints || 0) - itemPrice;
+        } else if (currencyInfo.isBraveryShop) {
+          player.braveryMedals = (player.braveryMedals || 0) - itemPrice;
         } else {
           player.gold -= itemPrice;
         }
@@ -526,14 +564,9 @@ export async function handleCommandDb(command: Command, playerId: string): Promi
         await player.save();
 
         responses.push(`Bạn đã mua [${buyItem.name}] với giá ${itemPrice} ${currencyInfo.currencySymbol}!`);
-        if (currencyInfo.isPremiumShop) {
-          responses.push(`${currencyInfo.currencyName} còn lại: ${player.premiumCurrency} ${currencyInfo.currencySymbol}`);
-        } else if (currencyInfo.isDungeonShop) {
-          responses.push(`${currencyInfo.currencyName} còn lại: ${player.dungeonCoin || 0} ${currencyInfo.currencySymbol}`);
-        } else {
-          responses.push(`${currencyInfo.currencyName} còn lại: ${player.gold} ${currencyInfo.currencySymbol}`);
-        }
+        responses.push(`${currencyInfo.currencyName} còn lại: ${currencyInfo.playerCurrency - itemPrice} ${currencyInfo.currencySymbol}`);
         break;
+      }
 
       case 'sell':
         if (!target) {
