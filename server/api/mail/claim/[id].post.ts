@@ -107,18 +107,24 @@ export default defineEventHandler(async (event) => {
       rewards.push(`${premiumToTransfer} Kim Cương`);
     }
 
-    // Transfer items
-    for (const attachedItem of itemsToTransfer) {
-      const itemId = (attachedItem.itemId as any)?._id || attachedItem.itemId;
-      const item = await ItemSchema.findById(itemId);
+    // Transfer items (optimized: fetch all items in a single query)
+    if (itemsToTransfer.length > 0) {
+      const itemIds = itemsToTransfer.map(ai => (ai.itemId as any)?._id || ai.itemId);
+      const items = await ItemSchema.find({ _id: { $in: itemIds } }).select('_id name').lean();
+      const itemMap = new Map(items.map(item => [item._id.toString(), item]));
       
-      if (item) {
-        // Add items to player inventory
-        for (let i = 0; i < attachedItem.quantity; i++) {
-          player.inventory.push(itemId);
-        }
+      for (const attachedItem of itemsToTransfer) {
+        const itemId = (attachedItem.itemId as any)?._id || attachedItem.itemId;
+        const item = itemMap.get(itemId.toString());
         
-        rewards.push(`${(attachedItem.itemId as any)?.name || 'Vật phẩm'} x${attachedItem.quantity}`);
+        if (item) {
+          // Add items to player inventory
+          for (let i = 0; i < attachedItem.quantity; i++) {
+            player.inventory.push(itemId);
+          }
+          
+          rewards.push(`${item.name} x${attachedItem.quantity}`);
+        }
       }
     }
 

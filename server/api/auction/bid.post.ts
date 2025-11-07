@@ -99,12 +99,9 @@ export default defineEventHandler(async (event) => {
       });
     }
 
-    // Store previous bidder info before updating
-    const previousBidderId = auction.currentBidder;
-    const previousBid = auction.currentBid;
-
     // Update auction atomically to prevent race conditions
-    const updatedAuction = await AuctionItemSchema.findOneAndUpdate(
+    // Use findOneAndUpdate to get the OLD document with previous bidder info
+    const oldAuction = await AuctionItemSchema.findOneAndUpdate(
       { 
         _id: auctionId, 
         status: 'active',
@@ -122,23 +119,23 @@ export default defineEventHandler(async (event) => {
           }
         }
       },
-      { new: true }
+      { new: false } // Return OLD document to get previous bidder info
     );
 
     // If update failed, another bid was placed or auction ended
-    if (!updatedAuction) {
+    if (!oldAuction) {
       throw createError({
         statusCode: 400,
         statusMessage: 'Đấu giá đã kết thúc hoặc có người đặt giá cao hơn.'
       });
     }
 
-    // Now process refunds and payments
-    // Refund previous bidder
-    if (previousBidderId) {
-      const previousBidder = await PlayerSchema.findById(previousBidderId);
+    // Now process refunds and payments using data from old auction document
+    // Refund previous bidder (from old auction state)
+    if (oldAuction.currentBidder) {
+      const previousBidder = await PlayerSchema.findById(oldAuction.currentBidder);
       if (previousBidder) {
-        previousBidder.gold += previousBid;
+        previousBidder.gold += oldAuction.currentBid;
         await previousBidder.save();
       }
     }
@@ -152,7 +149,7 @@ export default defineEventHandler(async (event) => {
       message: `Đã đặt giá ${validatedBidAmount} vàng.`,
       auction: {
         id: auction._id,
-        currentBid: updatedAuction.currentBid
+        currentBid: validatedBidAmount // Use validated bid amount since that's what was set
       }
     };
   } catch (error: any) {

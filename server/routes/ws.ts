@@ -5,6 +5,7 @@ import { handleCommandDb } from '../utils/commandHandlerDb';
 import { gameState } from '../utils/gameState';
 import { partyService } from '../utils/partyService';
 import { tradeService } from '../utils/tradeService';
+import { unsummonPet } from '../utils/petService';
 import { getRoomRespawns } from '../utils/npcAI';
 import { PlayerSchema } from '../../models/Player';
 import { RoomSchema } from '../../models/Room';
@@ -542,12 +543,13 @@ export default defineWebSocketHandler({
         
         // Clean up player state: combat, trade, party, pet
         try {
-          // 1. Exit combat if in combat
-          const dbPlayer = await PlayerSchema.findById(playerId);
+          // 1. Exit combat if in combat (optimized: use atomic update)
+          const dbPlayer = await PlayerSchema.findById(playerId).select('inCombat activePetId').lean();
           if (dbPlayer?.inCombat) {
-            dbPlayer.inCombat = false;
-            dbPlayer.combatTarget = null;
-            await dbPlayer.save();
+            await PlayerSchema.updateOne(
+              { _id: playerId },
+              { inCombat: false, combatTarget: null }
+            );
             gameState.stopCombat(playerId);
           }
           
@@ -578,7 +580,6 @@ export default defineWebSocketHandler({
           
           // 4. Unsummon pet if active
           if (dbPlayer?.activePetId) {
-            const { unsummonPet } = await import('../utils/petService');
             await unsummonPet(playerId);
           }
         } catch (error) {
