@@ -175,6 +175,8 @@
       @allocateTalent="handleAllocateTalent"
       @openProfessionChoice="handleOpenProfessionChoice"
       @inventoryAction="handleInventoryAction"
+      @openAchievements="handleOpenAchievements"
+      @openTitles="handleOpenTitles"
     />
     
     <!-- Settings Overlay -->
@@ -1254,6 +1256,18 @@ const handleChooseProfession = async (professionId: string) => {
 const handleOpenProfessionChoice = () => {
   characterMenuOpen.value = false;
   professionChoiceOpen.value = true;
+};
+
+// Handle opening achievements from character menu
+const handleOpenAchievements = () => {
+  characterMenuOpen.value = false;
+  achievementPopupOpen.value = true;
+};
+
+// Handle opening titles from character menu
+const handleOpenTitles = () => {
+  characterMenuOpen.value = false;
+  titlePopupOpen.value = true;
 };
 
 // Load merchant shop data
