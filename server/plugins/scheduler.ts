@@ -77,8 +77,9 @@ export default defineNitroPlugin((nitroApp) => {
     setTimeout(async () => {
       console.log('[Scheduler] Spawning world boss...');
       try {
-        // Spawn world boss at a designated location
-        const bossId = await spawnWorldBoss('Quảng Trường Đổ Nát', 'colossal_warmech');
+        // Spawn world boss at a designated location (TODO: make configurable)
+        const WORLD_BOSS_SPAWN_LOCATION = 'Quảng Trường Đổ Nát';
+        const bossId = await spawnWorldBoss(WORLD_BOSS_SPAWN_LOCATION, 'colossal_warmech');
         if (bossId) {
           console.log(`[Scheduler] World boss spawned: ${bossId}`);
         } else {

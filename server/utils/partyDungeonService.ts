@@ -175,6 +175,7 @@ export async function useKeyOnDoor(playerId: string, instanceId: string, keyItem
       // Remove key from inventory
       player.inventory = player.inventory.filter((id: any) => id.toString() !== keyItem._id.toString());
       await player.save();
+      // Delete the specific key item instance (it's player-specific)
       await ItemSchema.findByIdAndDelete(keyItem._id);
 
       // Notify party
@@ -270,9 +271,8 @@ export async function completeDungeon(instanceId: string): Promise<void> {
         if (Math.random() < 0.5) {
           const skillBook = await ItemSchema.findOne({ itemKey: 'ancient_skill_book' });
           if (skillBook) {
-            // Create a copy for this player
+            // Create a player-specific copy (without unique itemKey)
             const newBook = await ItemSchema.create({
-              itemKey: undefined, // Remove unique key
               name: skillBook.name,
               description: skillBook.description,
               type: skillBook.type,

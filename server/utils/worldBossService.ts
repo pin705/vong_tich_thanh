@@ -122,8 +122,8 @@ export async function distributeWorldBossRewards(agentId: string): Promise<void>
       if (!player) continue;
 
       // Calculate rewards based on contribution
-      const contributionPercent = contributor.damageDealt / 
-        contributors.reduce((sum, c) => sum + c.damageDealt, 0);
+      const totalDamage = contributors.reduce((sum, c) => sum + c.damageDealt, 0);
+      const contributionPercent = totalDamage > 0 ? contributor.damageDealt / totalDamage : 0;
       
       // Base rewards
       const baseGold = 500;
@@ -145,7 +145,16 @@ export async function distributeWorldBossRewards(agentId: string): Promise<void>
       if (contributor === contributors[0]) {
         const legendaryCore = await ItemSchema.findOne({ itemKey: 'ancient_robot_core' });
         if (legendaryCore) {
-          player.inventory.push(legendaryCore._id);
+          // Create a copy for this player
+          const newCore = await ItemSchema.create({
+            name: legendaryCore.name,
+            description: legendaryCore.description,
+            type: legendaryCore.type,
+            rarity: legendaryCore.rarity,
+            value: legendaryCore.value,
+            sellValue: legendaryCore.sellValue,
+          });
+          player.inventory.push(newCore._id);
         }
       }
 
