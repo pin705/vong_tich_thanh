@@ -1992,18 +1992,7 @@ export async function initializeWorld() {
       { upsert: true, new: true, setDefaultsOnInsert: true }
     );
 
-    // Simplified: Create 3 more sewer rooms with variation (bulk insert)
-    const sewerRoomDocs = [];
-    for (let i = 5; i <= 7; i++) {
-      sewerRoomDocs.push({
-        name: `Hầm Ngầm Khu ${i}`,
-        description: `Khu vực hầm ngầm tối tăm, nước bẩn chảy ào ạt. ${i % 3 === 0 ? 'Có tiếng động lạ phía trước.' : i % 3 === 1 ? 'Mùi hôi thối nồng nặc.' : 'Tường phủ đầy rêu độc.'}`,
-        exits: {},
-        items: [],
-        agents: []
-      });
-    }
-    const sewerRooms = await RoomSchema.insertMany(sewerRoomDocs);
+    // Removed: Unnecessary sewer room array that caused duplicate key errors
 
     // Phase 22: Zone 3 - Nhà Máy Lắp Ráp Cũ (Old Assembly Plant) - 9 rooms total - Requires level 10
     const loiVaoNhaMay = await RoomSchema.findOneAndUpdate(
@@ -2063,18 +2052,7 @@ export async function initializeWorld() {
       { upsert: true, new: true, setDefaultsOnInsert: true }
     );
 
-    // Simplified: Create 5 more factory rooms (bulk insert)
-    const factoryRoomDocs = [];
-    for (let i = 4; i <= 8; i++) {
-      factoryRoomDocs.push({
-        name: `Khu Vực Nhà Máy ${i}`,
-        description: `${i % 4 === 0 ? 'Phân xưởng' : i % 4 === 1 ? 'Kho chứa' : i % 4 === 2 ? 'Hành lang' : 'Phòng kỹ thuật'} số ${i}. ${i % 2 === 0 ? 'Máy móc rỉ sét nằm la liệt.' : 'Có dấu hiệu hoạt động gần đây.'}`,
-        exits: {},
-        items: [],
-        agents: []
-      });
-    }
-    const factoryRooms = await RoomSchema.insertMany(factoryRoomDocs);
+    // Removed: Unnecessary factory room array that caused duplicate key errors
 
     // Phase 22: Zone 4 - Phòng Thí Nghiệm Bị Chôn Vùi (Sunken Laboratory) - 9 rooms total
     const loiVaoPhongLab = await RoomSchema.findOneAndUpdate(
@@ -2135,18 +2113,7 @@ export async function initializeWorld() {
       { upsert: true, new: true, setDefaultsOnInsert: true }
     );
 
-    // Simplified: Create 5 more lab rooms (bulk insert)
-    const labRoomDocs = [];
-    for (let i = 3; i <= 7; i++) {
-      labRoomDocs.push({
-        name: `Phòng Lab Khu ${i}`,
-        description: `${i % 5 === 0 ? 'Phòng thí nghiệm' : i % 5 === 1 ? 'Kho mẫu vật' : i % 5 === 2 ? 'Phòng quan sát' : i % 5 === 3 ? 'Phòng khử trùng' : 'Hành lang lab'} số ${i}. Ngập nước và tối tăm.`,
-        exits: {},
-        items: [],
-        agents: []
-      });
-    }
-    const labRooms = await RoomSchema.insertMany(labRoomDocs);
+    // Removed: Unnecessary lab room array that caused duplicate key errors
 
     // Phase 22: Zone 5 - Trung Tâm Vong Tích Thành (Citadel Core) - 8 elite rooms total
     const loiVaoTrungTam = await RoomSchema.findOneAndUpdate(
@@ -2201,18 +2168,7 @@ export async function initializeWorld() {
       { upsert: true, new: true, setDefaultsOnInsert: true }
     );
 
-    // Simplified: Create 4 more citadel rooms (bulk insert)
-    const citadelRoomDocs = [];
-    for (let i = 3; i <= 6; i++) {
-      citadelRoomDocs.push({
-        name: `Trung Tâm Khu ${i}`,
-        description: `${i % 4 === 0 ? 'Phòng nghi lễ' : i % 4 === 1 ? 'Hành lang cổ đại' : i % 4 === 2 ? 'Phòng bảo vật' : 'Đền thờ nhỏ'} trong Citadel Core. Năng lượng cổ ngữ bao trùm.`,
-        exits: {},
-        items: [],
-        agents: []
-      });
-    }
-    const citadelRooms = await RoomSchema.insertMany(citadelRoomDocs);
+    // Removed: Unnecessary citadel room array that caused duplicate key errors
 
     // Link rooms with exits - create a connected world
     // Zone 1 (Starting Zone)
@@ -2247,16 +2203,9 @@ export async function initializeWorld() {
     hamNgam2.exits.south = hamNgam4._id; // Direct connection, bypassing hamNgam3
     
     hamNgam4.exits.north = hamNgam2._id; // Direct connection back
-    hamNgam4.exits.south = sewerRooms[0]._id;
+    hamNgam4.exits.east = hamNgamBoss._id; // Direct to boss room
     
-    // Link sewer rooms in a winding path
-    for (let i = 0; i < sewerRooms.length - 1; i++) {
-      sewerRooms[i].exits.south = sewerRooms[i + 1]._id;
-      sewerRooms[i + 1].exits.north = sewerRooms[i]._id;
-    }
-    
-    sewerRooms[sewerRooms.length - 1].exits.east = hamNgamBoss._id;
-    hamNgamBoss.exits.west = sewerRooms[sewerRooms.length - 1]._id;
+    hamNgamBoss.exits.west = hamNgam4._id;
     hamNgamBoss.exits.north = loiVaoNhaMay._id; // Link to Zone 3
 
     // Zone 3 (Factory)
@@ -2267,16 +2216,9 @@ export async function initializeWorld() {
     nhaMay2.exits.north = nhaMay3._id;
     
     nhaMay3.exits.south = nhaMay2._id;
-    nhaMay3.exits.east = factoryRooms[0]._id;
+    nhaMay3.exits.north = nhaMayBoss._id; // Direct to boss room
     
-    // Link factory rooms
-    for (let i = 0; i < factoryRooms.length - 1; i++) {
-      factoryRooms[i].exits.east = factoryRooms[i + 1]._id;
-      factoryRooms[i + 1].exits.west = factoryRooms[i]._id;
-    }
-    
-    factoryRooms[factoryRooms.length - 1].exits.north = nhaMayBoss._id;
-    nhaMayBoss.exits.south = factoryRooms[factoryRooms.length - 1]._id;
+    nhaMayBoss.exits.south = nhaMay3._id;
     nhaMayBoss.exits.down = loiVaoPhongLab._id; // Link to Zone 4
 
     // Zone 4 (Lab)
@@ -2287,16 +2229,9 @@ export async function initializeWorld() {
     phongLab1.exits.east = phongLab2._id;
     
     phongLab2.exits.west = phongLab1._id;
-    phongLab2.exits.north = labRooms[0]._id;
+    phongLab2.exits.east = phongLabBoss._id; // Direct to boss room
     
-    // Link lab rooms
-    for (let i = 0; i < labRooms.length - 1; i++) {
-      labRooms[i].exits.north = labRooms[i + 1]._id;
-      labRooms[i + 1].exits.south = labRooms[i]._id;
-    }
-    
-    labRooms[labRooms.length - 1].exits.east = phongLabBoss._id;
-    phongLabBoss.exits.west = labRooms[labRooms.length - 1]._id;
+    phongLabBoss.exits.west = phongLab2._id;
     phongLabBoss.exits.up = loiVaoTrungTam._id; // Link to Zone 5
 
     // Zone 5 (Citadel Core)
@@ -2307,16 +2242,9 @@ export async function initializeWorld() {
     trungTam1.exits.east = trungTam2._id;
     
     trungTam2.exits.west = trungTam1._id;
-    trungTam2.exits.north = citadelRooms[0]._id;
+    trungTam2.exits.north = trungTamBoss._id; // Direct to boss room
     
-    // Link citadel rooms
-    for (let i = 0; i < citadelRooms.length - 1; i++) {
-      citadelRooms[i].exits.north = citadelRooms[i + 1]._id;
-      citadelRooms[i + 1].exits.south = citadelRooms[i]._id;
-    }
-    
-    citadelRooms[citadelRooms.length - 1].exits.north = trungTamBoss._id;
-    trungTamBoss.exits.south = citadelRooms[citadelRooms.length - 1]._id;
+    trungTamBoss.exits.south = trungTam2._id;
 
     // Save all rooms
     await cổngThành.save();
@@ -2333,28 +2261,24 @@ export async function initializeWorld() {
     await hamNgam2.save();
     await hamNgam4.save();
     await hamNgamBoss.save();
-    for (const room of sewerRooms) await room.save();
     
     // Save Zone 3 rooms
     await loiVaoNhaMay.save();
     await nhaMay2.save();
     await nhaMay3.save();
     await nhaMayBoss.save();
-    for (const room of factoryRooms) await room.save();
     
     // Save Zone 4 rooms
     await loiVaoPhongLab.save();
     await phongLab1.save();
     await phongLab2.save();
     await phongLabBoss.save();
-    for (const room of labRooms) await room.save();
     
     // Save Zone 5 rooms
     await loiVaoTrungTam.save();
     await trungTam1.save();
     await trungTam2.save();
     await trungTamBoss.save();
-    for (const room of citadelRooms) await room.save();
 
     // Dungeon System: Create dungeon rooms
     const dungeonLobby = await RoomSchema.findOneAndUpdate(
@@ -3395,64 +3319,7 @@ export async function initializeWorld() {
     hamNgam4.agents.push(nguoiCongNgam._id);
     hamNgamBoss.agents.push(robotQuanLyCong._id);
     
-    // Populate sewer rooms with monsters
-    for (let i = 0; i < sewerRooms.length; i++) {
-      // Add Nhện Đột Biến and Người Cống Ngầm to sewer rooms
-      if (i % 2 === 0) {
-        // Create Nhện Đột Biến instance
-        const spider = await AgentSchema.findOneAndUpdate(
-          { agentKey: 'nhen_dot_bien' },
-          {
-            agentKey: 'nhen_dot_bien',
-                      name: 'Nhện Đột Biến',
-                      description: 'Nhện khổng lồ với nhiều mắt đỏ rực. Nọc độc nhỏ giọt từ nanh.',
-                      type: 'mob',
-                      currentRoomId: sewerRooms[i]._id,
-                      hp: 120,
-                      maxHp: 120,
-                      level: 12,
-                      damage: 15,
-                      behavior: 'aggressive',
-                      loot: [],
-                      experience: 80,
-                      agentType: 'mob',
-                      lootTable: [
-                        { itemId: voNhenCung._id, dropChance: 0.6 },
-                        { itemId: loiNangLuongYeu._id, dropChance: 0.3 }
-                      ]
-          },
-          { upsert: true, new: true, setDefaultsOnInsert: true }
-        );
-        sewerRooms[i].agents.push(spider._id);
-      } else {
-        // Create Người Cống Ngầm instance
-        const sewerperson = await AgentSchema.findOneAndUpdate(
-          { agentKey: 'nguoi_cong_ngam' },
-          {
-            agentKey: 'nguoi_cong_ngam',
-                      name: 'Người Cống Ngầm',
-                      description: 'Sinh vật nhân hình biến dạng sống trong hầm ngầm. Da xanh nhợt nhạt.',
-                      type: 'mob',
-                      currentRoomId: sewerRooms[i]._id,
-                      hp: 150,
-                      maxHp: 150,
-                      level: 16,
-                      damage: 20,
-                      behavior: 'aggressive',
-                      loot: [],
-                      experience: 120,
-                      agentType: 'mob',
-                      lootTable: [
-                        { itemId: voNhenCung._id, dropChance: 0.5 },
-                        { itemId: loiNangLuongYeu._id, dropChance: 0.4 }
-                      ]
-          },
-          { upsert: true, new: true, setDefaultsOnInsert: true }
-        );
-        sewerRooms[i].agents.push(sewerperson._id);
-      }
-      await sewerRooms[i].save();
-    }
+    // Removed: Unnecessary sewer room population that caused duplicate agent creation
 
     // Zone 3
     loiVaoNhaMay.agents.push(kySuTruongCu._id);
@@ -3460,64 +3327,7 @@ export async function initializeWorld() {
     nhaMay3.agents.push(congNhanBienDi._id);
     nhaMayBoss.agents.push(robotSatThuMau01._id);
     
-    // Populate factory rooms with monsters
-    for (let i = 0; i < factoryRooms.length; i++) {
-      if (i % 2 === 0) {
-        // Create Robot Bảo Vệ Rỉ Sét instance
-        const robot = await AgentSchema.findOneAndUpdate(
-          { agentKey: 'robot_bao_ve_ri_set' },
-          {
-            agentKey: 'robot_bao_ve_ri_set',
-                      name: 'Robot Bảo Vệ Rỉ Sét',
-                      description: 'Robot bảo vệ cũ kỹ, rỉ sét nhưng vẫn hoạt động. Vũ khí đã lỗi thời.',
-                      type: 'mob',
-                      currentRoomId: factoryRooms[i]._id,
-                      hp: 180,
-                      maxHp: 180,
-                      level: 22,
-                      damage: 25,
-                      behavior: 'patrol',
-                      patrolRoute: [factoryRooms[i]._id],
-                      loot: [],
-                      experience: 150,
-                      agentType: 'mob',
-                      lootTable: [
-                        { itemId: banhRangRiSet._id, dropChance: 0.7 },
-                        { itemId: loiNangLuongYeu._id, dropChance: 0.4 }
-                      ]
-          },
-          { upsert: true, new: true, setDefaultsOnInsert: true }
-        );
-        factoryRooms[i].agents.push(robot._id);
-      } else {
-        // Create Công Nhân Biến Dị instance
-        const mutantWorker = await AgentSchema.findOneAndUpdate(
-          { agentKey: 'cong_nhan_bien_di' },
-          {
-            agentKey: 'cong_nhan_bien_di',
-                      name: 'Công Nhân Biến Dị',
-                      description: 'Công nhân bị đột biến bởi hóa chất. Thân hình biến dạng, mắt trống rỗng.',
-                      type: 'mob',
-                      currentRoomId: factoryRooms[i]._id,
-                      hp: 220,
-                      maxHp: 220,
-                      level: 26,
-                      damage: 30,
-                      behavior: 'wander',
-                      loot: [],
-                      experience: 180,
-                      agentType: 'mob',
-                      lootTable: [
-                        { itemId: moDotBienNho._id, dropChance: 0.7 },
-                        { itemId: banhRangRiSet._id, dropChance: 0.3 }
-                      ]
-          },
-          { upsert: true, new: true, setDefaultsOnInsert: true }
-        );
-        factoryRooms[i].agents.push(mutantWorker._id);
-      }
-      await factoryRooms[i].save();
-    }
+    // Removed: Unnecessary factory room population that caused duplicate agent creation
 
     // Zone 4
     loiVaoPhongLab.agents.push(giaoSuBiAn._id);
@@ -3525,63 +3335,7 @@ export async function initializeWorld() {
     phongLab2.agents.push(sinhVatThiNghiemLoi._id);
     phongLabBoss.agents.push(quaiVatMe._id);
     
-    // Populate lab rooms with monsters
-    for (let i = 0; i < labRooms.length; i++) {
-      if (i % 2 === 0) {
-        // Create Sinh Vật Thí Nghiệm Lỗi instance
-        const experiment = await AgentSchema.findOneAndUpdate(
-          { agentKey: 'sinh_vat_thi_nghiem_loi' },
-          {
-            agentKey: 'sinh_vat_thi_nghiem_loi',
-                      name: 'Sinh Vật Thí Nghiệm Lỗi',
-                      description: 'Sinh vật lai tạo thất bại. Nhiều chi, nhiều đầu, di chuyển kỳ dị.',
-                      type: 'mob',
-                      currentRoomId: labRooms[i]._id,
-                      hp: 280,
-                      maxHp: 280,
-                      level: 32,
-                      damage: 38,
-                      behavior: 'aggressive',
-                      loot: [],
-                      experience: 240,
-                      agentType: 'mob',
-                      lootTable: [
-                        { itemId: moDotBienLon._id, dropChance: 0.7 },
-                        { itemId: tinhTheNangLuong._id, dropChance: 0.3 }
-                      ]
-          },
-          { upsert: true, new: true, setDefaultsOnInsert: true }
-        );
-        labRooms[i].agents.push(experiment._id);
-      } else {
-        // Create Bóng Ma Khoa Học Gia instance
-        const ghost = await AgentSchema.findOneAndUpdate(
-          { agentKey: 'bong_ma_khoa_hoc_gia' },
-          {
-            agentKey: 'bong_ma_khoa_hoc_gia',
-                      name: 'Bóng Ma Khoa Học Gia',
-                      description: 'Linh hồn khoa học gia chết trong thảm họa. Phát sáng xanh lạnh, xuyên qua vật thể.',
-                      type: 'mob',
-                      currentRoomId: labRooms[i]._id,
-                      hp: 250,
-                      maxHp: 250,
-                      level: 37,
-                      damage: 42,
-                      behavior: 'wander',
-                      loot: [],
-                      experience: 280,
-                      agentType: 'mob',
-                      lootTable: [
-                        { itemId: tinhTheNangLuong._id, dropChance: 0.6 },
-                        { itemId: moDotBienLon._id, dropChance: 0.4 }
-                      ]
-          },
-          { upsert: true, new: true, setDefaultsOnInsert: true }
-        );
-        labRooms[i].agents.push(ghost._id);
-      }
-      await labRooms[i].save();
-    }
+    // Removed: Unnecessary lab room population that caused duplicate agent creation
 
     // Zone 5
     loiVaoTrungTam.agents.push(thaySuCoNgu._id);
@@ -3589,64 +3343,7 @@ export async function initializeWorld() {
     trungTam2.agents.push(phapSuVongTich._id);
     trungTamBoss.agents.push(keCaiQuanCoNgu._id);
     
-    // Populate citadel rooms with elite monsters
-    for (let i = 0; i < citadelRooms.length; i++) {
-      if (i % 2 === 0) {
-        // Create Vệ Binh Cổ Ngữ instance
-        const guardian = await AgentSchema.findOneAndUpdate(
-          { agentKey: 've_binh_co_ngu' },
-          {
-            agentKey: 've_binh_co_ngu',
-                      name: 'Vệ Binh Cổ Ngữ',
-                      description: 'Chiến binh cổ đại bằng năng lượng tinh khiết. Giáp phát sáng, kiếm năng lượng sắc bén.',
-                      type: 'mob',
-                      currentRoomId: citadelRooms[i]._id,
-                      hp: 400,
-                      maxHp: 400,
-                      level: 43,
-                      damage: 55,
-                      behavior: 'patrol',
-                      patrolRoute: [citadelRooms[i]._id],
-                      loot: [],
-                      experience: 380,
-                      agentType: 'elite',
-                      lootTable: [
-                        { itemId: nangLuongTinhKhiet._id, dropChance: 0.7 },
-                        { itemId: loiHoVeCoDai._id, dropChance: 0.1 }
-                      ]
-          },
-          { upsert: true, new: true, setDefaultsOnInsert: true }
-        );
-        citadelRooms[i].agents.push(guardian._id);
-      } else {
-        // Create Pháp Sư Vong Tích instance
-        const mage = await AgentSchema.findOneAndUpdate(
-          { agentKey: 'phap_su_vong_tich' },
-          {
-            agentKey: 'phap_su_vong_tich',
-                      name: 'Pháp Sư Vong Tích',
-                      description: 'Pháp sư cổ đại với sức mạnh phép thuật khủng khiếp. Tay cầm quyển sách cổ phát sáng.',
-                      type: 'mob',
-                      currentRoomId: citadelRooms[i]._id,
-                      hp: 350,
-                      maxHp: 350,
-                      level: 47,
-                      damage: 70,
-                      behavior: 'aggressive',
-                      loot: [],
-                      experience: 420,
-                      agentType: 'elite',
-                      lootTable: [
-                        { itemId: nangLuongTinhKhiet._id, dropChance: 0.8 },
-                        { itemId: loiHoVeCoDai._id, dropChance: 0.15 }
-                      ]
-          },
-          { upsert: true, new: true, setDefaultsOnInsert: true }
-        );
-        citadelRooms[i].agents.push(mage._id);
-      }
-      await citadelRooms[i].save();
-    }
+    // Removed: Unnecessary citadel room population that caused duplicate agent creation
 
     // Save all rooms with agents
     await cổngThành.save();
