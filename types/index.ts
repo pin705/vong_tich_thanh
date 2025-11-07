@@ -1,14 +1,22 @@
+// Span type for structured messages
+export interface MessageSpan {
+  text: string;
+  category: 'default' | 'highlight' | 'accent' | 'error' | 'system' | 'damage' | 'heal' | 'loot' | 'xp';
+}
+
 // Message types for terminal output
 export interface Message {
   id: string;
   text: string;
   type: 'normal' | 'action' | 'accent' | 'error' | 'system' | 'combat_log' | 'chat_log' | 
         'damage_in' | 'damage_out' | 'heal' | 'loot' | 'xp' | 'critical' | 
-        'chat_say' | 'chat_guild';
+        'chat_say' | 'chat_guild' | 'structured-message';
   timestamp: Date;
   user?: string; // For chat messages
   category?: 'combat' | 'chat' | 'system' | 'reward' | 'world' | 'party' | 'guild' | 'say' | 'world_alert' | 'combat-player' | 'room-description'; // Semantic category for styling and filtering
   channel?: 'main' | 'combat' | 'chat'; // Channel for message routing
+  // Structured message support
+  spans?: MessageSpan[];
 }
 
 // Chat message type

@@ -1528,48 +1528,59 @@ const connectWebSocket = () => {
   ws.value.onmessage = (event) => {
     try {
       const data = JSON.parse(event.data);
-      const { type, message, payload, channel, category } = data;
+      const { type, message, payload, channel, category, spans } = data;
 
       switch (type) {
+        case 'structured-message':
+          // Handle new structured message format
+          addMessage(
+            message || payload || '', 
+            data.messageType || 'normal', 
+            undefined, 
+            channel || 'main', 
+            category,
+            spans
+          );
+          break;
         case 'normal':
-          addMessage(message || payload, 'normal', undefined, channel || 'main', category);
+          addMessage(message || payload, 'normal', undefined, channel || 'main', category, spans);
           break;
         case 'action':
-          addMessage(message || payload, 'action', undefined, channel || 'main', category);
+          addMessage(message || payload, 'action', undefined, channel || 'main', category, spans);
           break;
         case 'accent':
-          addMessage(message || payload, 'accent', undefined, channel || 'main', category);
+          addMessage(message || payload, 'accent', undefined, channel || 'main', category, spans);
           break;
         case 'error':
-          addMessage(message || payload, 'error', undefined, channel || 'main', category);
+          addMessage(message || payload, 'error', undefined, channel || 'main', category, spans);
           break;
         case 'system':
-          addMessage(message || payload, 'system', undefined, channel || 'main', category);
+          addMessage(message || payload, 'system', undefined, channel || 'main', category, spans);
           break;
         case 'combat_log':
-          addMessage(message || payload, 'combat_log', undefined, 'combat', category);
+          addMessage(message || payload, 'combat_log', undefined, 'combat', category, spans);
           break;
         // Combat-specific message types
         case 'damage_in':
-          addMessage(message || payload, 'damage_in', undefined, channel || 'combat', category);
+          addMessage(message || payload, 'damage_in', undefined, channel || 'combat', category, spans);
           break;
         case 'damage_out':
-          addMessage(message || payload, 'damage_out', undefined, channel || 'combat', category);
+          addMessage(message || payload, 'damage_out', undefined, channel || 'combat', category, spans);
           break;
         case 'heal':
-          addMessage(message || payload, 'heal', undefined, channel || 'combat', category);
+          addMessage(message || payload, 'heal', undefined, channel || 'combat', category, spans);
           break;
         case 'critical':
-          addMessage(message || payload, 'critical', undefined, channel || 'combat', category);
+          addMessage(message || payload, 'critical', undefined, channel || 'combat', category, spans);
           break;
         case 'xp':
-          addMessage(message || payload, 'xp', undefined, channel || 'combat', category);
+          addMessage(message || payload, 'xp', undefined, channel || 'combat', category, spans);
           break;
         case 'loot':
-          addMessage(message || payload, 'loot', undefined, channel || 'combat', category);
+          addMessage(message || payload, 'loot', undefined, channel || 'combat', category, spans);
           break;
         case 'chat_log':
-          addMessage(message || payload.message, 'chat_log', payload.user, 'chat', category);
+          addMessage(message || payload.message, 'chat_log', payload.user, 'chat', category, spans);
           break;
         case 'room':
           if (payload.name) {
@@ -1720,7 +1731,7 @@ const connectWebSocket = () => {
           break;
         case 'chat':
           // Handle chat messages with categories - route to chat channel
-          addMessage(data.message || payload, 'chat_log', data.user, 'chat', data.category || 'say');
+          addMessage(data.message || payload, 'chat_log', data.user, 'chat', data.category || 'say', spans);
           break;
         case 'combat-start':
           // Handle combat start

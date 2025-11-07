@@ -1,18 +1,33 @@
 <template>
   <div ref="logArea" class="log-pane">
     <div v-for="message in messages" :key="message.id" :class="getMessageClass(message)">
-      <span v-if="message.type === 'loot'" v-html="message.text"></span>
-      <template v-else>
+      <!-- Structured message with spans -->
+      <template v-if="message.spans && message.spans.length > 0">
         <span v-if="shouldShowIcon(message)" class="message-icon">{{ getMessageIcon(message) }}</span>
-        <span class="message-text" v-html="parseClickableElements(message.text)"></span>
+        <span class="message-text">
+          <span 
+            v-for="(span, idx) in message.spans" 
+            :key="idx" 
+            :class="getSpanClass(span)"
+            v-html="parseClickableInSpan(span.text)"
+          ></span>
+        </span>
+      </template>
+      <!-- Legacy message rendering -->
+      <template v-else>
+        <span v-if="message.type === 'loot'" v-html="message.text"></span>
+        <template v-else>
+          <span v-if="shouldShowIcon(message)" class="message-icon">{{ getMessageIcon(message) }}</span>
+          <span class="message-text" v-html="parseClickableElements(message.text)"></span>
+        </template>
       </template>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, watch, nextTick } from 'vue';
-import type { Message } from '~/types';
+import { ref, watch, nextTick, onMounted, onUnmounted } from 'vue';
+import type { Message, MessageSpan } from '~/types';
 
 const props = defineProps<{
   messages: Message[];
@@ -32,6 +47,16 @@ watch(() => props.messages.length, () => {
     }
   });
 });
+
+// Get CSS class for a span based on its category
+const getSpanClass = (span: MessageSpan): string => {
+  return `span-${span.category}`;
+};
+
+// Parse clickable elements within a span (for brackets)
+const parseClickableInSpan = (text: string): string => {
+  return parseClickableElements(text);
+};
 
 // Parse text to make elements in brackets clickable
 const parseClickableElements = (text: string): string => {
@@ -274,6 +299,52 @@ onUnmounted(() => {
   background-color: rgba(255, 176, 0, 0.08);
   padding: 0.3rem 0.5rem;
   font-weight: bold;
+}
+
+/* Span-based inline highlighting */
+.message-text :deep(.span-default) {
+  color: var(--text-dim);
+  background-color: transparent;
+}
+
+.message-text :deep(.span-highlight) {
+  color: var(--text-accent);
+  font-weight: 500;
+  background-color: transparent;
+}
+
+.message-text :deep(.span-accent) {
+  color: var(--text-accent);
+  font-weight: bold;
+}
+
+.message-text :deep(.span-error) {
+  color: var(--theme-text-error);
+  font-weight: 500;
+}
+
+.message-text :deep(.span-system) {
+  color: var(--theme-text-system);
+}
+
+.message-text :deep(.span-damage) {
+  color: #ff6666;
+  font-weight: 500;
+}
+
+.message-text :deep(.span-heal) {
+  color: #66ff66;
+  font-weight: 500;
+}
+
+.message-text :deep(.span-loot) {
+  color: var(--theme-text-loot);
+  font-weight: 500;
+}
+
+.message-text :deep(.span-xp) {
+  color: var(--theme-text-xp);
+  font-weight: 500;
 }
 
 /* Mobile responsiveness */

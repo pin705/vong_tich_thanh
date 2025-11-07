@@ -13,6 +13,7 @@ import { AgentSchema } from '../../models/Agent';
 import { deduplicateItemsById } from '../utils/itemDeduplication';
 import { commandRateLimiter, chatRateLimiter, sanitizeInput } from '../utils/validation';
 import { getExpForLevel } from '../utils/constants';
+import { createStructuredMessage } from '../utils/messageParser';
 
 // Store peer to player mapping
 const peerToPlayer = new Map<string, string>();
@@ -429,43 +430,29 @@ export default defineWebSocketHandler({
             // Process command with database integration
             const responses = await handleCommandDb(command, playerIdForCmd);
             
-            // Send responses
+            // Send responses using structured message format
             for (const response of responses) {
               if (response === '') {
                 peer.send(JSON.stringify({
                   type: 'normal',
                   message: ''
                 }));
-              } else if (response.includes('[') && response.includes(']')) {
-                // Messages with brackets are accents (names, rooms, etc)
-                peer.send(JSON.stringify({
-                  type: 'accent',
-                  message: response
-                }));
-              } else if (response.startsWith('Bạn')) {
-                // Actions by the player
-                peer.send(JSON.stringify({
-                  type: 'action',
-                  message: response
-                }));
-              } else if (response.includes('Lệnh không hợp lệ') || response.includes('không thể') || response.includes('Lỗi')) {
-                // Errors
-                peer.send(JSON.stringify({
-                  type: 'error',
-                  message: response
-                }));
-              } else if (response.includes('═')) {
-                // System messages (boxes, separators)
-                peer.send(JSON.stringify({
-                  type: 'system',
-                  message: response
-                }));
               } else {
-                // Normal text
-                peer.send(JSON.stringify({
-                  type: 'normal',
-                  message: response
-                }));
+                // Determine message type based on content
+                let messageType = 'normal';
+                if (response.includes('[') && response.includes(']')) {
+                  messageType = 'accent';
+                } else if (response.startsWith('Bạn')) {
+                  messageType = 'action';
+                } else if (response.includes('Lỗi') || response.includes('không') || response.includes('Lệnh không hợp lệ') || response.includes('không thể')) {
+                  messageType = 'error';
+                } else if (response.includes('═')) {
+                  messageType = 'system';
+                }
+                
+                // Create structured message with spans
+                const structuredMsg = createStructuredMessage(response, messageType);
+                peer.send(JSON.stringify(structuredMsg));
               }
             }
             
