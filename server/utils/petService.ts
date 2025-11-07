@@ -2,7 +2,6 @@ import { PetSchema } from '../../models/Pet';
 import { PetTemplateSchema } from '../../models/PetTemplate';
 import { PlayerSchema } from '../../models/Player';
 import { gameState } from './gameState';
-import { broadcastToRoom } from '../routes/ws';
 
 /**
  * Pet Service - Core pet system logic
@@ -88,7 +87,7 @@ export async function summonPet(playerId: string, petId: string) {
     gameState.addPet(petState);
 
     // Broadcast to room
-    await broadcastToRoom(player.currentRoomId.toString(), {
+    gameState.broadcastToRoom(player.currentRoomId.toString(), {
       type: 'message',
       payload: {
         text: `[${pet.nickname}] xuất hiện bên cạnh [${player.username}]!`,
@@ -124,7 +123,7 @@ export async function unsummonPet(playerId: string) {
     const pet = await PetSchema.findById(player.activePetId);
     if (pet) {
       // Broadcast to room
-      await broadcastToRoom(player.currentRoomId.toString(), {
+      gameState.broadcastToRoom(player.currentRoomId.toString(), {
         type: 'message',
         payload: {
           text: `[${pet.nickname}] biến mất!`,
@@ -164,7 +163,7 @@ export async function movePetToRoom(petId: string, newRoomId: string, oldRoomId:
     pet.currentRoomId = newRoomId;
 
     // Broadcast to old room
-    await broadcastToRoom(oldRoomId, {
+    gameState.broadcastToRoom(oldRoomId, {
       type: 'message',
       payload: {
         text: `[${pet.name}] rời khỏi phòng.`,
@@ -173,7 +172,7 @@ export async function movePetToRoom(petId: string, newRoomId: string, oldRoomId:
     });
 
     // Broadcast to new room
-    await broadcastToRoom(newRoomId, {
+    gameState.broadcastToRoom(newRoomId, {
       type: 'message',
       payload: {
         text: `[${pet.name}] đi vào phòng.`,
@@ -261,7 +260,7 @@ export async function petDefeated(petId: string) {
     // Broadcast defeat message
     const player = await PlayerSchema.findById(pet.ownerId);
     if (player) {
-      await broadcastToRoom(player.currentRoomId.toString(), {
+      gameState.broadcastToRoom(player.currentRoomId.toString(), {
         type: 'message',
         payload: {
           text: `[${pet.nickname}] đã bị đánh bại và biến mất!`,

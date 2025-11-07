@@ -129,6 +129,20 @@ class GameState {
     });
   }
 
+  // Broadcast to all connected players
+  broadcastToAll(message: any) {
+    const players = this.getAllPlayers();
+    players.forEach(player => {
+      if (player.ws) {
+        try {
+          player.ws.send(JSON.stringify(message));
+        } catch (error) {
+          console.error('Error sending message to player:', error);
+        }
+      }
+    });
+  }
+
   // Player state management
   getPlayerState(playerId: string): PlayerState | undefined {
     // Initialize if not exists
