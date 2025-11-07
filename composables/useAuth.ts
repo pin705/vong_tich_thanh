@@ -1,6 +1,6 @@
 export const useAuth = () => {
-  const user = useState<{ id: string; username: string } | null>('user', () => null);
-  const isAuthenticated = computed(() => !!user.value);
+  const { loggedIn, user, clear } = useUserSession();
+  const isAuthenticated = computed(() => loggedIn.value);
 
   const login = async (username: string, password: string) => {
     try {
@@ -10,10 +10,7 @@ export const useAuth = () => {
       });
       
       if (response.success && response.player) {
-        user.value = {
-          id: response.player.id,
-          username: response.player.username
-        };
+        // Session is set by the server, just return success
         return { success: true };
       }
       
@@ -34,10 +31,7 @@ export const useAuth = () => {
       });
       
       if (response.success && response.player) {
-        user.value = {
-          id: response.player.id,
-          username: response.player.username
-        };
+        // Session is set by the server, just return success
         return { success: true };
       }
       
@@ -58,30 +52,15 @@ export const useAuth = () => {
     } catch (error) {
       console.error('Logout error:', error);
     } finally {
-      user.value = null;
-    }
-  };
-
-  const checkSession = async () => {
-    try {
-      const response = await $fetch('/api/auth/session');
-      if (response.authenticated && response.user) {
-        user.value = response.user;
-        return true;
-      }
-      return false;
-    } catch (error) {
-      console.error('Session check error:', error);
-      return false;
+      await clear();
     }
   };
 
   return {
-    user: readonly(user),
+    user,
     isAuthenticated,
     login,
     register,
-    logout,
-    checkSession
+    logout
   };
 };

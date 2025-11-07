@@ -78,7 +78,8 @@ const handleLogin = async () => {
     const result = await login(username.value, password.value);
     
     if (result.success) {
-      await router.push('/');
+      // Use navigateTo with replace to force navigation
+      await navigateTo('/', { replace: true, external: true });
     } else {
       errorMessage.value = result.message || 'Đăng nhập thất bại. Vui lòng thử lại.';
     }

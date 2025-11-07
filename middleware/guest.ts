@@ -1,13 +1,8 @@
 export default defineNuxtRouteMiddleware(async (to, from) => {
-  const { checkSession, isAuthenticated } = useAuth();
-  
-  // Check session on first load
-  if (!isAuthenticated.value) {
-    await checkSession();
-  }
+  const { loggedIn } = useUserSession();
   
   // Redirect to game if already authenticated
-  if (isAuthenticated.value) {
+  if (loggedIn.value) {
     return navigateTo('/');
   }
 });
