@@ -49,7 +49,7 @@
           ({{ respawn.type === 'mob' ? 'M' : 'N' }}) {{ respawn.name }} - {{ formatRespawnTime(respawn.respawnTime) }}
         </div>
       </div>
-      <div v-if="players.length === 0 && npcs.length === 0 && mobs.length === 0 && pets.length === 0 && (!respawns || respawns.length === 0)" class="occupant-empty">
+      <div v-if="players.length === 0 && npcs.length === 0 && mobs.length === 0 && pets?.length === 0 && (!respawns || respawns.length === 0)" class="occupant-empty">
         (Không có ai)
       </div>
     </div>

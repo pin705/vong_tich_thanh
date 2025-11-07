@@ -15,7 +15,7 @@
       <div v-if="activeTab === 'stable'" class="pet-stable">
         <div v-if="loading" class="loading-message">Đang tải...</div>
         <div v-else-if="error" class="error-message">{{ error }}</div>
-        <div v-else-if="pets.length === 0" class="empty-message">
+        <div v-else-if="pets?.length === 0" class="empty-message">
           Bạn chưa có thú cưng nào.
           <br>
           Mua trứng thú cưng từ [Huấn Luyện Sư Kito] để bắt đầu!
