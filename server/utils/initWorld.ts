@@ -1182,6 +1182,90 @@ export async function initializeWorld() {
       }
     });
 
+    // World Boss Hunt Items
+    const loiRobotCoDai = await ItemSchema.create({
+      itemKey: 'ancient_robot_core',
+      name: 'Lõi Robot Cổ Đại',
+      description: 'Một lõi năng lượng còn phát sáng từ một cỗ máy chiến tranh thời cổ đại. Nguyên liệu chế tạo huyền thoại.',
+      type: 'craftingMaterial',
+      rarity: 'legendary',
+      value: 1000,
+      sellValue: 500,
+    });
+
+    const huyHieuDietKhongLo = await ItemSchema.create({
+      itemKey: 'giant_slayer_badge',
+      name: 'Huy Hiệu Diệt Khổng Lồ',
+      description: 'Một huy hiệu đặc biệt chứng minh bạn đã chiến thắng một kẻ địch khổng lồ. Sử dụng để nhận danh hiệu vĩnh viễn.',
+      type: 'TITLE_BADGE',
+      rarity: 'epic',
+      value: 0,
+      grantTitle: 'Diệt Khổng Lồ',
+      braveryMedalPrice: 100,
+    });
+
+    // Arena PvP Items
+    const giapDauSi = await ItemSchema.create({
+      itemKey: 'gladiator_armor',
+      name: 'Giáp Đấu Sĩ',
+      description: 'Bộ giáp được rèn đặc biệt cho những chiến binh trong đấu trường. Giảm 5% sát thương từ người chơi.',
+      type: 'Equipment',
+      slot: 'chest',
+      rarity: 'epic',
+      quality: 'Hiếm',
+      requiredLevel: 20,
+      stats: {
+        defense: 25,
+        hp: 100,
+      },
+      gloryPointsPrice: 500,
+    });
+
+    const huyHieuVoSi = await ItemSchema.create({
+      itemKey: 'champion_badge',
+      name: 'Huy Hiệu Vô Địch',
+      description: 'Huy hiệu của những chiến binh bất bại trong đấu trường. Sử dụng để nhận danh hiệu vĩnh viễn.',
+      type: 'TITLE_BADGE',
+      rarity: 'legendary',
+      value: 0,
+      grantTitle: 'Vô Địch Đấu Trường',
+      gloryPointsPrice: 1000,
+    });
+
+    // Party Dungeon Items
+    const sachKyNangCu = await ItemSchema.create({
+      itemKey: 'ancient_skill_book',
+      name: 'Sách Kỹ Năng Cổ',
+      description: 'Một cuốn sách cổ chứa đựng kiến thức về kỹ năng chiến đấu. Có thể dùng để nâng cấp kỹ năng.',
+      type: 'SKILL_UPGRADE_BOOK',
+      rarity: 'rare',
+      value: 200,
+      sellValue: 100,
+    });
+
+    const thuAnPetCaoCap = await ItemSchema.create({
+      itemKey: 'premium_pet_food',
+      name: 'Thức Ăn Pet Cao Cấp',
+      description: 'Thức ăn đặc biệt giúp pet nhận được một lượng EXP lớn. Chỉ dành cho những người yêu thú cưng.',
+      type: 'PET_FOOD',
+      rarity: 'uncommon',
+      value: 150,
+      sellValue: 50,
+      data: {
+        expBonus: 500,
+      },
+    });
+
+    const daBaoVe = await ItemSchema.create({
+      itemKey: 'protection_stone',
+      name: 'Đá Bảo Vệ',
+      description: 'Một viên đá huyền bí có thể bảo vệ trang bị khỏi rớt cấp khi cường hóa thất bại.',
+      type: 'ENHANCEMENT_PROTECTION',
+      rarity: 'rare',
+      value: 300,
+      sellValue: 150,
+    });
+
     // Create rooms
     const cổngThành = await RoomSchema.create({
       name: 'Cổng Thành Cũ',
@@ -1616,6 +1700,46 @@ export async function initializeWorld() {
     await trialLobby.save();
     await trialInstance.save();
 
+    // Arena System: Create arena rooms
+    const arenaLobby = await RoomSchema.create({
+      name: 'Phòng Chờ Đấu Trường',
+      description: 'Một phòng chờ rộng rãi với các băng ghế đá. Trên tường treo những tấm bảng ghi tên những chiến binh nổi tiếng. Không khí nơi đây căng thẳng nhưng đầy hứng khởi.',
+      exits: {},
+      isSafeZone: true,
+    });
+
+    const arena1v1RoomA = await RoomSchema.create({
+      name: 'Đấu Trường 1v1 - Phòng A',
+      description: 'Một đấu trường tròn với sàn đá cứng. Xung quanh là các hàng ghế cao chót vót, dù giờ đây đã trống rỗng. Đây là nơi quyết định người chiến thắng.',
+      exits: {},
+      isSafeZone: false,
+    });
+
+    const arena1v1RoomB = await RoomSchema.create({
+      name: 'Đấu Trường 1v1 - Phòng B',
+      description: 'Một đấu trường tròn với sàn đá cứng. Xung quanh là các hàng ghế cao chót vót, dù giờ đây đã trống rỗng. Đây là nơi quyết định người chiến thắng.',
+      exits: {},
+      isSafeZone: false,
+    });
+
+    arenaLobby.exits.south = khuCho._id; // Link back to main area
+    khuCho.exits.down = arenaLobby._id; // Link from marketplace
+    await arenaLobby.save();
+    await arena1v1RoomA.save();
+    await arena1v1RoomB.save();
+
+    // Party Dungeon System: Create entrance
+    const partyDungeonEntrance = await RoomSchema.create({
+      name: 'Lối Vào Di Tích Cổ',
+      description: 'Một lối vào đầy bụi với những cột đá cổ đại. Có vẻ như nơi đây đã bị lãng quên từ lâu. Một nhà khảo cổ đang nghiên cứu những bức tường.',
+      exits: {},
+      isSafeZone: true,
+    });
+
+    partyDungeonEntrance.exits.west = rừngRậm._id; // Link from forest
+    rừngRậm.exits.east = partyDungeonEntrance._id; // Link to dungeon
+    await partyDungeonEntrance.save();
+
     // Create NPCs
     const linhGac = await AgentSchema.create({
       name: 'Lính Gác',
@@ -1704,6 +1828,51 @@ export async function initializeWorld() {
       ],
       shopType: 'gold',
       shopCurrency: 'tamer_badge'
+    });
+
+    const arenaManager = await AgentSchema.create({
+      name: 'Quản Lý Đấu Trường',
+      description: 'Một người đàn ông cao lớn với bộ giáp lấp lánh. Ông là người quản lý các trận đấu trong đấu trường.',
+      type: 'npc',
+      agentKey: 'arena_manager',
+      currentRoomId: arenaLobby._id,
+      hp: 200,
+      maxHp: 200,
+      level: 30,
+      damage: 50,
+      behavior: 'passive',
+      dialogue: [
+        'Chào mừng đến đấu trường! Gõ "list" để xem cửa hàng vinh quang.',
+        'Muốn chiến đấu? Gõ "queue 1v1" để tham gia hàng chờ.',
+        'Điểm Vinh Quang chỉ có thể kiếm được từ chiến thắng PvP!',
+        'Những chiến binh mạnh nhất sẽ được vinh danh!'
+      ],
+      isVendor: true,
+      shopInventory: [
+        giapDauSi._id,
+        huyHieuVoSi._id,
+      ],
+      shopType: 'glory_points',
+      shopCurrency: 'glory_points'
+    });
+
+    const archaeologist = await AgentSchema.create({
+      name: 'Nhà Khảo Cổ',
+      description: 'Một người đàn ông cao với áo choàng bụi bặm và kính mắt dày. Ông đang ghi chép điều gì đó vào một cuốn sổ cũ.',
+      type: 'npc',
+      agentKey: 'archaeologist',
+      currentRoomId: partyDungeonEntrance._id,
+      hp: 100,
+      maxHp: 100,
+      level: 20,
+      damage: 15,
+      behavior: 'passive',
+      dialogue: [
+        'Chào! Tôi đang nghiên cứu Di Tích Cổ này.',
+        'Nếu nhóm của bạn muốn khám phá, gõ "talk nhà khảo cổ" và chọn "explore".',
+        'Hãy cẩn thận! Bên trong đầy rẫy bí ẩn và nguy hiểm.',
+        'Những người giải được các câu đố sẽ nhận được phần thưởng quý giá!',
+      ],
     });
 
     const chuotBienDi = await AgentSchema.create({
@@ -2299,7 +2468,14 @@ export async function initializeWorld() {
     // Add agents to rooms
     // Zone 1
     cổngThành.agents.push(linhGac._id, giaLang._id);
+    cổngThành.agents.push(petTamer._id); // Pet system
     khuCho.agents.push(thuongGia._id, thuongGiaBiAn._id);
+    
+    // Arena system
+    arenaLobby.agents.push(arenaManager._id);
+    
+    // Party dungeon system
+    partyDungeonEntrance.agents.push(archaeologist._id);
     hẻmTối.agents.push(chuotBienDi._id, chuotCong._id);
     rừngRậm.agents.push(sóiRừng._id, thayMaYeu._id, keCuopDuong._id);
     hang.agents.push(goblin._id, thuLinhKeCuop._id); // Phase 26: Added Level 10 boss
