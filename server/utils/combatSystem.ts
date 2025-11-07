@@ -711,7 +711,8 @@ export async function executeCombatTick(playerId: string, agentId: string): Prom
         isVendor: agent.isVendor,
         shopInventory: agent.shopInventory,
         shopType: agent.shopType,
-        maxInstances: agent.maxInstances
+        maxInstances: agent.maxInstances,
+        agentKey: agent.agentKey
       };
       
       if (room) {
@@ -1088,7 +1089,7 @@ export async function startCombat(playerId: string, agentId: string): Promise<st
     }
     
     messages.push('');
-    messages.push(`Trận chiến bắt đầu! [${player?.name}] HP: ${player.hp}/${player.maxHp} | [${agent.name}] HP: ${agent.hp}/${agent.maxHp}`);
+    messages.push(`Trận chiến bắt đầu! [${player?.username}] HP: ${player.hp}/${player.maxHp} | [${agent.name}] HP: ${agent.hp}/${agent.maxHp}`);
     
     // Broadcast to room
     const room = await RoomSchema.findById(player.currentRoomId);

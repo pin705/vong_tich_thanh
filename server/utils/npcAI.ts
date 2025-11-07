@@ -299,6 +299,7 @@ export async function scheduleAgentRespawn(agentData: any, roomId: string): Prom
       
       // Create new agent with same data
       const newAgent = await AgentSchema.create({
+        agentKey: agentData.agentKey,
         name: agentData.name,
         description: agentData.description,
         type: agentData.type,
