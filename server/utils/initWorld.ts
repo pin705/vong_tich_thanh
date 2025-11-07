@@ -173,6 +173,7 @@ export async function initializeWorld() {
         value: 25,
         price: 100,
         sellValue: 25,
+        gloryPointsPrice: 10, // ~1 win to buy
         stats: { healing: 30 }
       },
       { upsert: true, new: true, setDefaultsOnInsert: true }
@@ -347,6 +348,7 @@ export async function initializeWorld() {
               value: 50,
               price: 100,
               sellValue: 25,
+              gloryPointsPrice: 15, // ~2 wins to buy, making Arena useful for PvE too
               quality: 'Thường'
       },
       { upsert: true, new: true, setDefaultsOnInsert: true }
@@ -363,6 +365,7 @@ export async function initializeWorld() {
               value: 100,
               price: 200,
               sellValue: 50,
+              dungeonCoinPrice: 3, // ~15 floors to buy
               quality: 'Tốt'
       },
       { upsert: true, new: true, setDefaultsOnInsert: true }
@@ -379,6 +382,7 @@ export async function initializeWorld() {
               value: 75,
               price: 150,
               sellValue: 35,
+              dungeonCoinPrice: 2, // ~10 floors to buy
               quality: 'Tốt'
       },
       { upsert: true, new: true, setDefaultsOnInsert: true }
@@ -396,7 +400,8 @@ export async function initializeWorld() {
               value: 0, // Cannot be sold for gold
               stats: { damage: 50 },
               quality: 'Sử Thi',
-              requiredLevel: 20
+              requiredLevel: 20,
+              dungeonCoinPrice: 10 // ~50 floors - endgame weapon
       },
       { upsert: true, new: true, setDefaultsOnInsert: true }
     );
@@ -412,7 +417,8 @@ export async function initializeWorld() {
               value: 0, // Cannot be sold for gold
               stats: { defense: 40 },
               quality: 'Sử Thi',
-              requiredLevel: 20
+              requiredLevel: 20,
+              dungeonCoinPrice: 10 // ~50 floors - endgame armor
       },
       { upsert: true, new: true, setDefaultsOnInsert: true }
     );
@@ -472,7 +478,8 @@ export async function initializeWorld() {
               itemKey: 'pet_reroll_stone',
               value: 0,
               price: 0,
-              sellValue: 0
+              sellValue: 0,
+              tamerBadgePrice: 5 // ~12-15 floors to buy
       },
       { upsert: true, new: true, setDefaultsOnInsert: true }
     );
@@ -549,6 +556,7 @@ export async function initializeWorld() {
               sellValue: 0,
               quality: 'Sử Thi',
               rarity: 'legendary',
+              tamerBadgePrice: 20, // ~50 floors - legendary pet
               data: { grantsPetKey: 'phoenix' }
       },
       { upsert: true, new: true, setDefaultsOnInsert: true }
@@ -565,6 +573,7 @@ export async function initializeWorld() {
               price: 0,
               sellValue: 0,
               quality: 'Hiếm',
+              tamerBadgePrice: 3, // ~7-10 floors
               data: { expValue: 1000 }
       },
       { upsert: true, new: true, setDefaultsOnInsert: true }
@@ -582,6 +591,7 @@ export async function initializeWorld() {
               sellValue: 0,
               quality: 'Hiếm',
               rarity: 'rare',
+              tamerBadgePrice: 4, // ~10 floors
               data: { skillKey: 'fire_breath' }
       },
       { upsert: true, new: true, setDefaultsOnInsert: true }
@@ -598,6 +608,7 @@ export async function initializeWorld() {
               price: 0,
               sellValue: 0,
               quality: 'Tốt',
+              tamerBadgePrice: 4, // ~10 floors
               data: { skillKey: 'multi_attack' }
       },
       { upsert: true, new: true, setDefaultsOnInsert: true }
@@ -613,6 +624,7 @@ export async function initializeWorld() {
               value: 0,
               price: 0,
               sellValue: 0,
+              tamerBadgePrice: 2, // ~5 floors
               data: { healAmount: 500 }
       },
       { upsert: true, new: true, setDefaultsOnInsert: true }
@@ -628,6 +640,7 @@ export async function initializeWorld() {
               value: 0,
               price: 0,
               sellValue: 0,
+              tamerBadgePrice: 2, // ~5 floors
               data: { buffKey: 'PET_DEFENSE_BUFF', duration: 30000 }
       },
       { upsert: true, new: true, setDefaultsOnInsert: true }
@@ -2523,13 +2536,15 @@ export async function initializeWorld() {
               dialogue: [
                 'Chào mừng đến đấu trường! Gõ "list" để xem cửa hàng vinh quang.',
                 'Muốn chiến đấu? Gõ "queue 1v1" để tham gia hàng chờ.',
-                'Điểm Vinh Quang chỉ có thể kiếm được từ chiến thắng PvP!',
+                'Điểm Vinh Quang có thể đổi lấy trang bị mạnh hoặc đá cường hóa!',
                 'Những chiến binh mạnh nhất sẽ được vinh danh!'
               ],
               isVendor: true,
               shopInventory: [
                 giapDauSi._id,
                 huyHieuVoSi._id,
+                daCuongHoaCap1._id, // Add enhancement stones to make Arena useful for PvE players
+                binhMauLon._id, // Add potions for PvE utility
               ],
               shopType: 'glory_points',
               shopCurrency: 'glory_points'

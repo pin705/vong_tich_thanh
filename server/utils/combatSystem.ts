@@ -13,7 +13,7 @@ import { clearBossState } from './bossMechanics';
 import { broadcastRoomOccupants } from '../routes/ws';
 import { addGoldToPlayer, addPremiumCurrencyToPlayer } from './inventoryService';
 import { addExp as addPetExp, petDefeated } from './petService';
-import { COMBAT_TICK_INTERVAL, FLEE_SUCCESS_CHANCE, EXPERIENCE_PER_LEVEL, HP_GAIN_PER_LEVEL, MINIMUM_DAMAGE, TALENT_POINTS_PER_LEVEL, SKILL_POINTS_PER_LEVEL } from './constants';
+import { COMBAT_TICK_INTERVAL, FLEE_SUCCESS_CHANCE, getExpForLevel, HP_GAIN_PER_LEVEL, MINIMUM_DAMAGE, TALENT_POINTS_PER_LEVEL, SKILL_POINTS_PER_LEVEL } from './constants';
 import { trackBossContribution, isWorldBoss, distributeWorldBossRewards } from './worldBossService';
 
 // Boss reward constants
@@ -65,7 +65,7 @@ async function sendCombatStateUpdate(playerId: string) {
       maxResource: player.maxResource || 100,
       level: player.level,
       exp: player.experience || 0,
-      nextLevelExp: player.level * EXPERIENCE_PER_LEVEL,
+      nextLevelExp: getExpForLevel(player.level),
       gold: player.gold,
       currency: player.gold,
       premiumCurrency: player.premiumCurrency || 0,
@@ -266,7 +266,7 @@ async function distributeExperience(killer: any, totalExp: number, roomId: strin
 async function checkLevelUp(player: any): Promise<string[]> {
   const messages: string[] = [];
   
-  while (player.experience >= player.level * EXPERIENCE_PER_LEVEL) {
+  while (player.experience >= getExpForLevel(player.level)) {
     player.level += 1;
     player.maxHp += HP_GAIN_PER_LEVEL;
     player.hp = player.maxHp; // Full heal on level up
@@ -772,7 +772,7 @@ export async function executeCombatTick(playerId: string, agentId: string): Prom
         // Show updated stats
         playerObj.ws.send(JSON.stringify({ 
           type: 'system', 
-          message: `HP: ${player.hp}/${player.maxHp} | Level: ${player.level} | XP: ${player.experience}/${player.level * EXPERIENCE_PER_LEVEL}`,
+          message: `HP: ${player.hp}/${player.maxHp} | Level: ${player.level} | XP: ${player.experience}/${getExpForLevel(player.level)}`,
           channel: 'combat',
           category: 'combat-stats'
         }));

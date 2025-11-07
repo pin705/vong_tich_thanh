@@ -36,6 +36,15 @@ export const ItemSchema = defineMongooseModel({
       type: Number,
       default: 0,
     },
+    // Special Currency Prices
+    dungeonCoinPrice: {
+      type: Number,
+      default: 0,
+    },
+    tamerBadgePrice: {
+      type: Number,
+      default: 0,
+    },
     stats: {
       damage: Number,
       defense: Number,
