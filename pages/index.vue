@@ -1418,6 +1418,7 @@ const handleAcceptQuest = async (questId: string) => {
       await loadQuests();
     } else {
       addMessage(response.message || 'Không thể nhận nhiệm vụ.', 'error');
+    }
   } catch (error: any) {
     console.error('Error accepting quest:', error);
     const errorMsg = error.data?.message || 'Không thể nhận nhiệm vụ.';
