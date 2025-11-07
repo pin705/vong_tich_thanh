@@ -79,11 +79,46 @@ export default defineEventHandler(async (event) => {
       });
     }
 
+    // Store previous bidder info before updating
+    const previousBidderId = auction.currentBidder;
+    const previousBid = auction.currentBid;
+
+    // Update auction atomically to prevent race conditions
+    const updatedAuction = await AuctionItemSchema.findOneAndUpdate(
+      { 
+        _id: auctionId, 
+        status: 'active',
+        expiresAt: { $gte: new Date() },
+        currentBid: { $lt: bidAmount } // Ensure bid is still higher
+      },
+      { 
+        currentBid: bidAmount,
+        currentBidder: player._id,
+        $push: {
+          bidHistory: {
+            bidder: player._id,
+            amount: bidAmount,
+            timestamp: new Date()
+          }
+        }
+      },
+      { new: true }
+    );
+
+    // If update failed, another bid was placed or auction ended
+    if (!updatedAuction) {
+      throw createError({
+        statusCode: 400,
+        statusMessage: 'Đấu giá đã kết thúc hoặc có người đặt giá cao hơn.'
+      });
+    }
+
+    // Now process refunds and payments
     // Refund previous bidder
-    if (auction.currentBidder) {
-      const previousBidder = await PlayerSchema.findById(auction.currentBidder);
+    if (previousBidderId) {
+      const previousBidder = await PlayerSchema.findById(previousBidderId);
       if (previousBidder) {
-        previousBidder.gold += auction.currentBid;
+        previousBidder.gold += previousBid;
         await previousBidder.save();
       }
     }
@@ -91,16 +126,6 @@ export default defineEventHandler(async (event) => {
     // Deduct gold from new bidder
     player.gold -= bidAmount;
     await player.save();
-
-    // Update auction
-    auction.currentBid = bidAmount;
-    auction.currentBidder = player._id;
-    auction.bidHistory.push({
-      bidder: player._id,
-      amount: bidAmount,
-      timestamp: new Date()
-    });
-    await auction.save();
 
     return {
       success: true,

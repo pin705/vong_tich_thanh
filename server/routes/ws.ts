@@ -4,6 +4,7 @@ import { handleCommand } from '../utils/commandHandler';
 import { handleCommandDb } from '../utils/commandHandlerDb';
 import { gameState } from '../utils/gameState';
 import { partyService } from '../utils/partyService';
+import { tradeService } from '../utils/tradeService';
 import { getRoomRespawns } from '../utils/npcAI';
 import { PlayerSchema } from '../../models/Player';
 import { RoomSchema } from '../../models/Room';
@@ -539,11 +540,56 @@ export default defineWebSocketHandler({
           playerId
         );
         
+        // Clean up player state: combat, trade, party, pet
+        try {
+          // 1. Exit combat if in combat
+          const dbPlayer = await PlayerSchema.findById(playerId);
+          if (dbPlayer?.inCombat) {
+            dbPlayer.inCombat = false;
+            dbPlayer.combatTarget = null;
+            await dbPlayer.save();
+            gameState.stopCombat(playerId);
+          }
+          
+          // 2. Cancel any active trade
+          const playerTrade = tradeService.getPlayerTrade(playerId);
+          if (playerTrade) {
+            const otherPlayerId = playerTrade.isInitiator 
+              ? playerTrade.trade.targetId 
+              : playerTrade.trade.initiatorId;
+            tradeService.cancelTrade(playerId);
+            
+            // Notify other player
+            const otherPlayer = gameState.getPlayer(otherPlayerId);
+            if (otherPlayer?.ws) {
+              otherPlayer.ws.send(JSON.stringify({
+                type: 'system',
+                category: 'trade',
+                message: `[${player.username}] đã ngắt kết nối. Giao dịch đã bị hủy.`
+              }));
+            }
+          }
+          
+          // 3. Leave party if in party
+          const partyId = partyService.getPlayerParty(playerId);
+          if (partyId) {
+            partyService.leaveParty(playerId);
+          }
+          
+          // 4. Unsummon pet if active
+          if (dbPlayer?.activePetId) {
+            const { unsummonPet } = await import('../utils/petService');
+            await unsummonPet(playerId);
+          }
+        } catch (error) {
+          console.error('[WS] Error during disconnect cleanup:', error);
+        }
+        
         // Clean up rate limiters
         commandRateLimiter.reset(playerId);
         chatRateLimiter.reset(playerId);
         
-        // Remove player first
+        // Remove player from game state
         gameState.removePlayer(playerId);
         peerToPlayer.delete(peer.id);
         
