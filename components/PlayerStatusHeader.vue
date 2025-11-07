@@ -33,6 +33,21 @@
       <span class="currency-label">Cổ Thạch</span>
       <span class="currency-value">{{ premiumCurrency }}</span>
     </div>
+
+    <div v-if="dungeonCoin > 0" class="currency-section">
+      <span class="currency-label">Xu HN</span>
+      <span class="currency-value">{{ dungeonCoin }}</span>
+    </div>
+
+    <div v-if="trainingBadge > 0" class="currency-section">
+      <span class="currency-label">Huy Hiệu</span>
+      <span class="currency-value">{{ trainingBadge }}</span>
+    </div>
+
+    <div v-if="gloryPoints > 0" class="currency-section">
+      <span class="currency-label">Vinh Quang</span>
+      <span class="currency-value">{{ gloryPoints }}</span>
+    </div>
   </div>
 </template>
 
@@ -48,6 +63,9 @@ interface Props {
   maxResource: number;
   currency: number;
   premiumCurrency: number;
+  dungeonCoin?: number;
+  trainingBadge?: number;
+  gloryPoints?: number;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -58,7 +76,10 @@ const props = withDefaults(defineProps<Props>(), {
   resource: 0,
   maxResource: 100,
   currency: 0,
-  premiumCurrency: 0
+  premiumCurrency: 0,
+  dungeonCoin: 0,
+  trainingBadge: 0,
+  gloryPoints: 0
 });
 </script>
 

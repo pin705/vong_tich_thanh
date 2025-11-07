@@ -17,6 +17,7 @@
           {{ getItemIcon(item.type) }}
         </div>
         <div v-if="item" class="item-name" :class="getQualityClass(item.quality)">
+          <span v-if="item.enhancementLevel" class="enhancement-level">+{{ item.enhancementLevel }}</span>
           {{ truncateName(item.name) }}
         </div>
         <div v-if="item?.quality" class="item-quality-icon" :class="getQualityClass(item.quality)">
@@ -36,6 +37,14 @@
       <div v-if="selectedItem" class="item-details">
         <div v-if="selectedItem.quality" class="item-quality" :class="getQualityClass(selectedItem.quality)">
           {{ getQualityIcon(selectedItem.quality) }} {{ selectedItem.quality }}
+        </div>
+        
+        <div v-if="selectedItem.enhancementLevel" class="item-enhancement">
+          Cường hóa: <span class="enhancement-value">+{{ selectedItem.enhancementLevel }}</span>
+        </div>
+        
+        <div v-if="selectedItem.stars" class="item-stars">
+          Số sao: <span class="stars-value">{{ '★'.repeat(selectedItem.stars) }}{{ '☆'.repeat(5 - selectedItem.stars) }}</span>
         </div>
         
         <div class="item-description">{{ selectedItem.description }}</div>
@@ -135,6 +144,14 @@ interface InventoryItem {
    * Format: "(2 món): +10 HP, (4 món): +15 Damage"
    */
   setBonus?: string;
+  /** 
+   * Enhancement level for equipment (0-15)
+   */
+  enhancementLevel?: number;
+  /** 
+   * Star rating for items (1-5)
+   */
+  stars?: number;
 }
 
 interface ItemAction {
@@ -371,6 +388,13 @@ const executeAction = (actionId: string) => {
   border-color: #ff00ff;
 }
 
+/* Enhancement level badge */
+.enhancement-level {
+  color: var(--text-accent);
+  font-weight: bold;
+  margin-right: 0.25rem;
+}
+
 /* Popover Item Details */
 .item-details {
   color: var(--text-dim);
@@ -383,6 +407,33 @@ const executeAction = (actionId: string) => {
   padding: 0.5rem;
   background-color: rgba(0, 136, 0, 0.1);
   border-left: 3px solid currentColor;
+}
+
+.item-enhancement {
+  font-size: 15px;
+  color: var(--text-bright);
+  margin-bottom: 0.5rem;
+  padding: 0.5rem;
+  background-color: rgba(255, 215, 0, 0.1);
+  border-left: 3px solid var(--text-accent);
+}
+
+.enhancement-value {
+  color: var(--text-accent);
+  font-weight: bold;
+}
+
+.item-stars {
+  font-size: 15px;
+  color: var(--text-bright);
+  margin-bottom: 0.5rem;
+  padding: 0.5rem;
+  background-color: rgba(255, 215, 0, 0.1);
+}
+
+.stars-value {
+  color: #FFD700;
+  font-weight: bold;
 }
 
 .item-description {

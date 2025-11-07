@@ -3,6 +3,7 @@
     <div class="chat-title">[ Log Giao Tiếp ]</div>
     <div ref="chatArea" class="chat-area">
       <div v-for="msg in messages" :key="msg.id" class="chat-message">
+        <span class="guild-tag" v-if="msg.guildTag">[{{ msg.guildTag }}]</span>
         <span class="chat-user" v-if="msg.user">[{{ msg.user }}]:</span>
         <span class="chat-text">{{ msg.text }}</span>
       </div>
@@ -16,6 +17,7 @@ import { ref, watch, nextTick } from 'vue';
 interface ChatMessage {
   id: string;
   user?: string;
+  guildTag?: string;
   text: string;
   timestamp: Date;
 }
@@ -64,6 +66,12 @@ watch(() => props.messages.length, () => {
 
 .chat-message {
   margin-bottom: 0.25rem;
+}
+
+.guild-tag {
+  color: var(--text-accent);
+  margin-right: 0.25rem;
+  font-weight: bold;
 }
 
 .chat-user {
