@@ -82,7 +82,14 @@ export async function handleMovementCommand(command: Command, playerId: string):
       // Check if required quest is completed
       if (nextRoom.requirements?.requiredQuestKey) {
         const requiredQuest = await QuestSchema.findOne({ questKey: nextRoom.requirements.requiredQuestKey }).lean();
-        const playerQuest = playerQuests.find(q => q.questId.toString() === requiredQuest?._id.toString());
+        
+        if (!requiredQuest) {
+          console.error(`Required quest with key ${nextRoom.requirements.requiredQuestKey} not found`);
+          responses.push('Bạn chưa hoàn thành nhiệm vụ cần thiết để vào đây.');
+          return responses;
+        }
+        
+        const playerQuest = playerQuests.find(q => q.questId.toString() === requiredQuest._id.toString());
         
         if (!playerQuest || playerQuest.status !== 'completed') {
           responses.push('Bạn chưa hoàn thành nhiệm vụ cần thiết để vào đây.');
@@ -93,7 +100,14 @@ export async function handleMovementCommand(command: Command, playerId: string):
       // Check if blocked by incomplete quest
       if (nextRoom.requirements?.blockedByQuestKey) {
         const blockedQuest = await QuestSchema.findOne({ questKey: nextRoom.requirements.blockedByQuestKey }).lean();
-        const playerQuest = playerQuests.find(q => q.questId.toString() === blockedQuest?._id.toString());
+        
+        if (!blockedQuest) {
+          console.error(`Blocked quest with key ${nextRoom.requirements.blockedByQuestKey} not found`);
+          responses.push('Bạn chưa hoàn thành nhiệm vụ cần thiết để vào đây.');
+          return responses;
+        }
+        
+        const playerQuest = playerQuests.find(q => q.questId.toString() === blockedQuest._id.toString());
         
         if (!playerQuest || playerQuest.status !== 'completed') {
           responses.push('Bạn chưa hoàn thành nhiệm vụ cần thiết để vào đây.');
@@ -106,8 +120,13 @@ export async function handleMovementCommand(command: Command, playerId: string):
     if (nextRoom.requirements?.requiredItemKey) {
       // Populate inventory to access itemKey
       await player.populate('inventory');
-      const itemInInventory = player.inventory.find((item: any) => 
-        item.itemKey === nextRoom.requirements.requiredItemKey
+      interface InventoryItem {
+        _id: Types.ObjectId;
+        itemKey?: string;
+        name: string;
+      }
+      const itemInInventory = (player.inventory as unknown as InventoryItem[]).find(
+        (item) => item.itemKey === nextRoom.requirements?.requiredItemKey
       );
       
       if (!itemInInventory) {
