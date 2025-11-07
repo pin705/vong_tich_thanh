@@ -119,7 +119,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, watch } from 'vue';
 import FullscreenOverlay from './FullscreenOverlay.vue';
 
 interface Props {
@@ -161,12 +161,51 @@ onMounted(async () => {
   }
 });
 
+// Watch for when popup opens
+watch(() => props.isOpen, async (isOpen) => {
+  if (isOpen) {
+    await loadInventory();
+  }
+});
+
 async function loadInventory() {
   loading.value = true;
   try {
-    // In a real implementation, this would fetch from API
-    // For now, we'll use placeholder data
-    console.log('Loading inventory...');
+    // Fetch player state to get inventory
+    const response = await $fetch('/api/player/info');
+    if (response.success && response.player) {
+      const player = response.player;
+      playerGold.value = player.gold || 0;
+      
+      // Get populated inventory
+      const inventory = player.inventory || [];
+      
+      // Filter equipment items (weapons and armor)
+      equipmentItems.value = inventory
+        .filter((item: any) => {
+          if (!item) return false;
+          const type = item.type?.toLowerCase();
+          return type === 'weapon' || type === 'armor' || type === 'equipment';
+        })
+        .map((item: any) => ({
+          id: item._id || item.id,
+          name: item.name,
+          type: item.type,
+          quality: item.quality,
+          stats: item.stats,
+          enhancementLevel: item.enhancementLevel || 0,
+        }));
+      
+      // Filter upgrade materials
+      upgradeItems.value = inventory
+        .filter((item: any) => item && item.type === 'upgrade_material')
+        .map((item: any) => ({
+          id: item._id || item.id,
+          name: item.name,
+          type: item.type,
+          upgradeType: item.upgradeType,
+        }));
+    }
   } catch (error) {
     console.error('Error loading inventory:', error);
   } finally {

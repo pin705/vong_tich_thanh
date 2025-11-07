@@ -76,7 +76,7 @@
           </div>
           <div class="info-row">
             <span class="info-label">Nghề nghiệp:</span>
-            <span class="info-value">{{ profession || 'Lãng Khách' }}</span>
+            <span class="info-value">{{ professionDisplayName }}</span>
           </div>
         </div>
 
@@ -308,17 +308,37 @@ const emit = defineEmits<{
 const activeTab = ref<'info' | 'items' | 'equipment' | 'skills' | 'talents'>('info');
 const loading = ref(false);
 
+// Get profession display name in Vietnamese
+const professionDisplayName = computed(() => {
+  if (!props.profession) return 'Lãng Khách';
+  
+  const professionNames: Record<string, string> = {
+    'blacksmith': 'Thợ Rèn',
+    'alchemist': 'Giả Kim Sư',
+    'enchanter': 'Phù Phép Sư',
+    'hunter': 'Thợ Săn',
+    'miner': 'Thợ Mỏ',
+    'herbalist': 'Dược Sư'
+  };
+  
+  return professionNames[props.profession] || props.profession;
+});
+
 // Separate items into regular items and equipment
 const regularItems = computed(() => {
-  return props.inventoryItems.filter(item => 
-    item && item.type !== 'weapon' && item.type !== 'armor'
-  );
+  return props.inventoryItems.filter(item => {
+    if (!item) return false;
+    const type = item.type?.toLowerCase();
+    return type !== 'weapon' && type !== 'armor' && type !== 'equipment';
+  });
 });
 
 const equipmentItems = computed(() => {
-  return props.inventoryItems.filter(item => 
-    item && (item.type === 'weapon' || item.type === 'armor')
-  );
+  return props.inventoryItems.filter(item => {
+    if (!item) return false;
+    const type = item.type?.toLowerCase();
+    return type === 'weapon' || type === 'armor' || type === 'equipment';
+  });
 });
 
 // Handle inventory item click

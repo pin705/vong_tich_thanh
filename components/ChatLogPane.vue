@@ -1,42 +1,82 @@
 <template>
   <div class="chat-log-pane">
-    <!-- Sub-tabs for different chat channels -->
-    <div class="chat-subtabs">
-      <button
-        v-for="subtab in subtabs"
-        :key="subtab.id"
-        :class="['subtab', { active: currentSubTab === subtab.id }]"
-        @click="currentSubTab = subtab.id"
-      >
-        {{ subtab.label }}
-        <span v-if="getUnreadCount(subtab.id) > 0" class="unread-count">{{ getUnreadCount(subtab.id) }}</span>
-      </button>
+    <!-- Collapsed mode - show last 2 messages -->
+    <div v-if="!expanded" class="chat-collapsed">
+      <div class="chat-mini-header">
+        <span class="chat-title">💬 Chat</span>
+        <button class="expand-button" @click="expanded = true">[+] Mở rộng</button>
+      </div>
+      <div class="chat-mini-messages">
+        <div v-for="msg in lastTwoMessages" :key="msg.id" :class="getMessageClass(msg)">
+          <span class="chat-timestamp">{{ formatTime(msg.timestamp) }}</span>
+          <span class="chat-user" v-if="msg.user">[{{ msg.user }}]:</span>
+          <span class="chat-text">{{ msg.text }}</span>
+        </div>
+        <div v-if="filteredMessages.length === 0" class="empty-message-mini">
+          Chưa có tin nhắn.
+        </div>
+      </div>
+      <div class="chat-input-mini">
+        <input
+          v-model="chatInput"
+          type="text"
+          class="chat-input"
+          placeholder="Chat nhanh..."
+          @keydown.enter="sendChatMessage"
+          autocomplete="off"
+        />
+      </div>
     </div>
 
-    <!-- Chat messages area -->
-    <div ref="chatArea" class="chat-area">
-      <div v-for="msg in filteredMessages" :key="msg.id" :class="getMessageClass(msg)">
-        <span class="chat-timestamp">{{ formatTime(msg.timestamp) }}</span>
-        <span class="chat-user" v-if="msg.user">[{{ msg.user }}]:</span>
-        <span class="chat-text">{{ msg.text }}</span>
-      </div>
-      <div v-if="filteredMessages.length === 0" class="empty-message">
-        Chưa có tin nhắn nào.
-      </div>
-    </div>
+    <!-- Expanded mode - full chat popup -->
+    <Teleport to="body" v-if="typeof document !== 'undefined'">
+      <div v-if="expanded" class="chat-overlay" @click="expanded = false">
+        <div class="chat-popup" @click.stop>
+          <div class="chat-popup-header">
+            <h3>💬 Trò Chuyện</h3>
+            <button class="close-button" @click="expanded = false">✕</button>
+          </div>
 
-    <!-- Chat input area -->
-    <div class="chat-input-area">
-      <input
-        v-model="chatInput"
-        type="text"
-        class="chat-input"
-        :placeholder="getChatPlaceholder()"
-        @keydown.enter="sendChatMessage"
-        autocomplete="off"
-      />
-      <button class="send-button" @click="sendChatMessage">Gửi</button>
-    </div>
+          <!-- Sub-tabs for different chat channels -->
+          <div class="chat-subtabs">
+            <button
+              v-for="subtab in subtabs"
+              :key="subtab.id"
+              :class="['subtab', { active: currentSubTab === subtab.id }]"
+              @click="currentSubTab = subtab.id"
+            >
+              {{ subtab.label }}
+              <span v-if="getUnreadCount(subtab.id) > 0" class="unread-count">{{ getUnreadCount(subtab.id) }}</span>
+            </button>
+          </div>
+
+          <!-- Chat messages area -->
+          <div ref="chatArea" class="chat-area">
+            <div v-for="msg in filteredMessages" :key="msg.id" :class="getMessageClass(msg)">
+              <span class="chat-timestamp">{{ formatTime(msg.timestamp) }}</span>
+              <span class="chat-user" v-if="msg.user">[{{ msg.user }}]:</span>
+              <span class="chat-text">{{ msg.text }}</span>
+            </div>
+            <div v-if="filteredMessages.length === 0" class="empty-message">
+              Chưa có tin nhắn nào.
+            </div>
+          </div>
+
+          <!-- Chat input area -->
+          <div class="chat-input-area">
+            <input
+              v-model="chatInput"
+              type="text"
+              class="chat-input"
+              :placeholder="getChatPlaceholder()"
+              @keydown.enter="sendChatMessage"
+              autocomplete="off"
+            />
+            <button class="send-button" @click="sendChatMessage">Gửi</button>
+          </div>
+        </div>
+      </div>
+    </Teleport>
   </div>
 </template>
 
@@ -55,6 +95,7 @@ const emit = defineEmits<{
 const currentSubTab = ref('world');
 const chatArea = ref<HTMLElement | null>(null);
 const chatInput = ref('');
+const expanded = ref(false);
 
 const subtabs = [
   { id: 'world', label: 'Thế Giới' },
@@ -129,6 +170,11 @@ const filteredMessages = computed(() => {
   });
 });
 
+// Get last 2 messages for collapsed view
+const lastTwoMessages = computed(() => {
+  return filteredMessages.value.slice(-2);
+});
+
 // Get unread count for a sub-tab (placeholder for future implementation)
 const getUnreadCount = (subtabId: string) => {
   // This could be enhanced to track which messages have been read per sub-tab
@@ -185,6 +231,123 @@ watch(currentSubTab, () => {
   flex-direction: column;
   height: 100%;
   background-color: rgba(0, 136, 136, 0.03);
+}
+
+/* Collapsed Chat Mode */
+.chat-collapsed {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.chat-mini-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem;
+  background-color: rgba(0, 136, 136, 0.1);
+  border-bottom: 1px solid rgba(0, 136, 136, 0.3);
+}
+
+.chat-title {
+  color: var(--text-cyan);
+  font-weight: bold;
+  font-size: 16px;
+}
+
+.expand-button {
+  padding: 0.2rem 0.5rem;
+  background: rgba(0, 136, 136, 0.2);
+  border: 1px solid var(--text-cyan);
+  color: var(--text-cyan);
+  font-family: 'VT323', 'Source Code Pro', monospace;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.expand-button:hover {
+  background: var(--text-cyan);
+  color: var(--bg-black);
+}
+
+.chat-mini-messages {
+  flex: 1;
+  padding: 0.5rem;
+  overflow-y: auto;
+  font-family: 'VT323', 'Source Code Pro', monospace;
+  font-size: 14px;
+}
+
+.chat-input-mini {
+  padding: 0.5rem;
+  border-top: 1px solid rgba(0, 136, 136, 0.3);
+  background-color: rgba(0, 136, 136, 0.05);
+}
+
+.empty-message-mini {
+  color: var(--text-dim);
+  font-size: 14px;
+  text-align: center;
+  padding: 1rem;
+  opacity: 0.6;
+}
+
+/* Expanded Chat Popup */
+.chat-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.chat-popup {
+  width: 90%;
+  max-width: 800px;
+  height: 80%;
+  max-height: 600px;
+  background-color: var(--bg-black);
+  border: 2px solid var(--text-cyan);
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 0 20px rgba(0, 255, 255, 0.5);
+}
+
+.chat-popup-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem;
+  background-color: rgba(0, 136, 136, 0.1);
+  border-bottom: 2px solid var(--text-cyan);
+}
+
+.chat-popup-header h3 {
+  color: var(--text-cyan);
+  margin: 0;
+  font-size: 1.5rem;
+}
+
+.close-button {
+  padding: 0.3rem 0.8rem;
+  background: transparent;
+  border: 1px solid var(--text-cyan);
+  color: var(--text-cyan);
+  font-family: 'VT323', 'Source Code Pro', monospace;
+  font-size: 1.2rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.close-button:hover {
+  background: var(--text-cyan);
+  color: var(--bg-black);
 }
 
 .chat-subtabs {

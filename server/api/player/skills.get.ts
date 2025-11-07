@@ -1,4 +1,5 @@
 import { PlayerSchema } from '~/models/Player';
+import { SkillSchema } from '~/models/Skill';
 
 export default defineEventHandler(async (event) => {
   const user = await getUserSession(event);
@@ -23,11 +24,30 @@ export default defineEventHandler(async (event) => {
 
     // Default to mutant_warrior if no class set (backward compatibility)
     const playerClass = player.class || 'mutant_warrior';
+    const playerProfession = player.profession;
+
+    // Get all available skills for this player (class + profession)
+    const classSkills = await SkillSchema.find({
+      class: playerClass,
+      professionRequirement: null,
+    });
+
+    let professionSkills: typeof classSkills = [];
+    if (playerProfession) {
+      professionSkills = await SkillSchema.find({
+        professionRequirement: playerProfession,
+      });
+    }
+
+    // Combine class skills and profession skills as available skills
+    const availableSkills: typeof classSkills = [...classSkills, ...professionSkills];
 
     return {
       success: true,
-      skills: player.skills || [],
+      skills: player.skills || [], // Player's learned skills
+      availableSkills: availableSkills, // All skills player can potentially learn
       playerClass,
+      profession: playerProfession,
     };
   } catch (error) {
     console.error('Error fetching skills:', error);
