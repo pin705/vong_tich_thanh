@@ -8,7 +8,7 @@
       aria-label="Toggle quick menu"
     >
       <span v-if="!isMenuOpen">[≡]</span>
-      <span v-else">[X]</span>
+      <span v-else>[X]</span>
     </button>
 
     <!-- Floating Menu Items -->
