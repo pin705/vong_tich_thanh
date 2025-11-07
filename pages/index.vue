@@ -327,6 +327,13 @@
       @close="petPopupOpen = false"
     />
 
+    <!-- Pet Egg Hatching Popup -->
+    <PetEggHatchingOverlay
+      :isOpen="petEggHatchingPopupOpen"
+      @close="petEggHatchingPopupOpen = false"
+      @eggHatched="handleEggHatched"
+    />
+
     <!-- Achievement Popup -->
     <AchievementOverlay
       :isOpen="achievementPopupOpen"
@@ -409,6 +416,7 @@ import PremiumShopPopup from '~/components/PremiumShopPopup.vue';
 import ShopPopup from '~/components/ShopPopup.vue';
 import MailPopup from '~/components/MailPopup.vue';
 import PetOverlay from '~/components/PetOverlay.vue';
+import PetEggHatchingOverlay from '~/components/PetEggHatchingOverlay.vue';
 import AchievementOverlay from '~/components/AchievementOverlay.vue';
 import TitleOverlay from '~/components/TitleOverlay.vue';
 import LeaderboardOverlay from '~/components/LeaderboardOverlay.vue';
@@ -447,7 +455,7 @@ const {
   inventoryPopupOpen, mapPopupOpen, occupantsPopupOpen, contextualPopupOpen,
   tradingPopupOpen, partyPopupOpen, partyInvitationPopupOpen, guildPopupOpen,
   auctionHousePopupOpen, premiumShopPopupOpen, craftingPopupOpen, shopPopupOpen,
-  mailPopupOpen, petPopupOpen, blacksmithPopupOpen, leaderboardOpen,
+  mailPopupOpen, petPopupOpen, petEggHatchingPopupOpen, blacksmithPopupOpen, leaderboardOpen,
   guildInvitationPopupOpen, achievementPopupOpen, titlePopupOpen,
   toggleHelp, openAchievements, openTitles
 } = useGamePopups();
@@ -670,6 +678,9 @@ const handleTabClick = async (tabId: string) => {
         break;
       case 'pet':
         petPopupOpen.value = true;
+        break;
+      case 'hatch':
+        petEggHatchingPopupOpen.value = true;
         break;
     }
   } finally {
@@ -947,6 +958,12 @@ const handleInventoryAction = (action: string, itemId: string) => {
     currentInput.value = command;
     sendCommand();
   }
+};
+
+// Handle egg hatched event
+const handleEggHatched = () => {
+  // Refresh player state after egg hatches
+  fetchPlayerState();
 };
 
 // Handle map navigation

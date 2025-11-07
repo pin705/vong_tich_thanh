@@ -2142,7 +2142,8 @@ export async function handleCommandDb(command: Command, playerId: string): Promi
         responses.push('unsummon           - Thu hồi thú cưng');
         responses.push('pet attack [tên]   - Ra lệnh pet tấn công');
         responses.push('pet follow         - Ra lệnh pet theo sau');
-        responses.push('use [trứng]        - Nở trứng thú cưng');
+        responses.push('hatch              - Mở UI ấp trứng thú cưng');
+        responses.push('use [trứng]        - Nở trứng thú cưng (cách cũ)');
         responses.push('use [thức ăn]      - Cho pet ăn để lên cấp');
         responses.push('');
         responses.push('Mở menu Pet từ UI để xem chi tiết chuồng thú cưng!');

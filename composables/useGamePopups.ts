@@ -22,6 +22,7 @@ export function useGamePopups() {
   const shopPopupOpen = ref(false);
   const mailPopupOpen = ref(false);
   const petPopupOpen = ref(false);
+  const petEggHatchingPopupOpen = ref(false);
   const blacksmithPopupOpen = ref(false);
   const leaderboardOpen = ref(false);
   const guildInvitationPopupOpen = ref(false);
@@ -96,6 +97,10 @@ export function useGamePopups() {
     petPopupOpen.value = true;
   }
 
+  function openPetEggHatching() {
+    petEggHatchingPopupOpen.value = true;
+  }
+
   function openBlacksmith() {
     blacksmithPopupOpen.value = true;
   }
@@ -134,6 +139,7 @@ export function useGamePopups() {
     shopPopupOpen.value = false;
     mailPopupOpen.value = false;
     petPopupOpen.value = false;
+    petEggHatchingPopupOpen.value = false;
     blacksmithPopupOpen.value = false;
     leaderboardOpen.value = false;
     achievementPopupOpen.value = false;
@@ -163,6 +169,7 @@ export function useGamePopups() {
     shopPopupOpen,
     mailPopupOpen,
     petPopupOpen,
+    petEggHatchingPopupOpen,
     blacksmithPopupOpen,
     leaderboardOpen,
     achievementPopupOpen,
@@ -186,6 +193,7 @@ export function useGamePopups() {
     openShop,
     openMail,
     openPet,
+    openPetEggHatching,
     openBlacksmith,
     openLeaderboard,
     openAchievements,
