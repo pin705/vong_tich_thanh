@@ -49,6 +49,8 @@ async function sendCombatStateUpdate(playerId: string) {
   if (!playerObj || !playerObj.ws) return;
   
   // Send player state with complete information
+  // Note: mp/maxMp are aliases for resource/maxResource (kept for backward compatibility)
+  // Note: currency is an alias for gold (kept for backward compatibility)
   playerObj.ws.send(JSON.stringify({
     type: 'player_state',
     payload: {
@@ -61,7 +63,7 @@ async function sendCombatStateUpdate(playerId: string) {
       maxResource: player.maxResource || 100,
       level: player.level,
       exp: player.experience || 0,
-      nextLevelExp: player.level * 100, // EXPERIENCE_PER_LEVEL constant
+      nextLevelExp: player.level * EXPERIENCE_PER_LEVEL,
       gold: player.gold,
       currency: player.gold,
       premiumCurrency: player.premiumCurrency || 0,

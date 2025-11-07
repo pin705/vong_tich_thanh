@@ -12,11 +12,14 @@ import { RoomSchema } from '../../models/Room';
 import { AgentSchema } from '../../models/Agent';
 import { deduplicateItemsById } from '../utils/itemDeduplication';
 import { commandRateLimiter, chatRateLimiter, sanitizeInput } from '../utils/validation';
+import { EXPERIENCE_PER_LEVEL } from '../utils/constants';
 
 // Store peer to player mapping
 const peerToPlayer = new Map<string, string>();
 
 // Helper function to send player state
+// Note: mp/maxMp are aliases for resource/maxResource (kept for backward compatibility)
+// Note: currency is an alias for gold (kept for backward compatibility)
 async function sendPlayerState(peer: Peer, playerId: string) {
   const player = await PlayerSchema.findById(playerId);
   if (!player) return;
@@ -33,7 +36,7 @@ async function sendPlayerState(peer: Peer, playerId: string) {
       maxResource: player.maxResource || 100,
       level: player.level,
       exp: player.experience || 0,
-      nextLevelExp: player.level * 100,
+      nextLevelExp: player.level * EXPERIENCE_PER_LEVEL,
       gold: player.gold,
       currency: player.gold,
       premiumCurrency: player.premiumCurrency || 0,

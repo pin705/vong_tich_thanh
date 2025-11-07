@@ -56,7 +56,17 @@ export function useGameMessages() {
       if (currentChannel.value !== 'combat') {
         combatUnread.value = true;
       }
-    } else if (channel === 'chat' || type === 'chat_log') {
+    } else if (channel === 'chat') {
+      // Route to chat log if explicitly specified as chat channel OR if type is chat_log
+      chatLog.value.push(message);
+      if (chatLog.value.length > MAX_CHAT_MESSAGES) {
+        chatLog.value = chatLog.value.slice(-MAX_CHAT_MESSAGES);
+      }
+      if (currentChannel.value !== 'chat') {
+        chatUnread.value = true;
+      }
+    } else if (type === 'chat_log') {
+      // Backward compatibility: route chat_log types to chat channel
       chatLog.value.push(message);
       if (chatLog.value.length > MAX_CHAT_MESSAGES) {
         chatLog.value = chatLog.value.slice(-MAX_CHAT_MESSAGES);
