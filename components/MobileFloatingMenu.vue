@@ -19,7 +19,7 @@
           @click="openOccupants"
           title="Xem người xung quanh"
         >
-          <span class="menu-icon">[👤]</span>
+          <span class="menu-icon">[Occ]</span>
           <span class="menu-label">Xung Quanh</span>
         </button>
         <button 
