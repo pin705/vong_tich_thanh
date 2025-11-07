@@ -52,6 +52,10 @@ export default defineEventHandler(async (event) => {
     const premiumToTransfer = mail.attachedPremium;
     const itemsToTransfer = [...mail.attachedItems];
 
+    // Helper function to check if mail has any attachments
+    const hasAttachments = (m: any) => 
+      m.attachedItems.length > 0 || m.attachedGold > 0 || m.attachedPremium > 0;
+
     // Clear attachments from mail atomically to prevent duplicate claims
     const clearedMail = await MailSchema.findOneAndUpdate(
       { 
@@ -72,7 +76,7 @@ export default defineEventHandler(async (event) => {
     );
 
     // If update failed, mail was already claimed
-    if (!clearedMail || (clearedMail.attachedItems.length === 0 && clearedMail.attachedGold === 0 && clearedMail.attachedPremium === 0)) {
+    if (!clearedMail || !hasAttachments(clearedMail)) {
       throw createError({
         statusCode: 400,
         statusMessage: 'Thư này đã được nhận thưởng rồi.'

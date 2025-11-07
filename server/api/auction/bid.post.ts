@@ -109,7 +109,7 @@ export default defineEventHandler(async (event) => {
         _id: auctionId, 
         status: 'active',
         expiresAt: { $gte: new Date() },
-        currentBid: { $lt: validatedBidAmount } // Ensure bid is still higher
+        currentBid: { $lt: validatedBidAmount } // Ensure new bid is higher than current bid
       },
       { 
         currentBid: validatedBidAmount,
