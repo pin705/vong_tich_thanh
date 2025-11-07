@@ -60,7 +60,7 @@ export const RoomSchema = defineMongooseModel({
     },
     respawnTimeSeconds: {
       type: Number,
-      default: 5, // 5 seconds default, bosses can have 3600 (1 hour)
+      default: 10, // 10 seconds default, bosses can have 3600 (1 hour)
     },
     // Phase 27: Access Control System
     isLocked: {

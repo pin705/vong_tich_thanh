@@ -24,29 +24,31 @@
       />
     </div>
 
-    <div class="currency-section">
-      <span class="currency-label">Vàng</span>
-      <span class="currency-value">{{ currency }}</span>
-    </div>
+    <div class="currencies-wrapper">
+      <div class="currency-section">
+        <span class="currency-label">Vàng</span>
+        <span class="currency-value">{{ currency }}</span>
+      </div>
 
-    <div class="currency-section">
-      <span class="currency-label">Cổ Thạch</span>
-      <span class="currency-value">{{ premiumCurrency }}</span>
-    </div>
+      <div class="currency-section">
+        <span class="currency-label">Cổ Thạch</span>
+        <span class="currency-value">{{ premiumCurrency }}</span>
+      </div>
 
-    <div v-if="dungeonCoin > 0" class="currency-section">
-      <span class="currency-label">Xu HN</span>
-      <span class="currency-value">{{ dungeonCoin }}</span>
-    </div>
+      <div v-if="dungeonCoin > 0" class="currency-section">
+        <span class="currency-label">Xu HN</span>
+        <span class="currency-value">{{ dungeonCoin }}</span>
+      </div>
 
-    <div v-if="trainingBadge > 0" class="currency-section">
-      <span class="currency-label">Huy Hiệu</span>
-      <span class="currency-value">{{ trainingBadge }}</span>
-    </div>
+      <div v-if="trainingBadge > 0" class="currency-section">
+        <span class="currency-label">Huy Hiệu</span>
+        <span class="currency-value">{{ trainingBadge }}</span>
+      </div>
 
-    <div v-if="gloryPoints > 0" class="currency-section">
-      <span class="currency-label">Vinh Quang</span>
-      <span class="currency-value">{{ gloryPoints }}</span>
+      <div v-if="gloryPoints > 0" class="currency-section">
+        <span class="currency-label">Vinh Quang</span>
+        <span class="currency-value">{{ gloryPoints }}</span>
+      </div>
     </div>
   </div>
 </template>
@@ -131,6 +133,13 @@ const props = withDefaults(defineProps<Props>(), {
   gap: 0.3rem;
 }
 
+.currencies-wrapper {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.8rem;
+}
+
 .currency-label {
   color: var(--text-accent);
   font-size: 18px;
@@ -142,15 +151,15 @@ const props = withDefaults(defineProps<Props>(), {
   font-weight: bold;
 }
 
-/* Mobile responsiveness - make it sticky and compact */
+/* Mobile optimization */
 @media (max-width: 768px) {
   .player-status-header {
-    position: sticky;
-    top: 0;
+    max-width: 100%;
+    width: 100%;
     z-index: 100;
-    flex-direction: row;
-    flex-wrap: wrap;
-    align-items: center;
+    flex-direction: column;
+    flex-wrap: nowrap;
+    align-items: stretch;
     gap: 0.4rem;
     padding: 0.4rem 0.5rem;
     background-color: rgba(0, 136, 0, 0.15);
@@ -158,38 +167,50 @@ const props = withDefaults(defineProps<Props>(), {
   }
 
   .player-info-section {
-    flex: 1 1 auto;
+    flex: 0 0 auto;
     justify-content: flex-start;
-    min-width: auto;
     gap: 0.5rem;
   }
 
   .player-name {
-    font-size: 16px;
+    font-size: 14px;
   }
 
   .player-level {
-    font-size: 14px;
+    font-size: 13px;
     padding: 0.05rem 0.4rem;
   }
 
   .status-section {
-    flex: 1 1 calc(50% - 0.4rem);
-    min-width: auto;
+    flex: 0 0 auto;
     gap: 0.3rem;
+    min-width: auto;
+  }
+
+  /* Compact currency display - show all in one row */
+  .currencies-wrapper {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    padding: 0;
   }
 
   .currency-section {
-    flex: 0 1 auto;
+    flex: 0 0 auto;
     gap: 0.25rem;
+    padding: 0.15rem 0.3rem;
+    background-color: rgba(0, 255, 0, 0.08);
+    border-radius: 3px;
   }
 
   .currency-label {
-    font-size: 14px;
+    font-size: 12px;
   }
 
   .currency-value {
-    font-size: 13px;
+    font-size: 12px;
+    font-weight: 600;
   }
 }
 
@@ -201,32 +222,37 @@ const props = withDefaults(defineProps<Props>(), {
   }
 
   .player-info-section {
-    flex: 1 1 100%;
     gap: 0.4rem;
   }
 
   .player-name {
-    font-size: 15px;
+    font-size: 13px;
   }
 
   .player-level {
-    font-size: 13px;
+    font-size: 12px;
+    padding: 0.05rem 0.3rem;
   }
 
   .status-section {
-    flex: 1 1 100%;
+    gap: 0.25rem;
+  }
+
+  .currencies-wrapper {
+    gap: 0.4rem;
   }
 
   .currency-section {
-    flex: 0 1 auto;
+    gap: 0.2rem;
+    padding: 0.1rem 0.25rem;
   }
 
   .currency-label {
-    font-size: 13px;
+    font-size: 11px;
   }
 
   .currency-value {
-    font-size: 12px;
+    font-size: 11px;
   }
 }
 </style>
