@@ -1,17 +1,21 @@
 import { ref, type Ref } from 'vue';
 
 export interface Message {
+  id?: string;
   text: string;
   type: string;
   category?: string;
   clickable?: boolean;
   entityType?: string;
   entityId?: string;
-  timestamp: string;
+  timestamp: Date | string;
+  user?: string;
+  channel?: 'main' | 'combat' | 'chat';
 }
 
 const MAX_MAIN_LOG_MESSAGES = 500;
 const MAX_COMBAT_LOG_MESSAGES = 300;
+const MAX_CHAT_MESSAGES = 200;
 
 export function useGameMessages() {
   const mainLog = ref<Message[]>([]);
@@ -24,38 +28,46 @@ export function useGameMessages() {
   
   const currentChannel = ref<'main' | 'combat' | 'chat'>('main');
   
+  // Generate unique message ID
+  const generateId = () => `msg-${Date.now()}-${Math.random()}`;
+  
   function addMessage(
     text: string,
     type: string,
-    category?: string,
+    user?: string,
     channel: 'main' | 'combat' | 'chat' = 'main',
-    messageCategory?: string
+    category?: string
   ) {
     const message: Message = {
+      id: generateId(),
       text,
       type,
-      category: messageCategory || category,
-      timestamp: new Date().toISOString()
+      user,
+      channel,
+      category,
+      timestamp: new Date()
     };
     
     if (channel === 'combat') {
       combatLog.value.push(message);
       if (combatLog.value.length > MAX_COMBAT_LOG_MESSAGES) {
-        combatLog.value.shift();
+        combatLog.value = combatLog.value.slice(-MAX_COMBAT_LOG_MESSAGES);
       }
       if (currentChannel.value !== 'combat') {
         combatUnread.value = true;
       }
-    } else if (channel === 'chat') {
+    } else if (channel === 'chat' || type === 'chat_log') {
       chatLog.value.push(message);
-      // Chat has unlimited history (limited by storage)
+      if (chatLog.value.length > MAX_CHAT_MESSAGES) {
+        chatLog.value = chatLog.value.slice(-MAX_CHAT_MESSAGES);
+      }
       if (currentChannel.value !== 'chat') {
         chatUnread.value = true;
       }
     } else {
       mainLog.value.push(message);
       if (mainLog.value.length > MAX_MAIN_LOG_MESSAGES) {
-        mainLog.value.shift();
+        mainLog.value = mainLog.value.slice(-MAX_MAIN_LOG_MESSAGES);
       }
       if (currentChannel.value !== 'main') {
         mainUnread.value = true;
@@ -71,18 +83,19 @@ export function useGameMessages() {
     channel: 'main' | 'combat' | 'chat' = 'main'
   ) {
     const message: Message = {
+      id: generateId(),
       text,
       type,
       clickable: true,
       entityType,
       entityId,
-      timestamp: new Date().toISOString()
+      timestamp: new Date()
     };
     
     if (channel === 'combat') {
       combatLog.value.push(message);
       if (combatLog.value.length > MAX_COMBAT_LOG_MESSAGES) {
-        combatLog.value.shift();
+        combatLog.value = combatLog.value.slice(-MAX_COMBAT_LOG_MESSAGES);
       }
       if (currentChannel.value !== 'combat') {
         combatUnread.value = true;
@@ -90,7 +103,7 @@ export function useGameMessages() {
     } else {
       mainLog.value.push(message);
       if (mainLog.value.length > MAX_MAIN_LOG_MESSAGES) {
-        mainLog.value.shift();
+        mainLog.value = mainLog.value.slice(-MAX_MAIN_LOG_MESSAGES);
       }
       if (currentChannel.value !== 'main') {
         mainUnread.value = true;
@@ -108,6 +121,11 @@ export function useGameMessages() {
     }
   }
   
+  function setCurrentChannel(channel: 'main' | 'combat' | 'chat') {
+    currentChannel.value = channel;
+    clearChannelUnread(channel);
+  }
+  
   return {
     mainLog,
     combatLog,
@@ -118,6 +136,7 @@ export function useGameMessages() {
     currentChannel,
     addMessage,
     addClickableMessage,
-    clearChannelUnread
+    clearChannelUnread,
+    setCurrentChannel
   };
 }
