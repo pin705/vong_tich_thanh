@@ -22,3 +22,17 @@ logs
 .env
 .env.*
 !.env.example
+
+# Testing
+coverage
+.vitest
+*.lcov
+
+# Editor directories
+.vscode/*
+!.vscode/extensions.json
+!.vscode/launch.json
+.idea/
+
+# OS files
+Thumbs.db
