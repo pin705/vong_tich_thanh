@@ -31,6 +31,17 @@ export function useGameMessages() {
   // Generate unique message ID
   const generateId = () => `msg-${Date.now()}-${Math.random()}`;
   
+  // Helper function to add message to chat log
+  function addToChatLog(message: Message) {
+    chatLog.value.push(message);
+    if (chatLog.value.length > MAX_CHAT_MESSAGES) {
+      chatLog.value = chatLog.value.slice(-MAX_CHAT_MESSAGES);
+    }
+    if (currentChannel.value !== 'chat') {
+      chatUnread.value = true;
+    }
+  }
+  
   function addMessage(
     text: string,
     type: string,
@@ -56,24 +67,9 @@ export function useGameMessages() {
       if (currentChannel.value !== 'combat') {
         combatUnread.value = true;
       }
-    } else if (channel === 'chat') {
-      // Route to chat log if explicitly specified as chat channel OR if type is chat_log
-      chatLog.value.push(message);
-      if (chatLog.value.length > MAX_CHAT_MESSAGES) {
-        chatLog.value = chatLog.value.slice(-MAX_CHAT_MESSAGES);
-      }
-      if (currentChannel.value !== 'chat') {
-        chatUnread.value = true;
-      }
-    } else if (type === 'chat_log') {
-      // Backward compatibility: route chat_log types to chat channel
-      chatLog.value.push(message);
-      if (chatLog.value.length > MAX_CHAT_MESSAGES) {
-        chatLog.value = chatLog.value.slice(-MAX_CHAT_MESSAGES);
-      }
-      if (currentChannel.value !== 'chat') {
-        chatUnread.value = true;
-      }
+    } else if (channel === 'chat' || type === 'chat_log') {
+      // Route to chat log if explicitly specified as chat channel OR if type is chat_log (backward compatibility)
+      addToChatLog(message);
     } else {
       mainLog.value.push(message);
       if (mainLog.value.length > MAX_MAIN_LOG_MESSAGES) {

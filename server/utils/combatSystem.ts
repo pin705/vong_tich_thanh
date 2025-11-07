@@ -49,8 +49,10 @@ async function sendCombatStateUpdate(playerId: string) {
   if (!playerObj || !playerObj.ws) return;
   
   // Send player state with complete information
-  // Note: mp/maxMp are aliases for resource/maxResource (kept for backward compatibility)
-  // Note: currency is an alias for gold (kept for backward compatibility)
+  // Note: Duplicate field names are kept for backward compatibility:
+  // - mp/maxMp are aliases for resource/maxResource (used by different UI components)
+  // - currency is an alias for gold (legacy field name)
+  // These may be unified in a future major version
   playerObj.ws.send(JSON.stringify({
     type: 'player_state',
     payload: {

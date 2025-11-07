@@ -18,8 +18,10 @@ import { EXPERIENCE_PER_LEVEL } from '../utils/constants';
 const peerToPlayer = new Map<string, string>();
 
 // Helper function to send player state
-// Note: mp/maxMp are aliases for resource/maxResource (kept for backward compatibility)
-// Note: currency is an alias for gold (kept for backward compatibility)
+// Note: Duplicate field names are kept for backward compatibility:
+// - mp/maxMp are aliases for resource/maxResource (used by different UI components)
+// - currency is an alias for gold (legacy field name)
+// These may be unified in a future major version
 async function sendPlayerState(peer: Peer, playerId: string) {
   const player = await PlayerSchema.findById(playerId);
   if (!player) return;
