@@ -196,6 +196,7 @@
       :isOpen="questsOpen"
       :quests="playerQuests"
       @close="questsOpen = false"
+      @acceptQuest="handleAcceptQuest"
       @completeQuest="handleCompleteQuest"
       @abandonQuest="handleAbandonQuest"
       @repeatQuest="handleRepeatQuest"
@@ -1343,6 +1344,29 @@ const handleCraft = async (recipeId: string) => {
   } catch (error: any) {
     console.error('Error crafting:', error);
     const errorMsg = error?.data?.message || error?.message || 'Không thể chế tạo vật phẩm.';
+    addMessage(errorMsg, 'error');
+  } finally {
+    isLoading.value = false;
+  }
+};
+
+// Handle quest acceptance
+const handleAcceptQuest = async (questId: string) => {
+  isLoading.value = true;
+  loadingText.value = 'Đang nhận nhiệm vụ...';
+  try {
+    const response = await $fetch('/api/player/quests/accept', {
+      method: 'POST',
+      body: { questId }
+    });
+    
+    if (response.success) {
+      addMessage(response.message || 'Đã nhận nhiệm vụ!', 'system');
+      await loadQuests();
+    }
+  } catch (error: any) {
+    console.error('Error accepting quest:', error);
+    const errorMsg = error.data?.message || 'Không thể nhận nhiệm vụ.';
     addMessage(errorMsg, 'error');
   } finally {
     isLoading.value = false;
