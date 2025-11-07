@@ -9,15 +9,21 @@ module.exports = {
       args: '',
       env: {
         NODE_ENV: 'production',
-        PORT: 3000,
+        PORT: 3005,
+        MONGODB_URI: 'mongodb://localhost:27017/vong_tich_thanh', // Thay đổi theo cấu hình của bạn
+        NUXT_SESSION_PASSWORD: '0cff8d726c6f49fdbfb494cb1a3fb24b'
       },
       env_production: {
         NODE_ENV: 'production',
-        PORT: 3000,
+        PORT: 3005,
+        MONGODB_URI: 'mongodb://localhost:27017/vong_tich_thanh', // Thay đổi theo cấu hình của bạn
+        NUXT_SESSION_PASSWORD: '0cff8d726c6f49fdbfb494cb1a3fb24b'
       },
       env_development: {
         NODE_ENV: 'development',
-        PORT: 3000,
+        PORT: 3005,
+        MONGODB_URI: 'mongodb://localhost:27017/vong_tich_thanh', // Thay đổi theo cấu hình của bạn
+        NUXT_SESSION_PASSWORD: '0cff8d726c6f49fdbfb494cb1a3fb24b'
       },
       // Auto restart nếu crash
       autorestart: true,
@@ -46,7 +52,7 @@ module.exports = {
       host: 'SSH_HOSTMACHINE', // Thay bằng IP hoặc domain server
       ref: 'origin/main',
       repo: 'git@github.com:pin705/vong_tich_thanh.git',
-      path: '/var/www/vong_tich_thanh', // Đường dẫn deploy trên server
+      path: '/opt/vong_tich_thanh', // Đường dẫn deploy trên server
       'pre-deploy-local': '',
       'post-deploy': 'pnpm install && pnpm build && pm2 reload ecosystem.config.cjs --env production',
       'pre-setup': '',

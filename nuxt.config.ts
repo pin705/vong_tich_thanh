@@ -22,6 +22,15 @@ export default defineNuxtConfig({
     }
   },
 
+  runtimeConfig: {
+    session: {
+      cookie: {
+        secure: false, // Chỉ dùng secure cookie trong production (HTTPS)
+        sameSite: "lax", // Hoặc 'none' nếu cần truy cập cross-site
+      },
+    },
+  },
+
   css: ['~/assets/css/terminal.css'],
 
   // PWA Configuration
