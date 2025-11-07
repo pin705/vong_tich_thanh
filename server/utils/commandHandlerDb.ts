@@ -29,7 +29,7 @@ const MOVEMENT_COMMANDS = ['go', 'n', 's', 'e', 'w', 'u', 'd',
                            'north', 'south', 'east', 'west', 'up', 'down',
                            'bắc', 'nam', 'đông', 'tây', 'lên', 'xuống'];
 
-const COMBAT_COMMANDS = ['attack', 'a', 'kill', 'flee', 'run'];
+const COMBAT_COMMANDS = ['attack', 'a', 'kill', 'flee', 'run', 'auto'];
 
 const ITEM_COMMANDS = ['inventory', 'i', 'get', 'g', 'drop', 'use', 
                        'list', 'buy', 'sell'];
@@ -1737,24 +1737,32 @@ export async function handleCommandDb(command: Command, playerId: string): Promi
       case 'auto': {
         // Toggle auto-attack mode
         const playerState = gameState.getPlayerState(playerId);
-        if (!playerState) {
-          responses.push('Lỗi: Không tìm thấy trạng thái người chơi.');
-          break;
-        }
-
-        // Check if player is in combat
-        if (!playerState.inCombat) {
-          responses.push('Bạn không ở trong chiến đấu.');
-          break;
-        }
-
-        // Toggle auto-attack
-        playerState.isAutoAttacking = !playerState.isAutoAttacking;
         
-        if (playerState.isAutoAttacking) {
-          responses.push('[AUTO] Đã BẬT tự động tấn công.');
+        // Check if player is in combat
+        if (!player.inCombat) {
+          // Toggle global autoCombat setting when not in combat
+          player.autoCombat = !player.autoCombat;
+          await player.save();
+          
+          if (player.autoCombat) {
+            responses.push('✓ Tự động tấn công đã được BẬT. Bạn sẽ tự động tấn công quái khi bắt đầu chiến đấu.');
+          } else {
+            responses.push('✗ Tự động tấn công đã được TẮT. Bạn sẽ phải đánh thủ công khi trong chiến đấu.');
+          }
         } else {
-          responses.push('[AUTO] Đã TẮT tự động tấn công.');
+          // Toggle auto-attack for current combat
+          if (!playerState) {
+            responses.push('Lỗi: Không tìm thấy trạng thái người chơi.');
+            break;
+          }
+          
+          playerState.isAutoAttacking = !playerState.isAutoAttacking;
+          
+          if (playerState.isAutoAttacking) {
+            responses.push('[AUTO] Đã BẬT tự động tấn công cho trận chiến này.');
+          } else {
+            responses.push('[AUTO] Đã TẮT tự động tấn công. Sử dụng lệnh "attack" hoặc kỹ năng để tấn công.');
+          }
         }
         break;
       }

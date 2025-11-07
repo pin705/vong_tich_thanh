@@ -27,14 +27,32 @@ async function sendPlayerState(peer: Peer, playerId: string) {
       name: player.username,
       hp: player.hp,
       maxHp: player.maxHp,
+      mp: player.resource || 0,
+      maxMp: player.maxResource || 100,
       resource: player.resource || 0,
       maxResource: player.maxResource || 100,
       level: player.level,
+      exp: player.experience || 0,
+      nextLevelExp: player.level * 100,
+      gold: player.gold,
       currency: player.gold,
       premiumCurrency: player.premiumCurrency || 0,
+      profession: player.class || null,
+      class: player.class || null,
       inCombat: player.inCombat,
       hasUnreadMail: player.hasUnreadMail || false,
-      guild: player.guild ? player.guild.toString() : null
+      guild: player.guild ? player.guild.toString() : null,
+      talentPoints: player.talentPoints || 0,
+      skillPoints: player.skillPoints || 0,
+      stats: {
+        damage: player.damage || 5,
+        defense: player.defense || 0,
+        critChance: player.critChance || 5,
+        critDamage: player.critDamage || 150,
+        lifesteal: player.lifesteal || 0,
+        dodge: player.dodge || 5
+      },
+      inventoryItems: player.inventory || []
     }
   }));
 
