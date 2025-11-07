@@ -496,14 +496,14 @@ export default defineWebSocketHandler({
               
               // Check if tutorial was just completed and send special event
               const playerState = gameState.getPlayer(playerIdForCmd);
-              if (playerState && (playerState as any).tutorialRewardData) {
-                const rewardData = (playerState as any).tutorialRewardData;
+              if (playerState?.tutorialRewardData) {
+                const rewardData = playerState.tutorialRewardData;
                 peer.send(JSON.stringify({
                   type: 'tutorial-complete-reward',
                   items: rewardData
                 }));
                 // Clear the flag
-                delete (playerState as any).tutorialRewardData;
+                playerState.tutorialRewardData = undefined;
               }
             }
           } catch (cmdError) {

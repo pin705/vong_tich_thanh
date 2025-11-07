@@ -222,7 +222,7 @@ export async function initializeWorld() {
       { itemKey: 'starter_sword' },
       {
         itemKey: 'starter_sword',
-        name: '[Kiếm Tân Thủ]',
+        name: 'Kiếm Tân Thủ',
         description: 'Một thanh kiếm đơn giản dành cho người mới. Nhẹ và dễ sử dụng.',
         type: 'weapon',
         slot: 'weapon',
@@ -238,7 +238,7 @@ export async function initializeWorld() {
       { itemKey: 'starter_chest' },
       {
         itemKey: 'starter_chest',
-        name: '[Áo Tân Thủ]',
+        name: 'Áo Tân Thủ',
         description: 'Một bộ áo da đơn giản dành cho người mới. Cung cấp phòng thủ cơ bản.',
         type: 'armor',
         slot: 'chest',
@@ -254,7 +254,7 @@ export async function initializeWorld() {
       { itemKey: 'starter_legs' },
       {
         itemKey: 'starter_legs',
-        name: '[Quần Tân Thủ]',
+        name: 'Quần Tân Thủ',
         description: 'Một chiếc quần da đơn giản dành cho người mới. Bảo vệ chân bạn.',
         type: 'armor',
         slot: 'legs',
@@ -270,7 +270,7 @@ export async function initializeWorld() {
       { itemKey: 'starter_boots' },
       {
         itemKey: 'starter_boots',
-        name: '[Giày Tân Thủ]',
+        name: 'Giày Tân Thủ',
         description: 'Một đôi giày da đơn giản dành cho người mới. Giúp bạn di chuyển dễ dàng.',
         type: 'armor',
         slot: 'boots',

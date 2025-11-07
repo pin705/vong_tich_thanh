@@ -312,7 +312,7 @@ export async function handleCommandDb(command: Command, playerId: string): Promi
           // The WebSocket handler will check for this and send the custom event
           const playerState = gameState.getPlayer(playerId);
           if (playerState) {
-            (playerState as any).tutorialRewardData = itemsAwarded;
+            playerState.tutorialRewardData = itemsAwarded;
           }
           
           responses.push('');
