@@ -65,7 +65,7 @@
           <div class="bosses-title">Boss:</div>
           <div class="bosses-list">
             <div v-for="boss in selectedDungeonData.bosses" :key="boss" class="boss-item">
-              • {{ boss }}
+              {{ boss }}
             </div>
           </div>
         </div>
@@ -463,6 +463,10 @@ const findParty = () => {
   margin-bottom: 0.25rem;
 }
 
+.boss-item::before {
+  content: '- ';
+}
+
 .party-status {
   margin-bottom: 1.5rem;
 }
@@ -562,7 +566,7 @@ const findParty = () => {
 }
 
 .info-list li::before {
-  content: '• ';
+  content: '- ';
   color: var(--text-bright);
   margin-right: 0.5rem;
 }

@@ -44,7 +44,7 @@
         </div>
         
         <div v-if="selectedItem.stars" class="item-stars">
-          Số sao: <span class="stars-value">{{ '★'.repeat(selectedItem.stars) }}{{ '☆'.repeat(5 - selectedItem.stars) }}</span>
+          Số sao: <span class="stars-value">{{ selectedItem.stars }}/5</span>
         </div>
         
         <div class="item-description">{{ selectedItem.description }}</div>

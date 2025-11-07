@@ -449,7 +449,7 @@ const viewLeaderboard = () => {
 }
 
 .info-list li::before {
-  content: '• ';
+  content: '- ';
   color: var(--text-bright);
   margin-right: 0.5rem;
 }
