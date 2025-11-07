@@ -909,6 +909,114 @@ export async function handleCommandDb(command: Command, playerId: string): Promi
             );
           }
         }
+        // Handle pet consumables (healing potions, buff potions)
+        else if (useItem.type === 'PET_CONSUMABLE') {
+          if (!player.activePetId) {
+            responses.push('Bạn cần triệu hồi thú cưng trước khi sử dụng vật phẩm này!');
+            break;
+          }
+
+          const pet = await PetSchema.findById(player.activePetId);
+          if (!pet) {
+            responses.push('Không tìm thấy thú cưng.');
+            break;
+          }
+
+          const petState = gameState.getPet(player.activePetId.toString());
+          if (!petState) {
+            responses.push('Thú cưng chưa được khởi tạo.');
+            break;
+          }
+
+          // Handle pet healing potions
+          if (useItem.data && useItem.data.healAmount) {
+            const healAmount = useItem.data.healAmount;
+            const oldHp = petState.currentStats.hp;
+            petState.currentStats.hp = Math.min(petState.currentStats.maxHp, petState.currentStats.hp + healAmount);
+            const actualHeal = petState.currentStats.hp - oldHp;
+
+            // Update pet HP in database
+            pet.currentStats.hp = petState.currentStats.hp;
+            await pet.save();
+
+            // Remove item from inventory
+            player.inventory = player.inventory.filter((id: any) => id.toString() !== useItem._id.toString());
+            await player.save();
+
+            // Delete the consumed item
+            await ItemSchema.findByIdAndDelete(useItem._id);
+
+            responses.push(`Bạn sử dụng [${useItem.name}] cho [${pet.nickname}], hồi phục ${actualHeal} HP.`);
+            responses.push(`HP thú cưng: ${petState.currentStats.hp}/${petState.currentStats.maxHp}`);
+
+            // Broadcast to room
+            const healRoom = await RoomSchema.findById(player.currentRoomId);
+            if (healRoom) {
+              gameState.broadcastToRoom(
+                healRoom._id.toString(),
+                {
+                  type: 'normal',
+                  message: `[${player.username}] cho [${pet.nickname}] uống [${useItem.name}].`
+                },
+                player._id.toString()
+              );
+            }
+          }
+          // Handle pet buff potions
+          else if (useItem.data && useItem.data.buffKey) {
+            const buffKey = useItem.data.buffKey;
+            const duration = useItem.data.duration || 30000; // Default 30 seconds
+
+            // Check if pet already has this buff
+            const existingBuff = await BuffSchema.findOne({
+              playerId: pet._id, // Use pet ID as playerId for pet buffs
+              buffKey: buffKey,
+              active: true,
+            });
+
+            if (existingBuff) {
+              responses.push(`[${pet.nickname}] đã có buff này đang hoạt động!`);
+              break;
+            }
+
+            // Create buff for pet
+            await BuffSchema.create({
+              playerId: pet._id, // Use pet ID as playerId for pet buffs
+              buffKey: buffKey,
+              duration: duration,
+              active: true,
+              startTime: new Date(),
+              metadata: {
+                description: `Buff từ ${useItem.name}`,
+              },
+            });
+
+            // Remove item from inventory
+            player.inventory = player.inventory.filter((id: any) => id.toString() !== useItem._id.toString());
+            await player.save();
+
+            // Delete the consumed item
+            await ItemSchema.findByIdAndDelete(useItem._id);
+
+            responses.push(`[+] [${pet.nickname}] đã nhận buff từ [${useItem.name}]!`);
+            responses.push(`Hiệu ứng kéo dài ${duration / 1000} giây.`);
+
+            // Broadcast to room
+            const buffRoom = await RoomSchema.findById(player.currentRoomId);
+            if (buffRoom) {
+              gameState.broadcastToRoom(
+                buffRoom._id.toString(),
+                {
+                  type: 'normal',
+                  message: `[${player.username}] sử dụng [${useItem.name}] cho [${pet.nickname}]!`
+                },
+                player._id.toString()
+              );
+            }
+          } else {
+            responses.push(`Không thể sử dụng [${useItem.name}] cho thú cưng.`);
+          }
+        }
         else {
           responses.push(`[${useItem.name}] không phải là vật phẩm có thể sử dụng.`);
         }
@@ -1809,27 +1917,91 @@ export async function handleCommandDb(command: Command, playerId: string): Promi
         break;
       }
 
-      case 'tiếp':
-      case 'tiep':
-      case 'next': {
-        // Continue to next dungeon floor
-        const { getDungeonStatus, startChallenge } = await import('./dungeonService');
-        
-        // Check if player just completed a floor
-        const statusResult = await getDungeonStatus(playerId);
-        if (!statusResult.success) {
-          responses.push(statusResult.message);
+      case 'trial':
+      case 'thử luyện':
+      case 'thu luyen': {
+        // Pet Trial Tower commands
+        const subCommand = target?.toLowerCase();
+        const { getPetTrialStatus, startTrial } = await import('./petTrialService');
+
+        if (!subCommand || subCommand === 'status') {
+          // Show pet trial status
+          const statusResult = await getPetTrialStatus(playerId);
+          if (statusResult.success) {
+            const { currentFloor, highestFloor, tamerBadge, lastWeeklyReset } = statusResult.data;
+            responses.push('═══════════════════════════════════════════════════');
+            responses.push('         THÁP THỬ LUYỆN THÚ CƯNG                  ');
+            responses.push('═══════════════════════════════════════════════════');
+            responses.push(`Tầng hiện tại: ${currentFloor}`);
+            responses.push(`Tầng cao nhất: ${highestFloor}`);
+            responses.push(`Huy Hiệu Huấn Luyện: ${tamerBadge} 🎖️`);
+            responses.push('');
+            responses.push('Lưu ý:');
+            responses.push('  - Chỉ thú cưng mới có thể chiến đấu');
+            responses.push('  - Bạn sẽ bị PACIFIED (không thể tấn công)');
+            responses.push('  - Dùng vật phẩm để hỗ trợ thú cưng');
+            responses.push('');
+            responses.push('Lệnh:');
+            responses.push('  trial enter      - Bắt đầu thử luyện');
+            responses.push('  trial status     - Xem trạng thái');
+          } else {
+            responses.push(statusResult.message);
+          }
           break;
         }
 
-        const currentFloor = statusResult.data.currentFloor;
-        const challengeResult = await startChallenge(playerId, currentFloor);
+        if (subCommand === 'enter') {
+          // Start pet trial challenge
+          const trialResult = await startTrial(playerId);
+          
+          if (trialResult.success) {
+            responses.push(trialResult.message);
+          } else {
+            responses.push(trialResult.message);
+          }
+          break;
+        }
+
+        responses.push('Lệnh không hợp lệ. Sử dụng: trial [enter/status]');
+        break;
+      }
+
+      case 'tiếp':
+      case 'tiep':
+      case 'next': {
+        // Continue to next floor (dungeon or pet trial)
+        // Check which system the player is in based on room
+        const room = await RoomSchema.findById(player.currentRoomId);
         
-        if (challengeResult.success) {
-          responses.push(challengeResult.message);
-          responses.push('Sử dụng lệnh "attack" hoặc "a" để chiến đấu!');
+        if (room && room.name === 'Tháp Thử Luyện - Đấu Trường') {
+          // In Pet Trial Tower
+          const { startTrial } = await import('./petTrialService');
+          const trialResult = await startTrial(playerId);
+          
+          if (trialResult.success) {
+            responses.push(trialResult.message);
+          } else {
+            responses.push(trialResult.message);
+          }
         } else {
-          responses.push(challengeResult.message);
+          // In Dungeon
+          const { getDungeonStatus, startChallenge } = await import('./dungeonService');
+          
+          const statusResult = await getDungeonStatus(playerId);
+          if (!statusResult.success) {
+            responses.push(statusResult.message);
+            break;
+          }
+
+          const currentFloor = statusResult.data.currentFloor;
+          const challengeResult = await startChallenge(playerId, currentFloor);
+          
+          if (challengeResult.success) {
+            responses.push(challengeResult.message);
+            responses.push('Sử dụng lệnh "attack" hoặc "a" để chiến đấu!');
+          } else {
+            responses.push(challengeResult.message);
+          }
         }
         break;
       }

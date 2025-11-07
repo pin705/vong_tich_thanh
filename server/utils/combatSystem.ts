@@ -4,6 +4,7 @@ import { ItemSchema } from '../../models/Item';
 import { RoomSchema } from '../../models/Room';
 import { PlayerQuestSchema } from '../../models/PlayerQuest';
 import { PetSchema } from '../../models/Pet';
+import { BuffSchema } from '../../models/Buff';
 import { gameState } from './gameState';
 import { partyService } from './partyService';
 import { scheduleAgentRespawn } from './npcAI';
@@ -362,14 +363,23 @@ export async function executeCombatTick(playerId: string, agentId: string): Prom
     const messages: string[] = [];
     const room = await RoomSchema.findById(player.currentRoomId);
     
-    // Player attacks (only if auto-attacking is enabled)
+    // Check for PACIFIED buff (Pet Trial Tower - player cannot attack)
+    // Note: This query only executes during combat and PACIFIED is rare (only in Pet Trial)
+    // Future optimization: Cache buff status in gameState if needed
+    const pacifiedBuff = await BuffSchema.findOne({
+      playerId: player._id,
+      buffKey: 'PACIFIED',
+      active: true,
+    });
+    
+    // Player attacks (only if auto-attacking is enabled and NOT pacified)
     const playerState = gameState.getPlayerState(playerId);
     if (!playerState) {
       console.error('Player state not found for combat tick');
       return;
     }
     
-    if (playerState.isAutoAttacking) {
+    if (playerState.isAutoAttacking && !pacifiedBuff) {
       const playerBaseDamage = await calculatePlayerDamage(player);
       const playerDamage = calculateDamage(playerBaseDamage);
       agent.hp = Math.max(0, agent.hp - playerDamage);
@@ -440,6 +450,54 @@ export async function executeCombatTick(playerId: string, agentId: string): Prom
     // Check if agent died
     if (agent.hp <= 0) {
       messages.push('');
+      
+      // Check if this is a trial monster
+      if (agent.isTrialMonster && agent.trialFloor) {
+        // Get pet name for message
+        let petName = 'Thú cưng';
+        if (player.activePetId) {
+          const trialPet = await PetSchema.findById(player.activePetId);
+          if (trialPet) {
+            petName = trialPet.nickname;
+          }
+        }
+        messages.push(`[${petName}] đã hạ gục [${agent.name}]!`);
+        
+        // Complete trial floor and grant rewards
+        const { completeTrialFloor } = await import('./petTrialService');
+        const trialResult = await completeTrialFloor(playerId, agent.trialFloor);
+        
+        // Don't give regular EXP/loot for trial monsters - handled by completeTrialFloor
+        // Delete the agent and clean up
+        await AgentSchema.findByIdAndDelete(agent._id);
+        if (room) {
+          await RoomSchema.findByIdAndUpdate(
+            room._id,
+            { $pull: { agents: agent._id } },
+            { new: true }
+          );
+        }
+        
+        gameState.stopCombat(playerId);
+        
+        // Send messages to player
+        const playerObj = gameState.getPlayer(playerId);
+        if (playerObj && playerObj.ws) {
+          messages.forEach(msg => {
+            const messageType = getCombatMessageType(msg);
+            playerObj.ws.send(JSON.stringify({ 
+              type: messageType, 
+              message: msg,
+              channel: 'combat',
+              category: 'combat-player'
+            }));
+          });
+        }
+        
+        await sendCombatStateUpdate(playerId);
+        return;
+      }
+      
       messages.push(`Bạn đã hạ gục [${agent.name}]!`);
       
       // Handle faction reputation (Phase 18)
@@ -681,9 +739,11 @@ export async function executeCombatTick(playerId: string, agentId: string): Prom
     }
     
     // Agent attacks back
-    // Random chance to attack pet if available
+    // Trial monsters ALWAYS attack the pet (if available)
+    // Regular monsters have random chance to attack pet
     const hasPet = player.activePetId !== null && player.activePetId !== undefined;
-    const shouldAttackPet = hasPet && Math.random() < PET_ATTACK_TARGET_CHANCE;
+    const isTrialMonster = agent.isTrialMonster === true;
+    const shouldAttackPet = hasPet && (isTrialMonster || Math.random() < PET_ATTACK_TARGET_CHANCE);
     
     if (shouldAttackPet) {
       const pet = await PetSchema.findById(player.activePetId);
