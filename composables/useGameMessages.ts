@@ -86,6 +86,7 @@ export function useGameMessages() {
       'npc': '[NPC]',
       'boss': '[BOSS]',
       'world-boss': '[WORLD BOSS]',
+      'elite': '[ELITE]',
       'player': '[PLAYER]',
       'mob': '[MOB]',
       'party': '[PARTY]',
