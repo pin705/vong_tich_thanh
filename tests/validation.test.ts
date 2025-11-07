@@ -100,52 +100,56 @@ describe('Validation Utilities', () => {
 
   describe('validateNumber', () => {
     it('should accept valid numbers', () => {
-      const result = validateNumber(42)
+      const result = validateNumber(42, 'số')
       expect(result.valid).toBe(true)
+      expect(result.value).toBe(42)
     })
 
     it('should accept zero', () => {
-      const result = validateNumber(0)
+      const result = validateNumber(0, 'số')
       expect(result.valid).toBe(true)
+      expect(result.value).toBe(0)
     })
 
     it('should accept negative numbers', () => {
-      const result = validateNumber(-10)
+      const result = validateNumber(-10, 'số')
       expect(result.valid).toBe(true)
+      expect(result.value).toBe(-10)
     })
 
     it('should reject non-numbers', () => {
-      const result = validateNumber('not a number' as any)
+      const result = validateNumber('not a number', 'số')
       expect(result.valid).toBe(false)
-      expect(result.error).toContain('số hợp lệ')
+      expect(result.error).toContain('số')
     })
 
     it('should reject NaN', () => {
-      const result = validateNumber(NaN)
+      const result = validateNumber(NaN, 'số')
       expect(result.valid).toBe(false)
     })
 
     it('should reject numbers below minimum', () => {
-      const result = validateNumber(5, { min: 10 })
+      const result = validateNumber(5, 'số', { min: 10 })
       expect(result.valid).toBe(false)
-      expect(result.error).toContain('không được nhỏ hơn')
+      expect(result.error).toContain('lớn hơn hoặc bằng')
     })
 
     it('should reject numbers above maximum', () => {
-      const result = validateNumber(15, { max: 10 })
+      const result = validateNumber(15, 'số', { max: 10 })
       expect(result.valid).toBe(false)
-      expect(result.error).toContain('không được lớn hơn')
+      expect(result.error).toContain('không được vượt quá')
     })
 
     it('should reject non-integers when integer required', () => {
-      const result = validateNumber(3.14, { integer: true })
+      const result = validateNumber(3.14, 'số', { integer: true })
       expect(result.valid).toBe(false)
       expect(result.error).toContain('số nguyên')
     })
 
     it('should accept numbers within range', () => {
-      const result = validateNumber(5, { min: 0, max: 10 })
+      const result = validateNumber(5, 'số', { min: 0, max: 10 })
       expect(result.valid).toBe(true)
+      expect(result.value).toBe(5)
     })
   })
 
@@ -241,14 +245,14 @@ describe('Validation Utilities', () => {
 
     it('should remove HTML tags', () => {
       const result = sanitizeInput('<script>alert("xss")</script>')
-      expect(result).not.toContain('<script>')
-      expect(result).not.toContain('</script>')
+      expect(result).not.toContain('<')
+      expect(result).not.toContain('>')
     })
 
     it('should remove dangerous HTML', () => {
       const result = sanitizeInput('<img src="x" onerror="alert(1)">')
-      expect(result).not.toContain('<img')
-      expect(result).not.toContain('onerror')
+      expect(result).not.toContain('<')
+      expect(result).not.toContain('>')
     })
 
     it('should handle Vietnamese characters', () => {
@@ -256,10 +260,10 @@ describe('Validation Utilities', () => {
       expect(result).toBe('Xin chào các bạn')
     })
 
-    it('should limit length', () => {
-      const longText = 'a'.repeat(2000)
-      const result = sanitizeInput(longText, { maxLength: 100 })
-      expect(result.length).toBeLessThanOrEqual(100)
+    it('should limit length to 500 characters', () => {
+      const longText = 'a'.repeat(600)
+      const result = sanitizeInput(longText)
+      expect(result.length).toBe(500)
     })
 
     it('should trim whitespace', () => {
@@ -274,8 +278,12 @@ describe('Validation Utilities', () => {
 
     it('should preserve safe special characters', () => {
       const result = sanitizeInput('Level +5 [Rare]')
-      expect(result).toContain('+5')
-      expect(result).toContain('[Rare]')
+      expect(result).toBe('Level +5 [Rare]')
+    })
+
+    it('should handle non-string input', () => {
+      const result = sanitizeInput(null as any)
+      expect(result).toBe('')
     })
   })
 

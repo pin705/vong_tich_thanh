@@ -25,7 +25,6 @@ export default defineConfig({
     alias: {
       '~': resolve(__dirname, './'),
       '@': resolve(__dirname, './'),
-      '#app': resolve(__dirname, './.nuxt'),
     }
   }
 })
