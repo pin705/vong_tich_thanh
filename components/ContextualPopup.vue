@@ -42,6 +42,49 @@
             <span class="pet-value">{{ entityData.pet.name }} (Lv.{{ entityData.pet.level }})</span>
           </div>
 
+          <!-- Agent/Mob Stats -->
+          <div v-if="entityData?.level !== undefined" class="entity-stats">
+            <div class="stat-row">
+              <span class="stat-label">Cấp độ:</span>
+              <span class="stat-value">{{ entityData.level }}</span>
+            </div>
+            <div v-if="entityData?.damage" class="stat-row">
+              <span class="stat-label">Sát thương:</span>
+              <span class="stat-value">{{ entityData.damage }}</span>
+            </div>
+            <div v-if="entityData?.agentType" class="stat-row">
+              <span class="stat-label">Loại:</span>
+              <span class="stat-value agent-type" :class="entityData.agentType">{{ getAgentTypeLabel(entityData.agentType) }}</span>
+            </div>
+          </div>
+
+          <!-- Rewards Section -->
+          <div v-if="entityData?.experience !== undefined || entityData?.estimatedGold !== undefined" class="rewards-section">
+            <div class="rewards-title">--- Phần Thưởng ---</div>
+            <div v-if="entityData?.experience" class="reward-row">
+              <span class="reward-label">EXP:</span>
+              <span class="reward-value">{{ entityData.experience }}</span>
+            </div>
+            <div v-if="entityData?.estimatedGold" class="reward-row">
+              <span class="reward-label">Vàng:</span>
+              <span class="reward-value">~{{ entityData.estimatedGold }}</span>
+            </div>
+          </div>
+
+          <!-- Loot Table -->
+          <div v-if="entityData?.loot && entityData.loot.length > 0" class="loot-section">
+            <div class="loot-title">--- Vật Phẩm Rớt ---</div>
+            <div
+              v-for="(lootItem, index) in entityData.loot"
+              :key="index"
+              class="loot-item"
+              :class="lootItem.rarity"
+            >
+              <span class="loot-name">[{{ lootItem.name }}]</span>
+              <span class="loot-chance">({{ formatDropChance(lootItem.dropChance) }})</span>
+            </div>
+          </div>
+
           <!-- Custom Content Slot -->
           <div v-if="$slots.default" class="popup-custom-content">
             <slot></slot>
@@ -69,6 +112,13 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 
+interface LootItem {
+  name: string;
+  description?: string;
+  dropChance: number;
+  rarity?: string;
+}
+
 interface EntityData {
   hp?: number;
   maxHp?: number;
@@ -82,6 +132,12 @@ interface EntityData {
     name: string;
     level: number;
   };
+  level?: number;
+  damage?: number;
+  agentType?: 'mob' | 'elite' | 'boss';
+  experience?: number;
+  estimatedGold?: number;
+  loot?: LootItem[];
 }
 
 interface Action {
@@ -122,6 +178,20 @@ const hpPercentage = computed(() => {
   if (!props.entityData?.hp || !props.entityData?.maxHp) return 0;
   return Math.floor((props.entityData.hp / props.entityData.maxHp) * 100);
 });
+
+const getAgentTypeLabel = (type: 'mob' | 'elite' | 'boss') => {
+  const labels = {
+    mob: 'Thường',
+    elite: 'Tinh Anh',
+    boss: 'Boss'
+  };
+  return labels[type] || type;
+};
+
+const formatDropChance = (chance: number) => {
+  if (chance >= 1) return '100%';
+  return `${(chance * 100).toFixed(1)}%`;
+};
 </script>
 
 <style scoped>
@@ -279,6 +349,124 @@ const hpPercentage = computed(() => {
 .pet-value {
   color: #9370DB;
   font-weight: bold;
+}
+
+.entity-stats {
+  margin-bottom: 1rem;
+  padding: 0.75rem;
+  background-color: rgba(0, 136, 0, 0.05);
+  border-left: 2px solid var(--text-bright);
+}
+
+.stat-row {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.25rem;
+  color: var(--text-bright);
+}
+
+.stat-label {
+  color: var(--text-dim);
+}
+
+.stat-value {
+  font-weight: bold;
+}
+
+.stat-value.agent-type {
+  text-transform: uppercase;
+}
+
+.stat-value.agent-type.mob {
+  color: var(--text-bright);
+}
+
+.stat-value.agent-type.elite {
+  color: var(--text-accent);
+}
+
+.stat-value.agent-type.boss {
+  color: var(--text-danger);
+}
+
+.rewards-section {
+  margin-bottom: 1rem;
+  padding: 0.75rem;
+  background-color: rgba(255, 176, 0, 0.05);
+  border-left: 2px solid var(--text-accent);
+}
+
+.rewards-title {
+  color: var(--text-accent);
+  font-weight: bold;
+  margin-bottom: 0.5rem;
+  text-align: center;
+}
+
+.reward-row {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.25rem;
+  color: var(--text-bright);
+}
+
+.reward-label {
+  color: var(--text-dim);
+}
+
+.reward-value {
+  color: var(--text-accent);
+  font-weight: bold;
+}
+
+.loot-section {
+  margin-bottom: 1rem;
+  padding: 0.75rem;
+  background-color: rgba(0, 255, 255, 0.03);
+  border-left: 2px solid var(--text-cyan);
+}
+
+.loot-title {
+  color: var(--text-cyan);
+  font-weight: bold;
+  margin-bottom: 0.5rem;
+  text-align: center;
+}
+
+.loot-item {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.25rem;
+  padding: 0.25rem;
+}
+
+.loot-name {
+  color: var(--text-bright);
+}
+
+.loot-chance {
+  color: var(--text-dim);
+  font-size: 14px;
+}
+
+.loot-item.common .loot-name {
+  color: var(--text-dim);
+}
+
+.loot-item.uncommon .loot-name {
+  color: #00ff00;
+}
+
+.loot-item.rare .loot-name {
+  color: #0080ff;
+}
+
+.loot-item.epic .loot-name {
+  color: #a335ee;
+}
+
+.loot-item.legendary .loot-name {
+  color: #ff8000;
 }
 
 .popup-custom-content {

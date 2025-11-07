@@ -678,7 +678,7 @@ const handleTabClick = async (tabId: string) => {
 };
 
 // Handle entity selection from occupants list
-const handleEntitySelect = (type: 'player' | 'npc' | 'mob', entity: { id: string; name: string }) => {
+const handleEntitySelect = async (type: 'player' | 'npc' | 'mob', entity: { id: string; name: string }) => {
   if (!entity || !entity.id) return;
   console.log('Entity selected:', type, entity);
   selectedTarget.value = { type, id: entity.id, name: entity.name };
@@ -686,15 +686,57 @@ const handleEntitySelect = (type: 'player' | 'npc' | 'mob', entity: { id: string
   // Prepare contextual popup data
   const actions = getActionsForEntity(type, entity.name, entity.id);
   
-  contextualPopupData.value = {
-    title: `${entity.name} (${getEntityTypeLabel(type)})`,
-    entityType: type,
-    entityData: {
-      description: getEntityDescription(type, entity.name),
-      status: getEntityStatus(type)
-    },
-    actions
-  };
+  // For NPCs and mobs, fetch detailed information from the server
+  if (type === 'npc' || type === 'mob') {
+    try {
+      const response = await $fetch(`/api/agent/${entity.id}`);
+      
+      if (response.success && response.agent) {
+        const agent = response.agent;
+        
+        contextualPopupData.value = {
+          title: `${entity.name} (${getEntityTypeLabel(type)})`,
+          entityType: type,
+          entityData: {
+            description: agent.description,
+            status: getEntityStatus(type),
+            hp: agent.hp,
+            maxHp: agent.maxHp,
+            level: agent.level,
+            damage: agent.damage,
+            agentType: agent.agentType,
+            experience: agent.experience,
+            estimatedGold: agent.estimatedGold,
+            loot: agent.loot
+          },
+          actions
+        };
+      }
+    } catch (error) {
+      console.error('Error fetching agent details:', error);
+      // Fallback to basic information
+      contextualPopupData.value = {
+        title: `${entity.name} (${getEntityTypeLabel(type)})`,
+        entityType: type,
+        entityData: {
+          description: getEntityDescription(type, entity.name),
+          status: getEntityStatus(type)
+        },
+        actions
+      };
+    }
+  } else {
+    // For players, use basic information
+    contextualPopupData.value = {
+      title: `${entity.name} (${getEntityTypeLabel(type)})`,
+      entityType: type,
+      entityData: {
+        description: getEntityDescription(type, entity.name),
+        status: getEntityStatus(type)
+      },
+      actions
+    };
+  }
   
   contextualPopupOpen.value = true;
 };
