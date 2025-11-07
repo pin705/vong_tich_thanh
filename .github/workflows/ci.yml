@@ -11,6 +11,8 @@ jobs:
   lint-and-typecheck:
     runs-on: ubuntu-latest
     name: Lint and Type Check
+    permissions:
+      contents: read
     
     steps:
       - name: Checkout code
@@ -33,6 +35,8 @@ jobs:
     runs-on: ubuntu-latest
     name: Build Application
     needs: lint-and-typecheck
+    permissions:
+      contents: read
     
     steps:
       - name: Checkout code
@@ -61,6 +65,8 @@ jobs:
   security-audit:
     runs-on: ubuntu-latest
     name: Security Audit
+    permissions:
+      contents: read
     
     steps:
       - name: Checkout code
@@ -106,6 +112,8 @@ jobs:
     name: Build Summary
     needs: [lint-and-typecheck, build, security-audit]
     if: always()
+    permissions:
+      contents: read
     
     steps:
       - name: Check results
