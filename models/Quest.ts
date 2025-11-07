@@ -35,6 +35,12 @@ export interface IQuest {
 export const QuestSchema = defineMongooseModel<IQuest>({
   name: 'Quest',
   schema: {
+    questKey: { 
+      type: String, 
+      unique: true,
+      required: true,
+      index: true
+    },
     name: { type: String, required: true },
     description: { type: String, required: true },
     type: { 

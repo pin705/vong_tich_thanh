@@ -1,34 +1,4 @@
-// ============================================================================
-// GAME WORLD INITIALIZATION SCRIPT
-// ============================================================================
-// 
-// PURPOSE:
-// Initializes the game world with static data (rooms, items, agents, quests)
-// 
-// REFACTORING APPROACH (Task: Refactor initWorld Logic):
-// 1. All models now have natural keys (roomKey, itemKey, agentKey, questKey)
-// 2. Using findOneAndUpdate() with upsert:true instead of create()
-// 3. This ensures _id stability across re-runs (same key = same _id)
-// 4. References between entities are linked using key-based lookups
-//
-// WORKFLOW:
-// Phase 1: Seed Items (upsert based on itemKey)
-// Phase 2: Seed Rooms (upsert based on roomKey)
-// Phase 3: Seed Agents (upsert based on agentKey)
-// Phase 4: Seed Quests (upsert based on questKey)
-// Phase 5: Build ID maps (key -> _id mappings)
-// Phase 6: Link entities (update references using ID maps)
-//
-// STATUS:
-// - ✓ Models updated with natural keys
-// - ✓ Helper functions added (fetchMappedIds)
-// - ⚠ Partial conversion to upsert pattern (examples provided)
-// - ⚠ Full conversion needed for all ~180 create() calls
-// - ⚠ Linking logic needs implementation
-//
-// ============================================================================
-
-import type { Types } from 'mongoose';
+// Script to initialize the game world with rooms, NPCs, and items
 import { PlayerSchema } from '../../models/Player';
 import { RoomSchema } from '../../models/Room';
 import { ItemSchema } from '../../models/Item';
@@ -36,222 +6,115 @@ import { AgentSchema } from '../../models/Agent';
 import { QuestSchema } from '../../models/Quest';
 import { PetTemplateSchema } from '../../models/PetTemplate';
 
-// Type definitions for the ID maps used in linking
-interface IdMaps {
-  itemMap: Map<string, Types.ObjectId>;
-  roomMap: Map<string, Types.ObjectId>;
-  agentMap: Map<string, Types.ObjectId>;
-  questMap: Map<string, Types.ObjectId>;
-}
-
-/**
- * Fetch all entity IDs and create maps from natural keys to _id
- * This allows us to link entities using stable keys instead of volatile _ids
- */
-async function fetchMappedIds(): Promise<IdMaps> {
-  console.log('Fetching mapped IDs for linking...');
-  
-  const itemMap = new Map<string, Types.ObjectId>();
-  const roomMap = new Map<string, Types.ObjectId>();
-  const agentMap = new Map<string, Types.ObjectId>();
-  const questMap = new Map<string, Types.ObjectId>();
-  
-  // Fetch all items and map itemKey -> _id
-  const allItems = await ItemSchema.find({}, 'itemKey _id').lean();
-  allItems.forEach((item: any) => {
-    if (item.itemKey) {
-      itemMap.set(item.itemKey, item._id);
-    }
-  });
-  console.log(`✓ Mapped ${itemMap.size} items`);
-  
-  // Fetch all rooms and map roomKey -> _id
-  const allRooms = await RoomSchema.find({}, 'roomKey _id').lean();
-  allRooms.forEach((room: any) => {
-    if (room.roomKey) {
-      roomMap.set(room.roomKey, room._id);
-    }
-  });
-  console.log(`✓ Mapped ${roomMap.size} rooms`);
-  
-  // Fetch all agents and map agentKey -> _id
-  const allAgents = await AgentSchema.find({}, 'agentKey _id').lean();
-  allAgents.forEach((agent: any) => {
-    if (agent.agentKey) {
-      agentMap.set(agent.agentKey, agent._id);
-    }
-  });
-  console.log(`✓ Mapped ${agentMap.size} agents`);
-  
-  // Fetch all quests and map questKey -> _id
-  const allQuests = await QuestSchema.find({}, 'questKey _id').lean();
-  allQuests.forEach((quest: any) => {
-    if (quest.questKey) {
-      questMap.set(quest.questKey, quest._id);
-    }
-  });
-  console.log(`✓ Mapped ${questMap.size} quests`);
-  
-  return { itemMap, roomMap, agentMap, questMap };
-}
-
 export async function initializeWorld() {
   try {
-    console.log('='.repeat(60));
-    console.log('Initializing game world with upsert pattern...');
-    console.log('='.repeat(60));
+    console.log('Initializing game world...');
 
-    // REMOVED: deleteMany() calls - no longer needed with upsert pattern
-    // REMOVED: "skip if exists" check - upsert handles updates automatically
+    // await RoomSchema.deleteMany({});
+    // await ItemSchema.deleteMany({});
+    // await AgentSchema.deleteMany({});
+    // await QuestSchema.deleteMany({});
 
-    // =================================================================
-    // PHASE 1: Seed Items using findOneAndUpdate with upsert
-    // =================================================================
-    console.log('\n[Phase 1] Seeding Items...');
-    
-    // Using findOneAndUpdate with upsert: true for stable _id references
-    const binhMau = await ItemSchema.findOneAndUpdate(
-      { itemKey: 'binh_mau_nho' },
-      {
-        itemKey: 'binh_mau_nho',
-        name: 'Bình Máu Nhỏ',
-        description: 'Một bình thuốc nhỏ chứa dịch màu đỏ. Có thể hồi phục 15 HP.',
-        type: 'consumable',
-        value: 10,
-        price: 50,
-        sellValue: 10,
-        stats: { healing: 15 }
-      },
-      { upsert: true, new: true, setDefaultsOnInsert: true }
-    );
+    // Check if world already exists
+    const existingRooms = await RoomSchema.countDocuments();
+    if (existingRooms > 0) {
+      console.log('World already initialized, skipping...');
+      return;
+    }
 
-    const kiemGi = await ItemSchema.findOneAndUpdate(
-      { itemKey: 'kiem_gi' },
-      {
-        itemKey: 'kiem_gi',
-        name: 'Kiếm Gỉ',
-        description: 'Một thanh kiếm cũ đã gỉ sét. Vẫn có thể dùng được nhưng không sắc lắm.',
-        type: 'weapon',
-        value: 25,
-        stats: { damage: 8 }
-      },
-      { upsert: true, new: true, setDefaultsOnInsert: true }
-    );
+    // Create items
+    const binhMau = await ItemSchema.create({
+      name: 'Bình Máu Nhỏ',
+      description: 'Một bình thuốc nhỏ chứa dịch màu đỏ. Có thể hồi phục 15 HP.',
+      type: 'consumable',
+      value: 10,
+      price: 50,
+      sellValue: 10,
+      stats: { healing: 15 }
+    });
 
-    const aoDa = await ItemSchema.findOneAndUpdate(
-      { itemKey: 'ao_da' },
-      {
-        itemKey: 'ao_da',
-        name: 'Áo Da',
-        description: 'Một bộ áo da đơn giản. Cung cấp một ít phòng thủ.',
-        type: 'armor',
-        value: 30,
-        stats: { defense: 5 }
-      },
-      { upsert: true, new: true, setDefaultsOnInsert: true }
-    );
+    const kiemGi = await ItemSchema.create({
+      name: 'Kiếm Gỉ',
+      description: 'Một thanh kiếm cũ đã gỉ sét. Vẫn có thể dùng được nhưng không sắc lắm.',
+      type: 'weapon',
+      value: 25,
+      stats: { damage: 8 }
+    });
 
-    const duoiChuot = await ItemSchema.findOneAndUpdate(
-      { itemKey: 'duoi_chuot' },
-      {
-        itemKey: 'duoi_chuot',
-        name: 'Đuôi Chuột',
-        description: 'Đuôi của một con chuột biến dị. Có thể bán cho thương gia.',
-        type: 'misc',
-        value: 2
-      },
-      { upsert: true, new: true, setDefaultsOnInsert: true }
-    );
+    const aoDa = await ItemSchema.create({
+      name: 'Áo Da',
+      description: 'Một bộ áo da đơn giản. Cung cấp một ít phòng thủ.',
+      type: 'armor',
+      value: 30,
+      stats: { defense: 5 }
+    });
 
-    const binhMauLon = await ItemSchema.findOneAndUpdate(
-      { itemKey: 'binh_mau_lon' },
-      {
-        itemKey: 'binh_mau_lon',
-        name: 'Bình Máu Lớn',
-        description: 'Một bình thuốc lớn chứa dịch màu đỏ tươi. Có thể hồi phục 30 HP.',
-        type: 'consumable',
-        value: 25,
-        price: 100,
-        sellValue: 25,
-        stats: { healing: 30 }
-      },
-      { upsert: true, new: true, setDefaultsOnInsert: true }
-    );
+    const duoiChuot = await ItemSchema.create({
+      name: 'Đuôi Chuột',
+      description: 'Đuôi của một con chuột biến dị. Có thể bán cho thương gia.',
+      type: 'misc',
+      value: 2
+    });
 
-    const kiemThep = await ItemSchema.findOneAndUpdate(
-      { itemKey: 'kiem_thep' },
-      {
-        itemKey: 'kiem_thep',
-        name: 'Kiếm Thép',
-        description: 'Một thanh kiếm thép sắc bén. Vẫn còn mới và có thể gây sát thương tốt.',
-        type: 'weapon',
-        value: 50,
-        stats: { damage: 15 }
-      },
-      { upsert: true, new: true, setDefaultsOnInsert: true }
-    );
+    const binhMauLon = await ItemSchema.create({
+      name: 'Bình Máu Lớn',
+      description: 'Một bình thuốc lớn chứa dịch màu đỏ tươi. Có thể hồi phục 30 HP.',
+      type: 'consumable',
+      value: 25,
+      price: 100,
+      sellValue: 25,
+      stats: { healing: 30 }
+    });
 
-    const aoGiapNhe = await ItemSchema.findOneAndUpdate(
-      { itemKey: 'ao_giap_nhe' },
-      {
-        itemKey: 'ao_giap_nhe',
-        name: 'Áo Giáp Nhẹ',
-        description: 'Một bộ giáp nhẹ làm từ thép và da. Cung cấp phòng thủ tốt mà không làm chậm chuyển động.',
-        type: 'armor',
-        value: 60,
-        stats: { defense: 10 }
-      },
-      { upsert: true, new: true, setDefaultsOnInsert: true }
-    );
+    const kiemThep = await ItemSchema.create({
+      name: 'Kiếm Thép',
+      description: 'Một thanh kiếm thép sắc bén. Vẫn còn mới và có thể gây sát thương tốt.',
+      type: 'weapon',
+      value: 50,
+      stats: { damage: 15 }
+    });
 
-    const chiKhoaVang = await ItemSchema.findOneAndUpdate(
-      { itemKey: 'chia_khoa_vang' },
-      {
-        itemKey: 'chia_khoa_vang',
-        name: 'Chìa Khóa Vàng',
-        description: 'Một chiếc chìa khóa bằng vàng với hoa văn phức tạp. Có vẻ quan trọng.',
-        type: 'misc',
-        value: 100
-      },
-      { upsert: true, new: true, setDefaultsOnInsert: true }
-    );
+    const aoGiapNhe = await ItemSchema.create({
+      name: 'Áo Giáp Nhẹ',
+      description: 'Một bộ giáp nhẹ làm từ thép và da. Cung cấp phòng thủ tốt mà không làm chậm chuyển động.',
+      type: 'armor',
+      value: 60,
+      stats: { defense: 10 }
+    });
+
+    const chiKhoaVang = await ItemSchema.create({
+      name: 'Chìa Khóa Vàng',
+      description: 'Một chiếc chìa khóa bằng vàng với hoa văn phức tạp. Có vẻ quan trọng.',
+      type: 'misc',
+      value: 100
+    });
 
     // Premium Shop Items
-    const theExpX2 = await ItemSchema.findOneAndUpdate(
-      { itemKey: 'the_exp_x2' },
-      {
-        itemKey: 'the_exp_x2',
-        name: 'Thẻ x2 EXP (1 Giờ)',
-        description: 'Một tấm thẻ phát sáng ánh xanh lục. Khi sử dụng, bạn sẽ nhận được gấp đôi kinh nghiệm trong 1 giờ.',
-        type: 'consumable',
-        value: 0,
-        premiumPrice: 50,
-        effects: {
-          buff: 'EXP_BOOST',
-          multiplier: 2,
-          duration_minutes: 60
-        }
-      },
-      { upsert: true, new: true, setDefaultsOnInsert: true }
-    );
+    const theExpX2 = await ItemSchema.create({
+      name: 'Thẻ x2 EXP (1 Giờ)',
+      description: 'Một tấm thẻ phát sáng ánh xanh lục. Khi sử dụng, bạn sẽ nhận được gấp đôi kinh nghiệm trong 1 giờ.',
+      type: 'consumable',
+      value: 0,
+      premiumPrice: 50,
+      effects: {
+        buff: 'EXP_BOOST',
+        multiplier: 2,
+        duration_minutes: 60
+      }
+    });
 
-    const theExpX3 = await ItemSchema.findOneAndUpdate(
-      { itemKey: 'the_exp_x3' },
-      {
-        itemKey: 'the_exp_x3',
-        name: 'Thẻ x3 EXP (30 Phút)',
-        description: 'Một tấm thẻ phát sáng ánh vàng rực rỡ. Khi sử dụng, bạn sẽ nhận được gấp ba kinh nghiệm trong 30 phút.',
-        type: 'consumable',
-        value: 0,
-        premiumPrice: 80,
-        effects: {
-          buff: 'EXP_BOOST',
-          multiplier: 3,
-          duration_minutes: 30
-        }
-      },
-      { upsert: true, new: true, setDefaultsOnInsert: true }
-    );
+    const theExpX3 = await ItemSchema.create({
+      name: 'Thẻ x3 EXP (30 Phút)',
+      description: 'Một tấm thẻ phát sáng ánh vàng rực rỡ. Khi sử dụng, bạn sẽ nhận được gấp ba kinh nghiệm trong 30 phút.',
+      type: 'consumable',
+      value: 0,
+      premiumPrice: 80,
+      effects: {
+        buff: 'EXP_BOOST',
+        multiplier: 3,
+        duration_minutes: 30
+      }
+    });
 
     // Phase 26: Additional Consumables
     const binhMauVua = await ItemSchema.create({
@@ -1403,51 +1266,30 @@ export async function initializeWorld() {
       sellValue: 150,
     });
 
-    // =================================================================
-    // PHASE 2: Seed Rooms using findOneAndUpdate with upsert
-    // =================================================================
-    console.log('\n[Phase 2] Seeding Rooms...');
-    
-    // NOTE: Room references (exits, items, agents) will be linked in Phase 4
-    // For now, we create rooms with empty arrays/objects
-    const cổngThành = await RoomSchema.findOneAndUpdate(
-      { roomKey: 'cong_thanh_cu' },
-      {
-        roomKey: 'cong_thanh_cu',
-        name: 'Cổng Thành Cũ',
-        description: 'Bạn đang đứng trước một cổng thành bằng đá đã sụp đổ một nửa. Rêu và dây leo phủ kín. Gió rít qua những khe hở. Về phía bắc, bạn thấy ánh đèn leo lét của khu chợ.',
-        exits: {},
-        items: [],
-        agents: []
-      },
-      { upsert: true, new: true, setDefaultsOnInsert: true }
-    );
+    // Create rooms
+    const cổngThành = await RoomSchema.create({
+      name: 'Cổng Thành Cũ',
+      description: 'Bạn đang đứng trước một cổng thành bằng đá đã sụp đổ một nửa. Rêu và dây leo phủ kín. Gió rít qua những khe hở. Về phía bắc, bạn thấy ánh đèn leo lét của khu chợ.',
+      exits: {},
+      items: [],
+      agents: []
+    });
 
-    const khuCho = await RoomSchema.findOneAndUpdate(
-      { roomKey: 'khu_cho' },
-      {
-        roomKey: 'khu_cho',
-        name: 'Khu Chợ',
-        description: 'Một khu chợ nhỏ với vài gian hàng đang mở cửa. Mùi thức ăn và tiếng người qua lại tạo nên không khí sôi động.',
-        exits: {},
-        items: [],
-        agents: []
-      },
-      { upsert: true, new: true, setDefaultsOnInsert: true }
-    );
+    const khuCho = await RoomSchema.create({
+      name: 'Khu Chợ',
+      description: 'Một khu chợ nhỏ với vài gian hàng đang mở cửa. Mùi thức ăn và tiếng người qua lại tạo nên không khí sôi động.',
+      exits: {},
+      items: [],
+      agents: []
+    });
 
-    const hẻmTối = await RoomSchema.findOneAndUpdate(
-      { roomKey: 'hem_toi' },
-      {
-        roomKey: 'hem_toi',
-        name: 'Hẻm Tối',
-        description: 'Một con hẻm tối tăm và hẹp. Bạn nghe thấy tiếng chuột chạy trong bóng tối. Có mùi hôi thối nồng nặc.',
-        exits: {},
-        items: [], // Will be linked in Phase 4
-        agents: []
-      },
-      { upsert: true, new: true, setDefaultsOnInsert: true }
-    );
+    const hẻmTối = await RoomSchema.create({
+      name: 'Hẻm Tối',
+      description: 'Một con hẻm tối tăm và hẹp. Bạn nghe thấy tiếng chuột chạy trong bóng tối. Có mùi hôi thối nồng nặc.',
+      exits: {},
+      items: [duoiChuot._id],
+      agents: []
+    });
 
     const quảngTrường = await RoomSchema.create({
       name: 'Quảng Trường',
@@ -3149,71 +2991,11 @@ export async function initializeWorld() {
       active: true
     });
 
-    // =================================================================
-    // TODO: Complete conversion of remaining create() calls to upsert
-    // =================================================================
-    // The pattern has been demonstrated above with Items and Rooms.
-    // Remaining work:
-    // 1. Convert remaining ~88 ItemSchema.create() calls to findOneAndUpdate()
-    // 2. Convert remaining ~30 RoomSchema.create() calls to findOneAndUpdate()  
-    // 3. Convert all ~42 AgentSchema.create() calls to findOneAndUpdate()
-    // 4. Convert all ~18 QuestSchema.create() calls to findOneAndUpdate()
-    //
-    // Pattern to follow for each:
-    //   const entity = await Schema.findOneAndUpdate(
-    //     { entityKey: 'unique_key' },  // Find by natural key
-    //     { ...allData },                // Update with all data
-    //     { upsert: true, new: true, setDefaultsOnInsert: true }  // Upsert options
-    //   );
-    
-    // =================================================================
-    // PHASE 3: Fetch ID Maps (after all entities are seeded)
-    // =================================================================
-    // NOTE: This should be called after all entities are created/upserted
-    // console.log('\n[Phase 3] Building ID maps...');
-    // const idMaps = await fetchMappedIds();
-    
-    // =================================================================
-    // PHASE 4: Link Dynamic Data (using ID maps)
-    // =================================================================
-    // NOTE: Use idMaps to update references between entities
-    // Example for room exits:
-    //
-    // await RoomSchema.updateOne(
-    //   { roomKey: 'cong_thanh_cu' },
-    //   {
-    //     $set: {
-    //       exits: {
-    //         north: idMaps.roomMap.get('khu_cho'),
-    //         south: idMaps.roomMap.get('hem_toi')
-    //       }
-    //     }
-    //   }
-    // );
-    //
-    // Example for agent loot tables:
-    //
-    // await AgentSchema.updateOne(
-    //   { agentKey: 'chuot_bien_di' },
-    //   {
-    //     $set: {
-    //       lootTable: [
-    //         { itemId: idMaps.itemMap.get('da_chuot'), dropChance: 0.5 },
-    //         { itemId: idMaps.itemMap.get('vai_rach'), dropChance: 0.3 }
-    //       ]
-    //     }
-    //   }
-    // );
-
-    console.log('='.repeat(60));
-    console.log('World initialization complete!');
-    console.log('='.repeat(60));
-    console.log(`✓ Rooms: ${await RoomSchema.countDocuments()}`);
-    console.log(`✓ Items: ${await ItemSchema.countDocuments()}`);
-    console.log(`✓ Agents: ${await AgentSchema.countDocuments()}`);
-    console.log(`✓ Quests: ${await QuestSchema.countDocuments()}`);
-    console.log(`✓ Pet Templates: ${await PetTemplateSchema.countDocuments()}`);
-    console.log('='.repeat(60));
+    console.log('World initialized successfully!');
+    console.log(`- Created ${await RoomSchema.countDocuments()} rooms`);
+    console.log(`- Created ${await ItemSchema.countDocuments()} items`);
+    console.log(`- Created ${await AgentSchema.countDocuments()} agents`);
+    console.log(`- Created ${await QuestSchema.countDocuments()} quests`);
     
     return {
       startingRoomId: cổngThành._id

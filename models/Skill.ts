@@ -4,6 +4,12 @@ import { Schema } from 'mongoose';
 export const SkillSchema = defineMongooseModel({
   name: 'Skill',
   schema: {
+    skillKey: {
+      type: String,
+      unique: true,
+      required: true,
+      index: true,
+    },
     name: {
       type: String,
       required: true,
