@@ -2430,6 +2430,11 @@ export async function handleCommandDb(command: Command, playerId: string): Promi
 
         await player.save();
 
+        // Delete consumed gems from database to prevent orphaned documents
+        await ItemSchema.deleteMany({
+          _id: { $in: sourceGems.map(gem => gem._id) }
+        });
+
         responses.push('═══════════════════════════════════════');
         responses.push(`✨ [Thợ Kim Hoàn] đã kết hợp thành công!`);
         responses.push('─────────────────────────────────────');
@@ -2502,6 +2507,9 @@ export async function handleCommandDb(command: Command, playerId: string): Promi
 
         await equipItem.save();
         await player.save();
+
+        // Delete consumed Socket Punch from database
+        await ItemSchema.findByIdAndDelete(punchItem._id);
 
         responses.push('═══════════════════════════════════════');
         responses.push(`✨ Đã thêm lỗ khảm vào [${equipItem.name}]!`);
