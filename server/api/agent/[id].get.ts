@@ -26,7 +26,8 @@ export default defineEventHandler(async (event) => {
     }
 
     // Calculate estimated gold drop based on level
-    const estimatedGold = Math.floor(agent.level * 2);
+    const GOLD_PER_LEVEL_MULTIPLIER = 2;
+    const estimatedGold = Math.floor(agent.level * GOLD_PER_LEVEL_MULTIPLIER);
 
     // Prepare loot information
     const lootInfo = [];
