@@ -113,6 +113,9 @@ export default defineEventHandler(async (event) => {
     // Allocate point
     player.talents.set(talentId, currentRank + 1);
     player.talentPoints = (player.talentPoints || 0) - 1;
+    
+    // Mark the talents field as modified to ensure Mongoose saves it
+    player.markModified('talents');
 
     await player.save();
 
