@@ -69,10 +69,10 @@
               @click="handleCraft"
             >
               <template v-if="crafting">
-                [⚙️] Đang chế tạo...
+                Đang chế tạo...
               </template>
               <template v-else>
-                [✓] CHẾ TẠO
+                CHẾ TẠO
               </template>
             </button>
             <div v-if="!canCraft(selectedRecipe)" class="insufficient-notice">

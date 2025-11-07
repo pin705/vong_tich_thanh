@@ -9,7 +9,7 @@
         :aria-expanded="isExpanded"
         aria-label="Menu hành động nhanh"
       >
-        <span class="fab-icon">{{ isExpanded ? '×' : '⚡' }}</span>
+        <span class="fab-icon">{{ isExpanded ? 'X' : '+' }}</span>
       </button>
 
       <!-- Expanded Action Buttons -->

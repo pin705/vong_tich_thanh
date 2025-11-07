@@ -115,6 +115,7 @@ const categories: Category[] = [
   { id: 'guild', name: 'Bang hội' },
   { id: 'party', name: 'Nhóm' },
   { id: 'quest', name: 'Nhiệm vụ' },
+  { id: 'activities', name: 'Hoạt động' },
   { id: 'advanced', name: 'Nâng cao' },
 ];
 
@@ -450,6 +451,95 @@ const allCommands: Command[] = [
       'alias list - Xem danh sách lệnh tắt'
     ],
     examples: ['alias add atk attack Goblin', 'alias remove atk', 'alias list']
+  },
+  // Activities Section
+  {
+    name: 'Cường Hóa',
+    shortDesc: 'Nâng cấp trang bị',
+    description: 'Gặp [Thợ Rèn] ở Khu Chợ để nâng cấp trang bị. Cường hóa giúp tăng chỉ số của vũ khí và giáp, làm chúng mạnh mẽ hơn. Mỗi lần cường hóa cần nguyên liệu và vàng.',
+    category: 'activities',
+    usage: [
+      'Đến Khu Chợ và tìm [Thợ Rèn]',
+      'Nói chuyện với Thợ Rèn để xem dịch vụ cường hóa',
+      'Chuẩn bị trang bị và nguyên liệu cần thiết'
+    ],
+    examples: ['talk Thợ Rèn', 'go Khu Chợ']
+  },
+  {
+    name: 'Hầm Ngục',
+    shortDesc: 'Thách thức Dungeon',
+    description: 'Đến [Lối Vào Hầm Ngục] và gõ lệnh "dungeon" để khiêu chiến. Hầm ngục là nơi thử thách khó khăn với phần thưởng giá trị. Mỗi hầm ngục reset hàng tuần, cho phép bạn thách thức lại và nhận thêm phần thưởng.',
+    category: 'activities',
+    usage: [
+      'dungeon - Bắt đầu thách thức hầm ngục',
+      'dungeon status - Xem trạng thái hầm ngục',
+      'Hầm ngục reset mỗi tuần'
+    ],
+    examples: ['dungeon', 'dungeon status']
+  },
+  {
+    name: 'Thú Cưng (Pet)',
+    shortDesc: 'Quản lý Pet',
+    description: 'Thu thập [Trứng] từ Boss để có Pet. Gõ lệnh "pet" để quản lý thú cưng của bạn. Gõ "summon [tên]" để triệu hồi Pet tham gia chiến đấu cùng bạn. Pet có thể lên cấp và học kỹ năng mới.',
+    category: 'activities',
+    usage: [
+      'pet - Xem danh sách Pet',
+      'summon [tên] - Triệu hồi Pet',
+      'unsummon - Thu hồi Pet',
+      'pet feed [tên] - Cho Pet ăn để tăng EXP'
+    ],
+    examples: ['pet', 'summon Rồng Lửa', 'unsummon', 'pet feed Rồng Lửa']
+  },
+  {
+    name: 'Tháp Thử Luyện',
+    shortDesc: 'Thử sức Pet',
+    description: 'Gặp [Huấn Luyện Sư] để cho Pet của bạn thử sức. Tháp Thử Luyện là nơi chỉ Pet được phép chiến đấu, không có sự hỗ trợ từ chủ nhân. Đây là cách tốt để rèn luyện và kiểm tra sức mạnh của Pet.',
+    category: 'activities',
+    usage: [
+      'Tìm [Huấn Luyện Sư] tại khu vực đặc biệt',
+      'talk Huấn Luyện Sư',
+      'Chọn Pet để tham gia thử luyện'
+    ],
+    examples: ['talk Huấn Luyện Sư', 'goto Tháp Thử Luyện']
+  },
+  {
+    name: 'Boss Thế Giới',
+    shortDesc: 'Đánh Boss lớn',
+    description: 'Boss Thế Giới xuất hiện vào [Giờ cố định] mỗi ngày tại [Địa điểm đặc biệt]. Đây là những trùm cuối cực mạnh yêu cầu nhiều người chơi cùng hợp tác để đánh bại. Phần thưởng cực kỳ giá trị!',
+    category: 'activities',
+    usage: [
+      'Theo dõi thông báo về thời gian xuất hiện Boss',
+      'Tập hợp nhóm người chơi',
+      'Di chuyển đến địa điểm Boss xuất hiện',
+      'Phối hợp tấn công cùng người chơi khác'
+    ],
+    examples: ['world Có ai đi đánh Boss không?', 'party invite [tên người chơi]']
+  },
+  {
+    name: 'Đấu Trường PvP',
+    shortDesc: 'Đấu với người chơi',
+    description: 'Gặp [Quản Lý Đấu Trường] để tìm trận đấu PvP. Hệ thống hỗ trợ trận 1v1 (đơn) và 2v2 (đôi). Chiến thắng để nhận điểm xếp hạng và phần thưởng đặc biệt.',
+    category: 'activities',
+    usage: [
+      'Đến Đấu Trường',
+      'talk Quản Lý Đấu Trường',
+      'Chọn loại trận đấu (1v1 hoặc 2v2)',
+      'Chờ ghép trận và chiến đấu'
+    ],
+    examples: ['talk Quản Lý Đấu Trường', 'goto Đấu Trường']
+  },
+  {
+    name: 'Thám Hiểm Di Tích',
+    shortDesc: 'Khám phá và giải đố',
+    description: 'Gặp [Nhà Khảo Cổ] để lập tổ đội (Party) thám hiểm di tích cổ. Hoạt động này yêu cầu giải các câu đố, vượt qua bẫy, và đánh bại quái vật trong di tích. Làm việc nhóm là chìa khóa thành công!',
+    category: 'activities',
+    usage: [
+      'Tạo hoặc tham gia Party',
+      'Gặp [Nhà Khảo Cổ] để nhận nhiệm vụ',
+      'Di chuyển đến Di Tích',
+      'Hợp tác với đồng đội để giải đố và chiến đấu'
+    ],
+    examples: ['talk Nhà Khảo Cổ', 'party invite [tên người chơi]', 'goto Di Tích Cổ Đại']
   }
 ];
 

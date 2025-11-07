@@ -36,6 +36,12 @@
             <span class="guild-value">[{{ entityData.guild.tag }}] {{ entityData.guild.name }}</span>
           </div>
 
+          <!-- Pet Information -->
+          <div v-if="entityData?.pet" class="entity-pet-info">
+            <span class="pet-label">Pet triệu hồi:</span>
+            <span class="pet-value">{{ entityData.pet.name }} (Lv.{{ entityData.pet.level }})</span>
+          </div>
+
           <!-- Custom Content Slot -->
           <div v-if="$slots.default" class="popup-custom-content">
             <slot></slot>
@@ -71,6 +77,10 @@ interface EntityData {
   guild?: {
     name: string;
     tag: string;
+  };
+  pet?: {
+    name: string;
+    level: number;
   };
 }
 
@@ -250,6 +260,24 @@ const hpPercentage = computed(() => {
 
 .guild-value {
   color: var(--text-accent);
+  font-weight: bold;
+}
+
+.entity-pet-info {
+  color: var(--text-bright);
+  margin-bottom: 1rem;
+  padding: 0.75rem;
+  background-color: rgba(147, 112, 219, 0.1);
+  border-left: 2px solid #9370DB;
+}
+
+.pet-label {
+  color: var(--text-dim);
+  margin-right: 0.5rem;
+}
+
+.pet-value {
+  color: #9370DB;
   font-weight: bold;
 }
 
