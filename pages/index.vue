@@ -422,7 +422,6 @@ import LeaderboardOverlay from '~/components/LeaderboardOverlay.vue';
 import BlacksmithPopup from '~/components/BlacksmithPopup.vue';
 import TabSelector from '~/components/TabSelector.vue';
 import MainLogPane from '~/components/MainLogPane.vue';
-import CombatLogPane from '~/components/CombatLogPane.vue';
 import ChatLogPane from '~/components/ChatLogPane.vue';
 import RoomOccupantsPane from '~/components/RoomOccupantsPane.vue';
 import LoadingIndicator from '~/components/LoadingIndicator.vue';
