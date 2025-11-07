@@ -50,7 +50,7 @@ export default defineEventHandler(async (event) => {
         success: false, 
         message: `Bạn cần nghề nghiệp ${sanitizeText(quest.professionRequirement)} để nhận nhiệm vụ này!` 
       };
-    }
+      status: 'active'
 
     // Check if player already has this quest
     const existingQuest = await PlayerQuestSchema.findOne({ 
