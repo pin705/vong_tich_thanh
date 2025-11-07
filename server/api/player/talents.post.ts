@@ -14,10 +14,18 @@ export default defineEventHandler(async (event) => {
   const body = await readBody(event);
   const { talentId } = body;
 
-  if (!talentId) {
+  if (!talentId || typeof talentId !== 'string') {
     throw createError({
       statusCode: 400,
-      message: 'Talent ID is required',
+      message: 'Talent ID is required và phải là chuỗi',
+    });
+  }
+
+  // Sanitize talentId to prevent injection
+  if (!/^[a-zA-Z0-9_-]+$/.test(talentId)) {
+    throw createError({
+      statusCode: 400,
+      message: 'Talent ID không hợp lệ',
     });
   }
 

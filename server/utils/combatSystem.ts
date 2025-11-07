@@ -98,9 +98,9 @@ function calculateDamage(baseDamage: number): number {
 async function calculatePlayerDamage(player: any): Promise<number> {
   let baseDamage = 5 + player.level; // Base damage increases with level
   
-  // Check inventory for equipped weapon
+  // Check inventory for equipped weapon (optimized: only fetch type and stats fields)
   if (player.inventory && player.inventory.length > 0) {
-    const items = await ItemSchema.find({ _id: { $in: player.inventory } });
+    const items = await ItemSchema.find({ _id: { $in: player.inventory } }).select('type stats').lean();
     const weapons = items.filter((item: any) => item.type === 'weapon');
     if (weapons.length > 0) {
       // Use the best weapon
@@ -120,9 +120,9 @@ async function calculatePlayerDamage(player: any): Promise<number> {
 async function calculatePlayerDefense(player: any): Promise<number> {
   let defense = 0;
   
-  // Check inventory for equipped armor
+  // Check inventory for equipped armor (optimized: only fetch type and stats fields)
   if (player.inventory && player.inventory.length > 0) {
-    const items = await ItemSchema.find({ _id: { $in: player.inventory } });
+    const items = await ItemSchema.find({ _id: { $in: player.inventory } }).select('type stats').lean();
     const armors = items.filter((item: any) => item.type === 'armor');
     if (armors.length > 0) {
       // Use the best armor
@@ -278,7 +278,9 @@ async function dropLoot(agent: any, roomId: string): Promise<string[]> {
       // Roll for drop chance
       const roll = Math.random();
       if (roll <= lootEntry.dropChance) {
-        const originalItem = await ItemSchema.findById(lootEntry.itemId);
+        const originalItem = await ItemSchema.findById(lootEntry.itemId)
+          .select('name description type value stats rarity quality slot requiredLevel setKey setBonus recipe resultItem')
+          .lean();
         if (originalItem) {
           const newItem = await ItemSchema.create({
             name: originalItem.name,

@@ -1,6 +1,7 @@
 import { AuctionItemSchema } from '../../../models/AuctionItem';
 import { PlayerSchema } from '../../../models/Player';
 import { ItemSchema } from '../../../models/Item';
+import { validateObjectId } from '~/server/utils/validation';
 
 export default defineEventHandler(async (event) => {
   const user = await getUserSession(event);
@@ -18,6 +19,15 @@ export default defineEventHandler(async (event) => {
     throw createError({
       statusCode: 400,
       statusMessage: 'Auction ID is required.'
+    });
+  }
+
+  // Validate auctionId format
+  const validation = validateObjectId(auctionId);
+  if (!validation.valid) {
+    throw createError({
+      statusCode: 400,
+      statusMessage: validation.error || 'Auction ID không hợp lệ.'
     });
   }
 
@@ -75,7 +85,31 @@ export default defineEventHandler(async (event) => {
       });
     }
 
-    // Refund current bidder if exists
+    // Mark auction as sold first to prevent race conditions (atomic check-and-set)
+    const updatedAuction = await AuctionItemSchema.findOneAndUpdate(
+      { 
+        _id: auctionId, 
+        status: 'active',
+        expiresAt: { $gte: new Date() }
+      },
+      { 
+        status: 'sold',
+        currentBid: auction.buyoutPrice,
+        currentBidder: player._id
+      },
+      { new: false } // Return old document to check if update succeeded
+    );
+
+    // If update failed, auction was already sold or expired
+    if (!updatedAuction || updatedAuction.status !== 'active') {
+      throw createError({
+        statusCode: 400,
+        statusMessage: 'Đấu giá đã kết thúc hoặc đã được mua.'
+      });
+    }
+
+    // Now proceed with transfers (auction is locked as 'sold')
+    // Refund previous bidder if exists
     if (auction.currentBidder) {
       const currentBidder = await PlayerSchema.findById(auction.currentBidder);
       if (currentBidder) {
@@ -95,12 +129,6 @@ export default defineEventHandler(async (event) => {
     player.gold -= auction.buyoutPrice;
     player.inventory.push(auction.item._id);
     await player.save();
-
-    // Mark auction as sold
-    auction.status = 'sold';
-    auction.currentBid = auction.buyoutPrice;
-    auction.currentBidder = player._id;
-    await auction.save();
 
     const itemName = (auction.item as any).name || 'vật phẩm';
 

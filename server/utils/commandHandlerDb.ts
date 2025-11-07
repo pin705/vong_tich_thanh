@@ -64,7 +64,7 @@ async function formatTradeStatus(
   const responses: string[] = [];
   const { trade, isInitiator } = playerTrade;
   const otherPlayerId = isInitiator ? trade.targetId : trade.initiatorId;
-  const otherPlayer = await PlayerSchema.findById(otherPlayerId);
+  const otherPlayer = await PlayerSchema.findById(otherPlayerId).select('username').lean();
   
   responses.push('═══════════════════════════════════════════════════');
   responses.push('            GIAO DỊCH ĐANG HOẠT ĐỘNG              ');
@@ -73,7 +73,7 @@ async function formatTradeStatus(
   responses.push('');
   
   // Show initiator's offer
-  const initiatorItems = await ItemSchema.find({ _id: { $in: trade.initiatorItems } });
+  const initiatorItems = await ItemSchema.find({ _id: { $in: trade.initiatorItems } }).select('name').lean();
   responses.push(`${isInitiator ? 'Bạn' : otherPlayer?.username || 'Đối tác'} đưa ra:`);
   if (initiatorItems.length > 0) {
     initiatorItems.forEach((item: any) => {
@@ -89,7 +89,7 @@ async function formatTradeStatus(
   responses.push('');
   
   // Show target's offer
-  const targetItems = await ItemSchema.find({ _id: { $in: trade.targetItems } });
+  const targetItems = await ItemSchema.find({ _id: { $in: trade.targetItems } }).select('name').lean();
   responses.push(`${!isInitiator ? 'Bạn' : otherPlayer?.username || 'Đối tác'} đưa ra:`);
   if (targetItems.length > 0) {
     targetItems.forEach((item: any) => {
@@ -185,8 +185,8 @@ export async function handleCommandDb(command: Command, playerId: string): Promi
               
               // Show loot items
               if (agent.loot && agent.loot.length > 0) {
-                // Populate loot items if not already populated
-                const populatedAgent = await AgentSchema.findById(agent._id).populate('loot');
+                // Populate loot items if not already populated (optimized: only select name field)
+                const populatedAgent = await AgentSchema.findById(agent._id).populate('loot', 'name').lean();
                 if (populatedAgent && populatedAgent.loot) {
                   const lootNames = populatedAgent.loot.map((item: any) => `[${item.name}]`).join(', ');
                   responses.push(`Vật phẩm: ${lootNames}`);
@@ -270,7 +270,7 @@ export async function handleCommandDb(command: Command, playerId: string): Promi
         
         if (player.inventory && player.inventory.length > 0) {
           responses.push('Vật phẩm:');
-          const inventory = await ItemSchema.find({ _id: { $in: player.inventory } });
+          const inventory = await ItemSchema.find({ _id: { $in: player.inventory } }).select('name value').lean();
           inventory.forEach((item: any) => {
             responses.push(`  - [${item.name}] (${item.value} vàng)`);
           });
@@ -405,11 +405,11 @@ export async function handleCommandDb(command: Command, playerId: string): Promi
           break;
         }
 
-        // Phase 25: Use new vendor system
+        // Phase 25: Use new vendor system (optimized: only populate needed fields)
         const vendors = await AgentSchema.find({ 
           _id: { $in: listRoom.agents },
           isVendor: true
-        }).populate('shopInventory').populate('shopItems');
+        }).populate('shopInventory', 'name price premiumPrice').populate('shopItems', 'name price premiumPrice');
 
         if (vendors.length === 0) {
           responses.push('Không có ai ở đây để bán hàng.');
@@ -451,11 +451,11 @@ export async function handleCommandDb(command: Command, playerId: string): Promi
           break;
         }
 
-        // Phase 25: Use new vendor system
+        // Phase 25: Use new vendor system (optimized: only populate needed fields)
         const buyVendors = await AgentSchema.find({ 
           _id: { $in: buyRoom.agents },
           isVendor: true
-        }).populate('shopInventory').populate('shopItems');
+        }).populate('shopInventory', 'name price premiumPrice type').populate('shopItems', 'name price premiumPrice type');
 
         if (buyVendors.length === 0) {
           responses.push('Không có ai ở đây để bán hàng.');
@@ -559,7 +559,7 @@ export async function handleCommandDb(command: Command, playerId: string): Promi
           break;
         }
 
-        const sellItems = await ItemSchema.find({ _id: { $in: player.inventory } });
+        const sellItems = await ItemSchema.find({ _id: { $in: player.inventory } }).select('name value sellValue').lean();
         const sellItem = sellItems.find((i: any) => 
           i.name.toLowerCase().includes(target.toLowerCase())
         );
