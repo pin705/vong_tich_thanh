@@ -1,9 +1,13 @@
 import type { Command } from '~/types';
 import { PlayerSchema } from '../../models/Player';
 import { RoomSchema } from '../../models/Room';
+import { PlayerQuestSchema } from '../../models/PlayerQuest';
+import { QuestSchema } from '../../models/Quest';
+import { ItemSchema } from '../../models/Item';
 import { gameState } from '../utils/gameState';
 import { formatRoomDescription, DIRECTION_MAP, DIRECTION_NAMES_VI, getOppositeDirection } from '../utils/roomUtils';
 import { movePetToRoom } from '../utils/petService';
+import { removeItemFromPlayer } from '../utils/inventoryService';
 import type { Types } from 'mongoose';
 
 /**
@@ -59,6 +63,156 @@ export async function handleMovementCommand(command: Command, playerId: string):
       // Log the error for debugging
       console.error(`Room exit error: Room ${currentRoom._id} (${currentRoom.name}) has exit ${direction} pointing to non-existent room ${nextRoomId}`);
       return responses;
+    }
+
+    // ==============================
+    // ACCESS CONTROL CHECKS
+    // ==============================
+    
+    // Check if room is locked and show hint
+    if (nextRoom.isLocked && nextRoom.unlockHint) {
+      // Check if player meets requirements before showing generic locked message
+      const meetsRequirements = await checkRoomRequirements();
+      if (!meetsRequirements) {
+        responses.push(`🔒 ${nextRoom.name} đang bị khóa.`);
+        responses.push(`💡 ${nextRoom.unlockHint}`);
+        return responses;
+      }
+    }
+    
+    // Check level requirement
+    if (nextRoom.requirements?.minLevel && player.level < nextRoom.requirements.minLevel) {
+      responses.push(`Bạn cảm thấy một luồng năng lượng ngăn cản bạn. (Yêu cầu Cấp ${nextRoom.requirements.minLevel})`);
+      if (nextRoom.unlockHint) {
+        responses.push(`💡 ${nextRoom.unlockHint}`);
+      }
+      return responses;
+    }
+    
+    // Helper function to check all requirements
+    async function checkRoomRequirements(): Promise<boolean> {
+      // Check level
+      if (nextRoom.requirements?.minLevel && player.level < nextRoom.requirements.minLevel) {
+        return false;
+      }
+      
+      // Check quests
+      if (nextRoom.requirements?.requiredQuestKey || nextRoom.requirements?.blockedByQuestKey) {
+        const playerQuests = await PlayerQuestSchema.find({ playerId: player._id }).lean();
+        
+        if (nextRoom.requirements?.requiredQuestKey) {
+          const requiredQuest = await QuestSchema.findOne({ questKey: nextRoom.requirements.requiredQuestKey }).lean();
+          if (!requiredQuest) return false;
+          const playerQuest = playerQuests.find(q => q.questId.toString() === requiredQuest._id.toString());
+          if (!playerQuest || playerQuest.status !== 'completed') return false;
+        }
+        
+        if (nextRoom.requirements?.blockedByQuestKey) {
+          const blockedQuest = await QuestSchema.findOne({ questKey: nextRoom.requirements.blockedByQuestKey }).lean();
+          if (!blockedQuest) return false;
+          const playerQuest = playerQuests.find(q => q.questId.toString() === blockedQuest._id.toString());
+          if (!playerQuest || playerQuest.status !== 'completed') return false;
+        }
+      }
+      
+      // Check items
+      if (nextRoom.requirements?.requiredItemKey) {
+        await player.populate('inventory');
+        interface InventoryItem {
+          _id: Types.ObjectId;
+          itemKey?: string;
+          name: string;
+        }
+        const itemInInventory = (player.inventory as unknown as InventoryItem[]).find(
+          (item) => item.itemKey === nextRoom.requirements?.requiredItemKey
+        );
+        if (!itemInInventory) return false;
+      }
+      
+      return true;
+    }
+
+    // Check quest requirements
+    if (nextRoom.requirements?.requiredQuestKey || nextRoom.requirements?.blockedByQuestKey) {
+      const playerQuests = await PlayerQuestSchema.find({ playerId: player._id }).lean();
+      
+      // Check if required quest is completed
+      if (nextRoom.requirements?.requiredQuestKey) {
+        const requiredQuest = await QuestSchema.findOne({ questKey: nextRoom.requirements.requiredQuestKey }).lean();
+        
+        if (!requiredQuest) {
+          console.error(`Required quest with key ${nextRoom.requirements.requiredQuestKey} not found`);
+          responses.push('Bạn chưa hoàn thành nhiệm vụ cần thiết để vào đây.');
+          return responses;
+        }
+        
+        const playerQuest = playerQuests.find(q => q.questId.toString() === requiredQuest._id.toString());
+        
+        if (!playerQuest || playerQuest.status !== 'completed') {
+          responses.push('Bạn chưa hoàn thành nhiệm vụ cần thiết để vào đây.');
+          if (nextRoom.unlockHint) {
+            responses.push(`💡 ${nextRoom.unlockHint}`);
+          }
+          return responses;
+        }
+      }
+      
+      // Check if blocked by incomplete quest
+      if (nextRoom.requirements?.blockedByQuestKey) {
+        const blockedQuest = await QuestSchema.findOne({ questKey: nextRoom.requirements.blockedByQuestKey }).lean();
+        
+        if (!blockedQuest) {
+          console.error(`Blocked quest with key ${nextRoom.requirements.blockedByQuestKey} not found`);
+          responses.push('Bạn chưa hoàn thành nhiệm vụ cần thiết để vào đây.');
+          if (nextRoom.unlockHint) {
+            responses.push(`💡 ${nextRoom.unlockHint}`);
+          }
+          return responses;
+        }
+        
+        const playerQuest = playerQuests.find(q => q.questId.toString() === blockedQuest._id.toString());
+        
+        if (!playerQuest || playerQuest.status !== 'completed') {
+          responses.push('Bạn chưa hoàn thành nhiệm vụ cần thiết để vào đây.');
+          if (nextRoom.unlockHint) {
+            responses.push(`💡 ${nextRoom.unlockHint}`);
+          }
+          return responses;
+        }
+      }
+    }
+
+    // Check item requirement
+    if (nextRoom.requirements?.requiredItemKey) {
+      // Populate inventory to access itemKey
+      await player.populate('inventory');
+      interface InventoryItem {
+        _id: Types.ObjectId;
+        itemKey?: string;
+        name: string;
+      }
+      const itemInInventory = (player.inventory as unknown as InventoryItem[]).find(
+        (item) => item.itemKey === nextRoom.requirements?.requiredItemKey
+      );
+      
+      if (!itemInInventory) {
+        // Get item name for better error message
+        const requiredItem = await ItemSchema.findOne({ itemKey: nextRoom.requirements.requiredItemKey }).lean();
+        const itemName = requiredItem ? requiredItem.name : 'vật phẩm đặc biệt';
+        responses.push(`Cánh cửa bị khóa. Bạn cần [${itemName}] để mở.`);
+        if (nextRoom.unlockHint) {
+          responses.push(`💡 ${nextRoom.unlockHint}`);
+        }
+        return responses;
+      }
+      
+      // Consume item if required
+      if (nextRoom.requirements.consumeItem) {
+        const result = await removeItemFromPlayer(playerId, itemInInventory._id.toString());
+        if (result.success) {
+          responses.push(`Bạn đã dùng [${result.item.name}] để mở cửa.`);
+        }
+      }
     }
 
     // Get Vietnamese direction name for broadcasting

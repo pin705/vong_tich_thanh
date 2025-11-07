@@ -1471,6 +1471,7 @@ export async function initializeWorld() {
     );
 
     const quảngTrường = await RoomSchema.create({
+      roomKey: 'quang_truong',
       name: 'Quảng Trường',
       description: 'Quảng trường chính của thành phố. Một đài phun nước cũ kỹ đứng ở trung tâm, nước đã khô cạn từ lâu.',
       exits: {},
@@ -1479,6 +1480,7 @@ export async function initializeWorld() {
     });
 
     const rừngRậm = await RoomSchema.create({
+      roomKey: 'rung_ram',
       name: 'Rừng Rậm',
       description: 'Một khu rừng rậm bên ngoài thành phố. Cây cối um tùm, ánh sáng mờ ảo. Bạn nghe thấy tiếng động vật hoang dã.',
       exits: {},
@@ -1487,6 +1489,7 @@ export async function initializeWorld() {
     });
 
     const hang = await RoomSchema.create({
+      roomKey: 'hang_toi',
       name: 'Hang Tối',
       description: 'Một hang động tối tăm và ẩm ướt. Bạn cảm thấy có điều gì đó nguy hiểm đang rình rập trong bóng tối.',
       exits: {},
@@ -1495,6 +1498,7 @@ export async function initializeWorld() {
     });
 
     const phòngKhóTreasure = await RoomSchema.create({
+      roomKey: 'phong_kho_bau',
       name: 'Phòng Kho Báu',
       description: 'Một phòng nhỏ với nhiều rương gỗ. Không khí tĩnh lặng đến đáng ngờ. Có vẻ như ai đó đã ở đây trước bạn.',
       exits: {},
@@ -1503,6 +1507,7 @@ export async function initializeWorld() {
     });
 
     const sânLuyệnTập = await RoomSchema.create({
+      roomKey: 'san_luyen_tap',
       name: 'Sân Luyện Tập',
       description: 'Một sân tập rộng với nhiều mục tiêu và vũ khí tập luyện. Có vẻ như vẫn còn được sử dụng thường xuyên.',
       exits: {},
@@ -1512,14 +1517,21 @@ export async function initializeWorld() {
 
     // Phase 22: Zone 2 - Hầm Ngầm Bỏ Hoang (Abandoned Sewers) - 7 rooms total
     const loiVaoHamNgam = await RoomSchema.create({
+      roomKey: 'loi_vao_ham_ngam',
       name: 'Lối Vào Hầm Ngầm',
       description: 'Lối xuống tối tăm với các bậc đá ẩm ướt. Mùi hôi thối nồng nặc thoát lên từ bên dưới.',
       exits: {},
       items: [],
-      agents: []
+      agents: [],
+      isLocked: true,
+      unlockHint: 'Cần đạt Cấp 5 để vào khu vực này.',
+      requirements: {
+        minLevel: 5  // Requires level 5 to enter the sewers
+      }
     });
 
     const hamNgam2 = await RoomSchema.create({
+      roomKey: 'duong_ham_cong',
       name: 'Đường Hầm Cong',
       description: 'Đường hầm uốn cong với ánh sáng yếu ớt từ rêu phát quang. Tiếng nước nhỏ giọt vang vọng.',
       exits: {},
@@ -1528,6 +1540,7 @@ export async function initializeWorld() {
     });
 
     const hamNgam4 = await RoomSchema.create({
+      roomKey: 'o_nhen_khong_lo',
       name: 'Ổ Nhện Khổng Lồ',
       description: 'Căn phòng phủ đầy mạng nhện dày đặc. Xương cốt nạn nhân nằm rải rác.',
       exits: {},
@@ -1536,6 +1549,7 @@ export async function initializeWorld() {
     });
 
     const hamNgamBoss = await RoomSchema.create({
+      roomKey: 'phong_dieu_khien_cong',
       name: 'Phòng Điều Khiển Cống',
       description: 'Phòng điều khiển trung tâm với màn hình và bảng điều khiển hỏng hóc. Một robot khổng lồ đứng ở giữa.',
       exits: {},
@@ -1556,16 +1570,23 @@ export async function initializeWorld() {
     }
     const sewerRooms = await RoomSchema.insertMany(sewerRoomDocs);
 
-    // Phase 22: Zone 3 - Nhà Máy Lắp Ráp Cũ (Old Assembly Plant) - 9 rooms total
+    // Phase 22: Zone 3 - Nhà Máy Lắp Ráp Cũ (Old Assembly Plant) - 9 rooms total - Requires level 10
     const loiVaoNhaMay = await RoomSchema.create({
+      roomKey: 'cong_nha_may',
       name: 'Cổng Nhà Máy',
       description: 'Cổng sắt khổng lồ đã rỉ sét nửa mở. Biển báo "Nguy Hiểm - Cấm Vào" đã phai màu.',
       exits: {},
       items: [],
-      agents: []
+      agents: [],
+      isLocked: true,
+      unlockHint: 'Cần đạt Cấp 10 để vào khu vực nguy hiểm này.',
+      requirements: {
+        minLevel: 10  // Requires level 10 to enter the factory
+      }
     });
 
     const nhaMay2 = await RoomSchema.create({
+      roomKey: 'phan_xuong_a',
       name: 'Phân Xưởng A',
       description: 'Phân xưởng lắp ráp với robot bảo vệ rỉ sét đang tuần tra.',
       exits: {},
@@ -1574,6 +1595,7 @@ export async function initializeWorld() {
     });
 
     const nhaMay3 = await RoomSchema.create({
+      roomKey: 'phong_thi_nghiem_nho',
       name: 'Phòng Thí Nghiệm Nhỏ',
       description: 'Phòng lab nhỏ với các bình chứa vỡ. Chất lỏng xanh rò rỉ ra sàn.',
       exits: {},
@@ -1582,6 +1604,7 @@ export async function initializeWorld() {
     });
 
     const nhaMayBoss = await RoomSchema.create({
+      roomKey: 'phong_thu_nghiem_chinh',
       name: 'Phòng Thử Nghiệm Chính',
       description: 'Phòng thử nghiệm rộng lớn. Robot Sát Thủ Mẫu 01 đứng ở trung tâm, đèn LED đỏ nhấp nháy.',
       exits: {},
@@ -1604,14 +1627,22 @@ export async function initializeWorld() {
 
     // Phase 22: Zone 4 - Phòng Thí Nghiệm Bị Chôn Vùi (Sunken Laboratory) - 9 rooms total
     const loiVaoPhongLab = await RoomSchema.create({
+      roomKey: 'loi_vao_phong_lab',
       name: 'Lối Vào Phòng Lab',
       description: 'Lối vào bị ngập nước. Cửa kim loại dày bị cong vênh. Cảnh báo sinh học phát sáng đỏ.',
       exits: {},
       items: [],
-      agents: []
+      agents: [],
+      isLocked: true,
+      unlockHint: 'Cần có [Chìa Khóa Hầm Ngầm] để mở cửa này. Có thể tìm được từ Boss hoặc nhiệm vụ.',
+      requirements: {
+        requiredItemKey: 'dungeon_key',  // Requires Dungeon Key to enter
+        consumeItem: false  // Key is not consumed (can be reused)
+      }
     });
 
     const phongLab1 = await RoomSchema.create({
+      roomKey: 'tien_sanh_lab',
       name: 'Tiền Sảnh Lab',
       description: 'Tiền sảnh ngập nửa mét nước. Bàn tiếp tân đổ ngã. Máu khô dính trên tường.',
       exits: {},
@@ -1620,6 +1651,7 @@ export async function initializeWorld() {
     });
 
     const phongLab2 = await RoomSchema.create({
+      roomKey: 'phong_nuoi_cay',
       name: 'Phòng Nuôi Cấy',
       description: 'Phòng đầy bể nuôi cấy vỡ. Sinh vật thí nghiệm lỗi lang thang trong đống mảnh vỡ.',
       exits: {},
@@ -1628,6 +1660,7 @@ export async function initializeWorld() {
     });
 
     const phongLabBoss = await RoomSchema.create({
+      roomKey: 'phong_thi_nghiem_chinh',
       name: 'Phòng Thí Nghiệm Chính',
       description: 'Phòng lab trung tâm khổng lồ. Bể nuôi lớn nhất đã vỡ. "Quái Vật Mẹ" nằm ở trung tâm, bao quanh bởi các đệ tử.',
       exits: {},
@@ -1650,6 +1683,7 @@ export async function initializeWorld() {
 
     // Phase 22: Zone 5 - Trung Tâm Vong Tích Thành (Citadel Core) - 8 elite rooms total
     const loiVaoTrungTam = await RoomSchema.create({
+      roomKey: 'cong_vao_trung_tam',
       name: 'Cổng Vào Trung Tâm',
       description: 'Cổng khổng lồ bằng kim loại cổ đại. Các ký tự phát sáng xanh lam. Năng lượng dày đặc trong không khí.',
       exits: {},
@@ -1658,6 +1692,7 @@ export async function initializeWorld() {
     });
 
     const trungTam1 = await RoomSchema.create({
+      roomKey: 'dai_sanh_co_ngu',
       name: 'Đại Sảnh Cổ Ngữ',
       description: 'Đại sảnh tráng lệ với trần vòm cao. Vệ binh cổ ngữ đứng canh gác.',
       exits: {},
@@ -1666,6 +1701,7 @@ export async function initializeWorld() {
     });
 
     const trungTam2 = await RoomSchema.create({
+      roomKey: 'thu_vien_co',
       name: 'Thư Viện Cổ',
       description: 'Thư viện đầy sách cổ và cuộn giấy da. Pháp sư vong tích đang nghiên cứu.',
       exits: {},
@@ -1674,6 +1710,7 @@ export async function initializeWorld() {
     });
 
     const trungTamBoss = await RoomSchema.create({
+      roomKey: 'ngai_vang_ke_cai_quan',
       name: 'Ngai Vàng Kẻ Cai Quản',
       description: 'Phòng ngai vàng rộng lớn. Kẻ Cai Quản Cổ Ngữ ngồi trên ngai, tỏa ra hào quang uy nghi.',
       exits: {},
@@ -1838,6 +1875,7 @@ export async function initializeWorld() {
 
     // Dungeon System: Create dungeon rooms
     const dungeonLobby = await RoomSchema.create({
+      roomKey: 'sanh_ham_nguc',
       name: 'Sảnh Hầm Ngục',
       description: 'Một sảnh rộng với cổng đá lớn dẫn vào hầm ngục. Ánh sáng lờ mờ từ những ngọn đuốc treo tường. Có một thương nhân đứng ở góc phòng.',
       exits: {
@@ -1846,6 +1884,7 @@ export async function initializeWorld() {
     });
 
     const dungeonInstance = await RoomSchema.create({
+      roomKey: 'ham_nguc_phong_chien',
       name: 'Hầm Ngục - Phòng Chiến',
       description: 'Một phòng chiến rộng lớn với bầu không khí ngột ngạt. Đây là nơi bạn đối mặt với thử thách.',
       exits: {
@@ -1859,12 +1898,14 @@ export async function initializeWorld() {
 
     // Pet Trial System: Create trial tower rooms
     const trialLobby = await RoomSchema.create({
+      roomKey: 'sanh_thap_thu_luyen',
       name: 'Sảnh Tháp Thử Luyện',
       description: 'Một sảnh cao với ánh sáng xanh phát ra từ các cột pha lê. Trên tường khắc những hình vẽ về các Huấn Luyện Sư huyền thoại cùng thú cưng của họ. Không khí tràn đầy năng lượng kỳ lạ.',
       exits: {},
     });
 
     const trialInstance = await RoomSchema.create({
+      roomKey: 'thap_thu_luyen_dau_truong',
       name: 'Tháp Thử Luyện - Đấu Trường',
       description: 'Một đấu trường rộng lớn với sàn đá cứng. Xung quanh là các hàng ghế đá trống rỗng, như thể từng chứng kiến vô số trận chiến. Đây là nơi thú cưng của bạn phải chiến đấu một mình.',
       exits: {
@@ -1881,6 +1922,7 @@ export async function initializeWorld() {
 
     // Arena System: Create arena rooms
     const arenaLobby = await RoomSchema.create({
+      roomKey: 'phong_cho_dau_truong',
       name: 'Phòng Chờ Đấu Trường',
       description: 'Một phòng chờ rộng rãi với các băng ghế đá. Trên tường treo những tấm bảng ghi tên những chiến binh nổi tiếng. Không khí nơi đây căng thẳng nhưng đầy hứng khởi.',
       exits: {},
@@ -1888,6 +1930,7 @@ export async function initializeWorld() {
     });
 
     const arena1v1RoomA = await RoomSchema.create({
+      roomKey: 'dau_truong_1v1_phong_a',
       name: 'Đấu Trường 1v1 - Phòng A',
       description: 'Một đấu trường tròn với sàn đá cứng. Xung quanh là các hàng ghế cao chót vót, dù giờ đây đã trống rỗng. Đây là nơi quyết định người chiến thắng.',
       exits: {},
@@ -1895,6 +1938,7 @@ export async function initializeWorld() {
     });
 
     const arena1v1RoomB = await RoomSchema.create({
+      roomKey: 'dau_truong_1v1_phong_b',
       name: 'Đấu Trường 1v1 - Phòng B',
       description: 'Một đấu trường tròn với sàn đá cứng. Xung quanh là các hàng ghế cao chót vót, dù giờ đây đã trống rỗng. Đây là nơi quyết định người chiến thắng.',
       exits: {},
@@ -1909,6 +1953,7 @@ export async function initializeWorld() {
 
     // Party Dungeon System: Create entrance
     const partyDungeonEntrance = await RoomSchema.create({
+      roomKey: 'loi_vao_di_tich_co',
       name: 'Lối Vào Di Tích Cổ',
       description: 'Một lối vào đầy bụi với những cột đá cổ đại. Có vẻ như nơi đây đã bị lãng quên từ lâu. Một nhà khảo cổ đang nghiên cứu những bức tường.',
       exits: {},
@@ -1921,6 +1966,7 @@ export async function initializeWorld() {
 
     // Create NPCs
     const linhGac = await AgentSchema.create({
+      agentKey: 'linh_gac',
       name: 'Lính Gác',
       description: 'Người lính gác trông mệt mỏi. Áo giáp của anh ta đã rỉ sét và anh ta dựa vào một cây giáo cũ. Anh ta có vẻ không muốn bị làm phiền.',
       type: 'npc',
@@ -1938,6 +1984,7 @@ export async function initializeWorld() {
     });
 
     const thuongGia = await AgentSchema.create({
+      agentKey: 'tho_ren',
       name: 'Thợ Rèn',
       description: 'Một người thợ rèn khỏe mạnh với tạp dề da đen xì. Anh ta đứng sau quầy hàng với nhiều vật phẩm và công cụ.',
       type: 'npc',
@@ -2055,6 +2102,7 @@ export async function initializeWorld() {
     });
 
     const chuotBienDi = await AgentSchema.create({
+      agentKey: 'chuot_bien_di',
       name: 'Chuột Biến Dị',
       description: 'Một con chuột to bằng con chó. Lông rụng, mắt đỏ rực, và răng nanh nhọn hoắt.',
       type: 'mob',
@@ -2074,6 +2122,7 @@ export async function initializeWorld() {
     });
 
     const sóiRừng = await AgentSchema.create({
+      agentKey: 'soi_rung',
       name: 'Sói Rừng',
       description: 'Một con sói hoang dã với bộ lông xám và đôi mắt vàng sắc bén. Nó gầm gừ đe dọa.',
       type: 'mob',
@@ -2092,6 +2141,7 @@ export async function initializeWorld() {
     });
 
     const goblin = await AgentSchema.create({
+      agentKey: 'goblin',
       name: 'Goblin',
       description: 'Một con goblin nhỏ nhưng hung hãn. Da xanh, tai nhọn, và cầm một cây gậy gỗ thô sơ.',
       type: 'mob',
@@ -2111,6 +2161,7 @@ export async function initializeWorld() {
     });
 
     const linhTuần = await AgentSchema.create({
+      agentKey: 'linh_tuan',
       name: 'Lính Tuần',
       description: 'Một người lính đang tuần tra. Anh ta mặc áo giáp nhẹ và cầm một cây giáo.',
       type: 'npc',
@@ -2130,6 +2181,7 @@ export async function initializeWorld() {
     });
 
     const huấnLuyệnViên = await AgentSchema.create({
+      agentKey: 'huan_luyen_vien',
       name: 'Huấn Luyện Viên',
       description: 'Một chiến binh kỳ cựu với nhiều vết sẹo. Anh ta đang giảng dạy các chiến binh trẻ.',
       type: 'npc',
@@ -2148,6 +2200,7 @@ export async function initializeWorld() {
     });
 
     const phùThủy = await AgentSchema.create({
+      agentKey: 'phu_thuy',
       name: 'Phù Thủy',
       description: 'Một phù thủy già với chiếc áo choàng tím. Ông ta đang nghiên cứu một cuốn sách cũ.',
       type: 'npc',
@@ -2171,6 +2224,7 @@ export async function initializeWorld() {
     });
 
     const thuongGiaBiAn = await AgentSchema.create({
+      agentKey: 'thuong_gia_bi_an',
       name: 'Thương Gia Bí Ẩn',
       description: 'Một người mặc áo choàng đen bí ẩn. Ánh mắt sắc bén nhìn thấu mọi thứ. Một hào quang kỳ lạ bao quanh người này.',
       type: 'npc',
@@ -2195,6 +2249,7 @@ export async function initializeWorld() {
 
     // Dungeon System: Dungeon Merchant NPC
     const dungeonMerchant = await AgentSchema.create({
+      agentKey: 'thuong_nhan_ham_nguc',
       name: 'Thương Nhân Hầm Ngục',
       description: 'Một thương nhân bí ẩn chuyên bán đồ quý hiếm bằng Xu Hầm Ngục. Mắt người này lấp lánh với sự tham lam.',
       type: 'npc',
@@ -2217,6 +2272,7 @@ export async function initializeWorld() {
 
     // Phase 22: Zone 1 New NPCs and Mobs (Level 1-10)
     const giaLang = await AgentSchema.create({
+      agentKey: 'gia_lang',
       name: 'Già Làng',
       description: 'Một ông già hiền lành với bộ râu bạc. Ông ta là người hướng dẫn người mới.',
       type: 'npc',
@@ -2235,6 +2291,7 @@ export async function initializeWorld() {
     });
 
     const chuotCong = await AgentSchema.create({
+      agentKey: 'chuot_cong',
       name: 'Chuột Cống',
       description: 'Chuột nhỏ sinh sống trong cống, yếu ớt nhưng hung hãn khi đói.',
       type: 'mob',
@@ -2254,6 +2311,7 @@ export async function initializeWorld() {
     });
 
     const thayMaYeu = await AgentSchema.create({
+      agentKey: 'thay_ma_yeu',
       name: 'Thây Ma Yếu',
       description: 'Xác sống yếu ớt, di chuyển chậm chạp. Toát ra mùi tử khí.',
       type: 'mob',
@@ -2273,6 +2331,7 @@ export async function initializeWorld() {
     });
 
     const keCuopDuong = await AgentSchema.create({
+      agentKey: 'ke_cuop_duong',
       name: 'Kẻ Cướp Đường',
       description: 'Tên cướp hung hãn với dao găm rỉ sét. Mắt đỏ ngầu tham lam.',
       type: 'mob',
@@ -2294,6 +2353,7 @@ export async function initializeWorld() {
 
     // Phase 26: Zone 1 Boss (Level 10) - Drops Chìa Khóa Hầm Ngầm
     const thuLinhKeCuop = await AgentSchema.create({
+      agentKey: 'thu_linh_ke_cuop',
       name: 'Thủ Lĩnh Kẻ Cướp',
       description: 'Thủ lĩnh của băng cướp, mặc áo giáp da dày và cầm rìu hai tay lớn. Sẹo dài chạy từ trán xuống má.',
       type: 'mob',
@@ -2319,6 +2379,7 @@ export async function initializeWorld() {
 
     // Phase 22: Zone 2 NPCs and Mobs (Level 10-20)
     const thoSanPheLieu = await AgentSchema.create({
+      agentKey: 'tho_san_phe_lieu',
       name: 'Thợ Săn Phế Liệu',
       description: 'Người săn lùng đồ phế thải trong hầm ngầm. Mặc áo giáp kim loại tái chế.',
       type: 'npc',
@@ -2337,6 +2398,7 @@ export async function initializeWorld() {
     });
 
     const nhenDotBien = await AgentSchema.create({
+      agentKey: 'nhen_dot_bien',
       name: 'Nhện Đột Biến',
       description: 'Nhện khổng lồ với nhiều mắt đỏ rực. Nọc độc nhỏ giọt từ nanh.',
       type: 'mob',
@@ -2359,6 +2421,7 @@ export async function initializeWorld() {
     });
 
     const nguoiCongNgam = await AgentSchema.create({
+      agentKey: 'nguoi_cong_ngam',
       name: 'Người Cống Ngầm',
       description: 'Sinh vật nhân hình biến dạng sống trong hầm ngầm. Da xanh nhợt nhạt.',
       type: 'mob',
@@ -2381,6 +2444,7 @@ export async function initializeWorld() {
     });
 
     const robotQuanLyCong = await AgentSchema.create({
+      agentKey: 'robot_quan_ly_cong',
       name: 'Robot Quản Lý Cống',
       description: 'Robot cổ đại khổng lồ vẫn đang vận hành. Đèn LED đỏ nhấp nháy cảnh báo.',
       type: 'mob',
@@ -2407,6 +2471,7 @@ export async function initializeWorld() {
 
     // Phase 22: Zone 3 NPCs and Mobs (Level 20-30)
     const kySuTruongCu = await AgentSchema.create({
+      agentKey: 'ky_su_truong_cu',
       name: 'Kỹ Sư Trưởng Cũ',
       description: 'Kỹ sư già từng làm việc tại nhà máy. Mang theo nhiều công cụ cổ.',
       type: 'npc',
@@ -2425,6 +2490,7 @@ export async function initializeWorld() {
     });
 
     const robotBaoVeRiSet = await AgentSchema.create({
+      agentKey: 'robot_bao_ve_ri_set',
       name: 'Robot Bảo Vệ Rỉ Sét',
       description: 'Robot bảo vệ cũ kỹ, rỉ sét nhưng vẫn hoạt động. Vũ khí đã lỗi thời.',
       type: 'mob',
@@ -2445,6 +2511,7 @@ export async function initializeWorld() {
     });
 
     const congNhanBienDi = await AgentSchema.create({
+      agentKey: 'cong_nhan_bien_di',
       name: 'Công Nhân Biến Dị',
       description: 'Công nhân bị đột biến bởi hóa chất. Thân hình biến dạng, mắt trống rỗng.',
       type: 'mob',
@@ -2464,6 +2531,7 @@ export async function initializeWorld() {
     });
 
     const robotSatThuMau01 = await AgentSchema.create({
+      agentKey: 'robot_sat_thu_mau_01',
       name: 'Robot Sát Thủ Mẫu 01',
       description: 'Robot chiến đấu nguyên mẫu. Vũ khí tích hợp, AI thông minh, di chuyển nhanh.',
       type: 'mob',
@@ -2489,6 +2557,7 @@ export async function initializeWorld() {
 
     // Phase 22: Zone 4 NPCs and Mobs (Level 30-40)
     const giaoSuBiAn = await AgentSchema.create({
+      agentKey: 'giao_su_bi_an',
       name: 'Giáo Sư Bí Ẩn',
       description: 'Nhà khoa học bị mắc kẹt trong phòng lab. Áo choàng trắng dính đầy máu khô.',
       type: 'npc',
@@ -2507,6 +2576,7 @@ export async function initializeWorld() {
     });
 
     const sinhVatThiNghiemLoi = await AgentSchema.create({
+      agentKey: 'sinh_vat_thi_nghiem_loi',
       name: 'Sinh Vật Thí Nghiệm Lỗi',
       description: 'Sinh vật lai tạo thất bại. Nhiều chi, nhiều đầu, di chuyển kỳ dị.',
       type: 'mob',
@@ -2526,6 +2596,7 @@ export async function initializeWorld() {
     });
 
     const bongMaKhoaHocGia = await AgentSchema.create({
+      agentKey: 'bong_ma_khoa_hoc_gia',
       name: 'Bóng Ma Khoa Học Gia',
       description: 'Linh hồn khoa học gia chết trong thảm họa. Phát sáng xanh lạnh, xuyên qua vật thể.',
       type: 'mob',
@@ -2545,6 +2616,7 @@ export async function initializeWorld() {
     });
 
     const quaiVatMe = await AgentSchema.create({
+      agentKey: 'quai_vat',
       name: 'Quái Vật "Mẹ"',
       description: 'Sinh vật đột biến khổng lồ, là mẹ của tất cả thí nghiệm lỗi. Cơ thể khổng lồ, nhiều xúc tu.',
       type: 'mob',
@@ -2567,6 +2639,7 @@ export async function initializeWorld() {
 
     // Phase 22: Zone 5 NPCs and Mobs (Level 40-50)
     const thaySuCoNgu = await AgentSchema.create({
+      agentKey: 'thay_tu_co_ngu',
       name: 'Thầy Tu Cổ Ngữ',
       description: 'Thầy tu già canh giữ Citadel. Áo choàng xanh lam, tỏa hào quang thánh thiện.',
       type: 'npc',
@@ -2585,6 +2658,7 @@ export async function initializeWorld() {
     });
 
     const veBinhCoNgu = await AgentSchema.create({
+      agentKey: 've_binh_co_ngu',
       name: 'Vệ Binh Cổ Ngữ',
       description: 'Chiến binh cổ đại bằng năng lượng tinh khiết. Giáp phát sáng, kiếm năng lượng sắc bén.',
       type: 'mob',
@@ -2605,6 +2679,7 @@ export async function initializeWorld() {
     });
 
     const phapSuVongTich = await AgentSchema.create({
+      agentKey: 'phap_su_vong_tich',
       name: 'Pháp Sư Vong Tích',
       description: 'Pháp sư cổ đại với sức mạnh phép thuật khủng khiếp. Tay cầm quyển sách cổ phát sáng.',
       type: 'mob',
@@ -2624,6 +2699,7 @@ export async function initializeWorld() {
     });
 
     const keCaiQuanCoNgu = await AgentSchema.create({
+      agentKey: 'ke_cai_quan_co_ngu',
       name: 'Kẻ Cai Quản Cổ Ngữ',
       description: 'Người cai quản tối thượng của Citadel. Hào quang vàng bao trùm, sức mạnh áp đảo.',
       type: 'mob',
@@ -2674,6 +2750,7 @@ export async function initializeWorld() {
       if (i % 2 === 0) {
         // Create Nhện Đột Biến instance
         const spider = await AgentSchema.create({
+      agentKey: 'nhen_dot_bien',
           name: 'Nhện Đột Biến',
           description: 'Nhện khổng lồ với nhiều mắt đỏ rực. Nọc độc nhỏ giọt từ nanh.',
           type: 'mob',
@@ -2695,6 +2772,7 @@ export async function initializeWorld() {
       } else {
         // Create Người Cống Ngầm instance
         const sewerperson = await AgentSchema.create({
+      agentKey: 'nguoi_cong_ngam',
           name: 'Người Cống Ngầm',
           description: 'Sinh vật nhân hình biến dạng sống trong hầm ngầm. Da xanh nhợt nhạt.',
           type: 'mob',
@@ -2728,6 +2806,7 @@ export async function initializeWorld() {
       if (i % 2 === 0) {
         // Create Robot Bảo Vệ Rỉ Sét instance
         const robot = await AgentSchema.create({
+      agentKey: 'robot_bao_ve_ri_set',
           name: 'Robot Bảo Vệ Rỉ Sét',
           description: 'Robot bảo vệ cũ kỹ, rỉ sét nhưng vẫn hoạt động. Vũ khí đã lỗi thời.',
           type: 'mob',
@@ -2750,6 +2829,7 @@ export async function initializeWorld() {
       } else {
         // Create Công Nhân Biến Dị instance
         const mutantWorker = await AgentSchema.create({
+      agentKey: 'cong_nhan_bien_di',
           name: 'Công Nhân Biến Dị',
           description: 'Công nhân bị đột biến bởi hóa chất. Thân hình biến dạng, mắt trống rỗng.',
           type: 'mob',
@@ -2783,6 +2863,7 @@ export async function initializeWorld() {
       if (i % 2 === 0) {
         // Create Sinh Vật Thí Nghiệm Lỗi instance
         const experiment = await AgentSchema.create({
+      agentKey: 'sinh_vat_thi_nghiem_loi',
           name: 'Sinh Vật Thí Nghiệm Lỗi',
           description: 'Sinh vật lai tạo thất bại. Nhiều chi, nhiều đầu, di chuyển kỳ dị.',
           type: 'mob',
@@ -2804,6 +2885,7 @@ export async function initializeWorld() {
       } else {
         // Create Bóng Ma Khoa Học Gia instance
         const ghost = await AgentSchema.create({
+      agentKey: 'bong_ma_khoa_hoc_gia',
           name: 'Bóng Ma Khoa Học Gia',
           description: 'Linh hồn khoa học gia chết trong thảm họa. Phát sáng xanh lạnh, xuyên qua vật thể.',
           type: 'mob',
@@ -2837,6 +2919,7 @@ export async function initializeWorld() {
       if (i % 2 === 0) {
         // Create Vệ Binh Cổ Ngữ instance
         const guardian = await AgentSchema.create({
+      agentKey: 've_binh_co_ngu',
           name: 'Vệ Binh Cổ Ngữ',
           description: 'Chiến binh cổ đại bằng năng lượng tinh khiết. Giáp phát sáng, kiếm năng lượng sắc bén.',
           type: 'mob',
@@ -2859,6 +2942,7 @@ export async function initializeWorld() {
       } else {
         // Create Pháp Sư Vong Tích instance
         const mage = await AgentSchema.create({
+      agentKey: 'phap_su_vong_tich',
           name: 'Pháp Sư Vong Tích',
           description: 'Pháp sư cổ đại với sức mạnh phép thuật khủng khiếp. Tay cầm quyển sách cổ phát sáng.',
           type: 'mob',
