@@ -246,6 +246,11 @@ export const PlayerSchema = defineMongooseModel({
       ref: 'Room',
       default: [],
     }],
+    // Tutorial System
+    hasCompletedTutorial: {
+      type: Boolean,
+      default: false,
+    },
     // Enhancement & Dungeon System
     dungeonCoin: {
       type: Number,

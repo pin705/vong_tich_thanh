@@ -493,6 +493,18 @@ export default defineWebSocketHandler({
               await sendExits(peer, playerAfterCmd.currentRoomId.toString());
               await sendRoomOccupants(peer, playerAfterCmd.currentRoomId.toString(), playerIdForCmd);
               await sendPartyState(peer, playerIdForCmd);
+              
+              // Check if tutorial was just completed and send special event
+              const playerState = gameState.getPlayer(playerIdForCmd);
+              if (playerState && (playerState as any).tutorialRewardData) {
+                const rewardData = (playerState as any).tutorialRewardData;
+                peer.send(JSON.stringify({
+                  type: 'tutorial-complete-reward',
+                  items: rewardData
+                }));
+                // Clear the flag
+                delete (playerState as any).tutorialRewardData;
+              }
             }
           } catch (cmdError) {
             console.error('[WS] Error processing command:', cmdError);
