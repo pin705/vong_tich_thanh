@@ -97,6 +97,13 @@
             <!-- Actions -->
             <div class="detail-actions">
               <button
+                v-if="selectedQuest.status === 'available'"
+                class="action-button accept"
+                @click="acceptQuest(selectedQuest)"
+              >
+                [+] NHẬN NHIỆM VỤ
+              </button>
+              <button
                 v-if="selectedQuest.status === 'active' && isQuestComplete(selectedQuest)"
                 class="action-button complete"
                 @click="completeQuest(selectedQuest)"
@@ -176,7 +183,7 @@ const props = withDefaults(defineProps<Props>(), {
   quests: () => []
 });
 
-const emit = defineEmits(['close', 'completeQuest', 'abandonQuest', 'repeatQuest', 'trackQuest']);
+const emit = defineEmits(['close', 'acceptQuest', 'completeQuest', 'abandonQuest', 'repeatQuest', 'trackQuest']);
 
 const activeTab = ref<'active' | 'completed' | 'available'>('active');
 const selectedQuest = ref<Quest | null>(null);
@@ -257,6 +264,10 @@ function hasRequirements(quest: Quest): boolean {
 
 function selectQuest(quest: Quest) {
   selectedQuest.value = quest;
+}
+
+function acceptQuest(quest: Quest) {
+  emit('acceptQuest', quest.id);
 }
 
 function completeQuest(quest: Quest) {
@@ -540,6 +551,15 @@ function trackQuest(quest: Quest) {
 .action-button:hover {
   background: #00ff00;
   transform: scale(1.02);
+}
+
+.action-button.accept {
+  background: #00aa00;
+  border-color: #00ff00;
+}
+
+.action-button.accept:hover {
+  background: #00ff00;
 }
 
 .action-button.complete {

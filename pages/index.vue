@@ -196,6 +196,7 @@
       :isOpen="questsOpen"
       :quests="playerQuests"
       @close="questsOpen = false"
+      @acceptQuest="handleAcceptQuest"
       @completeQuest="handleCompleteQuest"
       @abandonQuest="handleAbandonQuest"
       @repeatQuest="handleRepeatQuest"
@@ -318,6 +319,12 @@
       @mailUpdated="handleMailUpdated"
     />
 
+    <!-- Pet Popup -->
+    <PetOverlay
+      :isOpen="petPopupOpen"
+      @close="petPopupOpen = false"
+    />
+
     <!-- Crafting Popup -->
     <CraftingPopup
       :isOpen="craftingPopupOpen"
@@ -383,6 +390,7 @@ import CraftingPopup from '~/components/CraftingPopup.vue';
 import PremiumShopPopup from '~/components/PremiumShopPopup.vue';
 import ShopPopup from '~/components/ShopPopup.vue';
 import MailPopup from '~/components/MailPopup.vue';
+import PetOverlay from '~/components/PetOverlay.vue';
 import LeaderboardOverlay from '~/components/LeaderboardOverlay.vue';
 import TabSelector from '~/components/TabSelector.vue';
 import MainLogPane from '~/components/MainLogPane.vue';
@@ -434,7 +442,7 @@ const MAX_COMMAND_HISTORY = 100; // Limit stored commands
 
 // Message limits to prevent accumulation
 const MAX_MAIN_LOG_MESSAGES = 500; // Keep last 500 messages in main log
-const MAX_COMBAT_LOG_MESSAGES = 300; // Keep last 300 messages in combat log
+const MAX_COMBAT_LOG_MESSAGES = 100; // Keep last 100 messages in combat log for better performance
 
 // Load chat messages from localStorage
 const loadChatFromStorage = () => {
@@ -564,11 +572,13 @@ const tradingPopupOpen = ref(false);
 const partyPopupOpen = ref(false);
 const partyInvitationPopupOpen = ref(false);
 const guildPopupOpen = ref(false);
+const guildInvitationPopupOpen = ref(false);
 const auctionHousePopupOpen = ref(false);
 const premiumShopPopupOpen = ref(false);
 const craftingPopupOpen = ref(false);
 const shopPopupOpen = ref(false);
 const mailPopupOpen = ref(false);
+const petPopupOpen = ref(false);
 const shopPopupRef = ref<InstanceType<typeof ShopPopup> | null>(null);
 
 // Loading state
@@ -645,7 +655,6 @@ const partyInvitationData = ref<{
 });
 
 // Guild invitation data
-const guildInvitationPopupOpen = ref(false);
 const guildInvitationData = ref<{
   guildId: string;
   guildName: string;
@@ -914,6 +923,9 @@ const handleTabClick = async (tabId: string) => {
         await loadQuests();
         questsOpen.value = true;
         break;
+      case 'pet':
+        petPopupOpen.value = true;
+        break;
     }
   } finally {
     isLoading.value = false;
@@ -976,6 +988,15 @@ const handleContextualAction = async (action: { command: string }) => {
     await loadCraftingRecipes();
     craftingPopupOpen.value = true;
     isLoading.value = false;
+  } else if (action.command.startsWith('__pet_menu__:')) {
+    // Open pet menu
+    petPopupOpen.value = true;
+  } else if (action.command.startsWith('__arena__:')) {
+    // Open arena (could add arena popup in the future)
+    addMessage('Tính năng đấu trường đang được phát triển.', 'system');
+  } else if (action.command.startsWith('__guild_menu__:')) {
+    // Open guild menu
+    guildPopupOpen.value = true;
   } else {
     // Execute normal command
     currentInput.value = action.command;
@@ -989,37 +1010,65 @@ const getActionsForEntity = (type: 'player' | 'npc' | 'mob', name: string, entit
     case 'npc':
       const actions = [
         { label: 'Nói Chuyện (Talk)', command: `talk ${name}`, disabled: false },
-        { label: 'Xem Xét (Look)', command: `look ${name}`, disabled: false },
-        { label: 'Giao Dịch (Trade)', command: `__trade__:${entityId}:${name}`, disabled: false },
-        { label: 'Tấn Công (Attack)', command: `attack ${name}`, disabled: false }
+        { label: 'Xem Xét (Look)', command: `look ${name}`, disabled: false }
       ];
       
-      // Add crafting action for Blacksmith
-      if (name === 'Thợ Rèn') {
-        actions.splice(2, 0, { 
-          label: 'Chế Tạo (Craft)', 
-          command: `__crafting__:${entityId}:${name}`, 
-          disabled: false 
-        });
-      }
-      
-      // Phase 25: Add vendor shop action for known vendors
+      // Add specific actions based on NPC name
+      // Vendors and shops
       if (name === 'Thương Gia') {
-        actions.splice(2, 0, { 
+        actions.push({ 
           label: 'Xem Cửa Hàng (Shop)', 
           command: `__vendor_shop__:${entityId}:${name}:gold`, 
           disabled: false 
         });
       }
       
-      // Add premium shop action for "Thương Gia Bí Ẩn"
       if (name === 'Thương Gia Bí Ẩn') {
-        actions.splice(2, 0, { 
+        actions.push({ 
           label: 'Cửa Hàng Cao Cấp', 
           command: `__vendor_shop__:${entityId}:${name}:premium`, 
           disabled: false 
         });
       }
+      
+      if (name === 'Thợ Rèn') {
+        actions.push({ 
+          label: 'Chế Tạo (Craft)', 
+          command: `__crafting__:${entityId}:${name}`, 
+          disabled: false 
+        });
+      }
+      
+      // Pet related NPCs
+      if (name === 'Huấn Luyện Sư Kito' || name.includes('Huấn Luyện')) {
+        actions.push({ 
+          label: 'Quản Lý Thú Cưng', 
+          command: `__pet_menu__:${entityId}:${name}`, 
+          disabled: false 
+        });
+      }
+      
+      // Arena manager
+      if (name === 'Quản Lý Đấu Trường' || name.includes('Arena')) {
+        actions.push({ 
+          label: 'Tham Gia Đấu Trường', 
+          command: `__arena__:${entityId}:${name}`, 
+          disabled: false 
+        });
+      }
+      
+      // Guild related NPCs
+      if (name === 'Già Làng' || name.includes('Guild')) {
+        actions.push({ 
+          label: 'Quản Lý Bang Hội', 
+          command: `__guild_menu__:${entityId}:${name}`, 
+          disabled: false 
+        });
+      }
+      
+      // Add trade and attack as default options for most NPCs
+      actions.push({ label: 'Giao Dịch (Trade)', command: `__trade__:${entityId}:${name}`, disabled: false });
+      actions.push({ label: 'Tấn Công (Attack)', command: `attack ${name}`, disabled: false });
       
       return actions;
     case 'mob':
@@ -1331,6 +1380,31 @@ const handleCraft = async (recipeId: string) => {
   } catch (error: any) {
     console.error('Error crafting:', error);
     const errorMsg = error?.data?.message || error?.message || 'Không thể chế tạo vật phẩm.';
+    addMessage(errorMsg, 'error');
+  } finally {
+    isLoading.value = false;
+  }
+};
+
+// Handle quest acceptance
+const handleAcceptQuest = async (questId: string) => {
+  isLoading.value = true;
+  loadingText.value = 'Đang nhận nhiệm vụ...';
+  try {
+    const response = await $fetch('/api/player/quests/accept', {
+      method: 'POST',
+      body: { questId }
+    });
+    
+    if (response.success) {
+      addMessage(response.message || 'Đã nhận nhiệm vụ!', 'system');
+      await loadQuests();
+      await loadQuests();
+    } else {
+      addMessage(response.message || 'Không thể nhận nhiệm vụ.', 'error');
+  } catch (error: any) {
+    console.error('Error accepting quest:', error);
+    const errorMsg = error.data?.message || 'Không thể nhận nhiệm vụ.';
     addMessage(errorMsg, 'error');
   } finally {
     isLoading.value = false;
