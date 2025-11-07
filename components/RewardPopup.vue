@@ -17,7 +17,7 @@
         Lời khuyên: Gõ 'i' (hoặc nhấn nút [Túi]) để mở túi đồ.
       </p>
       <p class="text-amber">
-        Gõ 'equip [tên vật phẩm]' (ví dụ: 'equip kiếm tân thủ') để trang bị.
+        Gõ 'equip [tên vật phẩm]' (ví dụ: 'equip {{ exampleItemName }}') để trang bị.
       </p>
 
       <button @click="onClose" 
@@ -29,6 +29,7 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue';
 import FullscreenOverlay from '~/components/FullscreenOverlay.vue';
 
 interface Props {
@@ -37,11 +38,16 @@ interface Props {
   items: Array<{ itemKey: string; name: string }>;
 }
 
-defineProps<Props>();
+const props = defineProps<Props>();
 
 const emit = defineEmits<{
   close: [];
 }>();
+
+// Get the first item name as example for equip command
+const exampleItemName = computed(() => {
+  return props.items.length > 0 ? props.items[0].name.toLowerCase() : 'tên vật phẩm';
+});
 
 const onClose = () => {
   emit('close');

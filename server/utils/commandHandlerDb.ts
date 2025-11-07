@@ -296,9 +296,10 @@ export async function handleCommandDb(command: Command, playerId: string): Promi
           }).lean();
           
           // Add items to player inventory concurrently for better performance
-          await Promise.all(starterItems.map(item => addItemToPlayer(player, item._id)));
+          await Promise.all(starterItems.map(item => addItemToPlayer(playerId, item._id.toString())));
           
-          await player.save();
+          // Reload player to get updated inventory
+          await player.reload();
           
           // Prepare reward data to be stored in gameState for WebSocket to pick up
           const itemsAwarded = starterItems.map(item => ({
@@ -311,6 +312,9 @@ export async function handleCommandDb(command: Command, playerId: string): Promi
           const playerState = gameState.getPlayer(playerId);
           if (playerState) {
             playerState.tutorialRewardData = itemsAwarded;
+          } else {
+            // Player state not in memory yet - log warning but continue
+            console.warn(`[Tutorial] Player state not found for ${playerId}, reward popup may not display`);
           }
           
           responses.push('');
