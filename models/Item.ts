@@ -124,7 +124,8 @@ export const ItemSchema = defineMongooseModel({
     itemKey: {
       type: String,
       unique: true,
-      required: true,
+      required: false, // Temporarily set to false while migrating
+      sparse: true, // Allow multiple null values
       index: true,
     },
     // Pet System - Additional data for pet items

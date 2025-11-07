@@ -110,7 +110,7 @@ export async function initializeWorld() {
     console.log('\n[Phase 1] Seeding Items...');
     
     // Using findOneAndUpdate with upsert: true for stable _id references
-    const binhMau = await ItemSchema.findOneAndUpdate(
+    const binhMau = await ItemSitemKechema.findOneAndUpdate(
       { itemKey: 'binh_mau_nho' },
       {
         itemKey: 'binh_mau_nho',
@@ -255,6 +255,7 @@ export async function initializeWorld() {
 
     // Phase 26: Additional Consumables
     const binhMauVua = await ItemSchema.create({
+      itemKey: 'medium_health_potion',
       name: 'Bình Máu Vừa',
       description: 'Một bình thuốc cỡ vừa chứa dịch màu đỏ thẫm. Có thể hồi phục 500 HP.',
       type: 'consumable',
@@ -265,6 +266,7 @@ export async function initializeWorld() {
     });
 
     const binhNangLuongNho = await ItemSchema.create({
+      itemKey: 'small_energy_potion',
       name: 'Bình Năng Lượng Nhỏ',
       description: 'Một lọ dịch màu xanh lam phát sáng. Hồi phục 100 Năng Lượng (Mana/Nộ/Energy).',
       type: 'consumable',
@@ -277,6 +279,7 @@ export async function initializeWorld() {
     });
 
     const dichChuyenVeChoCu = await ItemSchema.create({
+      itemKey: 'teleport_scroll_old_market',
       name: 'Dịch Chuyển Về Chợ Cũ',
       description: 'Một cuộn giấy cổ với ký tự phát sáng. Sử dụng một lần để quay về Chợ Cũ.',
       type: 'consumable',
@@ -290,6 +293,7 @@ export async function initializeWorld() {
 
     // Phase 26: Utility Items
     const chiaKhoaHamNgam = await ItemSchema.create({
+      itemKey: 'dungeon_key',
       name: 'Chìa Khóa Hầm Ngầm',
       description: 'Một chiếc chìa khóa gỉ sét với hình dạng kỳ lạ. Có vẻ mở được cánh cửa xuống Hầm Ngầm.',
       type: 'misc',
@@ -299,6 +303,7 @@ export async function initializeWorld() {
     });
 
     const ruongGoNho = await ItemSchema.create({
+      itemKey: 'small_wooden_chest',
       name: 'Rương Gỗ Nhỏ',
       description: 'Một chiếc rương gỗ nhỏ cũ kỹ. Bên trong có thể chứa vật phẩm ngẫu nhiên.',
       type: 'misc',
@@ -349,6 +354,7 @@ export async function initializeWorld() {
 
     // Dungeon Shop - Special items only available for dungeon coins
     const kiemHamNguc = await ItemSchema.create({
+      itemKey: 'dungeon_sword',
       name: 'Kiếm Hầm Ngục',
       description: 'Một thanh kiếm rèn từ kim loại hiếm trong hầm ngục. Phát sáng ánh tím huyền bí.',
       type: 'weapon',
@@ -360,6 +366,7 @@ export async function initializeWorld() {
     });
 
     const aoGiapHamNguc = await ItemSchema.create({
+      itemKey: 'dungeon_armor',
       name: 'Áo Giáp Hầm Ngục',
       description: 'Bộ giáp nặng được tạo từ vật liệu quý hiếm. Cung cấp phòng thủ tuyệt vời.',
       type: 'armor',
@@ -533,6 +540,7 @@ export async function initializeWorld() {
     // Phase 21 & 22: Crafting Materials
     // Zone 1 Materials (Level 1-10)
     const daChuot = await ItemSchema.create({
+      itemKey: 'rat_leather',
       name: 'Da Chuột',
       description: 'Da của chuột biến dị, có thể dùng để chế tạo trang bị nhẹ.',
       type: 'Material',
@@ -541,6 +549,7 @@ export async function initializeWorld() {
     });
 
     const vaiRach = await ItemSchema.create({
+      itemKey: 'torn_cloth',
       name: 'Vải Rách',
       description: 'Mảnh vải cũ kỹ, vẫn có thể dùng để may vá.',
       type: 'Material',
@@ -550,6 +559,7 @@ export async function initializeWorld() {
 
     // Zone 2 Materials (Level 10-20)
     const voNhenCung = await ItemSchema.create({
+      itemKey: 'spider_shell',
       name: 'Vỏ Nhện Cứng',
       description: 'Vỏ cứng của nhện đột biến, có thể dùng làm giáp nhẹ.',
       type: 'Material',
@@ -558,6 +568,7 @@ export async function initializeWorld() {
     });
 
     const loiNangLuongYeu = await ItemSchema.create({
+      itemKey: 'weak_energy_core',
       name: 'Lõi Năng Lượng Yếu',
       description: 'Lõi năng lượng nhỏ từ các thiết bị cổ, còn một chút năng lượng.',
       type: 'Material',
@@ -566,6 +577,7 @@ export async function initializeWorld() {
     });
 
     const loiCoNguHong = await ItemSchema.create({
+      itemKey: 'broken_ancient_core',
       name: 'Lõi Cổ Ngữ Hỏng',
       description: 'Lõi năng lượng cổ đại đã hư hỏng, vẫn phát ra ánh sáng yếu ớt.',
       type: 'Material',
@@ -576,6 +588,7 @@ export async function initializeWorld() {
 
     // Zone 3 Materials (Level 20-30)
     const banhRangRiSet = await ItemSchema.create({
+      itemKey: 'rusty_gear',
       name: 'Bánh Răng Rỉ Sét',
       description: 'Bánh răng kim loại bị rỉ sét, vẫn có thể tái sử dụng.',
       type: 'Material',
@@ -584,6 +597,7 @@ export async function initializeWorld() {
     });
 
     const moDotBienNho = await ItemSchema.create({
+      itemKey: 'small_mutant_tissue',
       name: 'Mô Đột Biến Nhỏ',
       description: 'Mô sinh học bị đột biến, có thể dùng cho nghiên cứu hoặc chế tạo.',
       type: 'Material',
@@ -592,6 +606,7 @@ export async function initializeWorld() {
     });
 
     const chipViMachCo = await ItemSchema.create({
+      itemKey: 'ancient_microchip',
       name: 'Chip Vi Mạch Cổ',
       description: 'Vi mạch điện tử cổ đại, còn hoạt động được.',
       type: 'Material',
@@ -602,6 +617,7 @@ export async function initializeWorld() {
 
     // Zone 4 Materials (Level 30-40)
     const moDotBienLon = await ItemSchema.create({
+      itemKey: 'large_mutant_tissue',
       name: 'Mô Đột Biến Lớn',
       description: 'Mô sinh học đột biến cỡ lớn, phát ra năng lượng kỳ lạ.',
       type: 'Material',
@@ -611,6 +627,7 @@ export async function initializeWorld() {
     });
 
     const tinhTheNangLuong = await ItemSchema.create({
+      itemKey: 'energy_crystal',
       name: 'Tinh Thể Năng Lượng',
       description: 'Tinh thể trong suốt chứa năng lượng tinh khiết.',
       type: 'Material',
@@ -620,6 +637,7 @@ export async function initializeWorld() {
     });
 
     const traiTimDotBienOnDinh = await ItemSchema.create({
+      itemKey: 'stable_mutant_heart',
       name: 'Trái Tim Đột Biến Ổn Định',
       description: 'Trái tim của sinh vật đột biến mạnh mẽ, vẫn đập đều.',
       type: 'Material',
@@ -630,6 +648,7 @@ export async function initializeWorld() {
 
     // Zone 5 Materials (Level 40-50)
     const nangLuongTinhKhiet = await ItemSchema.create({
+      itemKey: 'pure_energy',
       name: 'Năng Lượng Tinh Khiết',
       description: 'Năng lượng nguyên chất từ vệ binh cổ ngữ.',
       type: 'Material',
@@ -639,6 +658,7 @@ export async function initializeWorld() {
     });
 
     const nuocMatCuaThanhCu = await ItemSchema.create({
+      itemKey: 'tears_of_old_city',
       name: 'Nước Mắt Của Thành Cũ',
       description: 'Tinh thể lỏng huyền bí, chỉ rơi từ kẻ cai quản mạnh nhất.',
       type: 'Material',
@@ -648,6 +668,7 @@ export async function initializeWorld() {
     });
 
     const loiHoVeCoDai = await ItemSchema.create({
+      itemKey: 'ancient_guard_core',
       name: 'Lõi Hộ Vệ Cổ Đại',
       description: 'Lõi năng lượng từ hộ vệ cổ đại, phát ra ánh sáng mạnh mẽ và ổn định.',
       type: 'Material',
