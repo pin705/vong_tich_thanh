@@ -500,7 +500,7 @@ const targetState = ref<TargetState>({
 
 // Initialize player state with username
 if (user.value?.username) {
-  playerState.value.name = user.value.username;
+  updatePlayerState({ name: user.value.username });
 }
 
 // Watch for chat changes to persist
@@ -1355,12 +1355,11 @@ const sendCommand = async () => {
   }
 
   // Add to command history using composable
-  const originalInput = currentInput.value.trim();
-  addToHistory(originalInput);
+  addToHistory(currentInput.value.trim());
 
   // Echo command (show expanded version if alias was used)
-  if (input !== originalInput) {
-    addMessage(`> ${originalInput} → ${input}`, 'system');
+  if (input !== currentInput.value.trim()) {
+    addMessage(`> ${currentInput.value.trim()} → ${input}`, 'system');
   } else {
     addMessage(`> ${input}`, 'system');
   }

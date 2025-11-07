@@ -54,9 +54,9 @@ export function useCommandHistory() {
   const addToHistory = (command: string) => {
     if (commandHistory.value[commandHistory.value.length - 1] !== command) {
       commandHistory.value.push(command);
-      // Limit history size
+      // Limit history size efficiently
       if (commandHistory.value.length > MAX_COMMAND_HISTORY) {
-        commandHistory.value = commandHistory.value.slice(-MAX_COMMAND_HISTORY);
+        commandHistory.value.shift();
       }
     }
     historyIndex.value = -1;
