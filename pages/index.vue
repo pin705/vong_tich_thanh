@@ -26,7 +26,6 @@
         <!-- Content Area for Active Tab -->
         <div class="channel-content">
           <MainLogPane v-if="currentChannel === 'main'" :messages="mainLog" @clickElement="handleClickableElement" />
-          <CombatLogPane v-else-if="currentChannel === 'combat'" :messages="combatLog" />
           <ChatLogPane 
             v-else-if="currentChannel === 'chat'" 
             :messages="chatLog" 
@@ -423,7 +422,6 @@ import LeaderboardOverlay from '~/components/LeaderboardOverlay.vue';
 import BlacksmithPopup from '~/components/BlacksmithPopup.vue';
 import TabSelector from '~/components/TabSelector.vue';
 import MainLogPane from '~/components/MainLogPane.vue';
-import CombatLogPane from '~/components/CombatLogPane.vue';
 import ChatLogPane from '~/components/ChatLogPane.vue';
 import RoomOccupantsPane from '~/components/RoomOccupantsPane.vue';
 import LoadingIndicator from '~/components/LoadingIndicator.vue';
@@ -446,8 +444,8 @@ const router = useRouter();
 // Use composables for state management
 const { playerState, updatePlayerState } = usePlayerState();
 const { 
-  mainLog, combatLog, chatLog, 
-  mainUnread, combatUnread, chatUnread,
+  mainLog, chatLog, 
+  mainUnread, chatUnread,
   currentChannel, addMessage, setCurrentChannel 
 } = useGameMessages();
 const {
@@ -510,13 +508,12 @@ const saveChatToStorage = () => {
 // Channel tabs configuration
 const channelTabs = computed(() => [
   { id: 'main', label: 'Chính', hasUnread: mainUnread.value },
-  { id: 'combat', label: 'Chiến Đấu', hasUnread: combatUnread.value },
   { id: 'chat', label: 'Chat', hasUnread: chatUnread.value }
 ]);
 
 // Handle channel tab change
 const handleChannelChange = (channelId: string) => {
-  setCurrentChannel(channelId as 'main' | 'combat' | 'chat');
+  setCurrentChannel(channelId as 'main' | 'chat');
 };
 
 // State

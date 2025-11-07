@@ -521,7 +521,7 @@ export async function executeCombatTick(playerId: string, agentId: string): Prom
             playerObj.ws.send(JSON.stringify({ 
               type: messageType, 
               message: msg,
-              channel: 'combat',
+              channel: 'main',
               category: 'combat-player'
             }));
           });
@@ -534,7 +534,8 @@ export async function executeCombatTick(playerId: string, agentId: string): Prom
       messages.push(`Bạn đã hạ gục [${agent.name}]!`);
       
       // World Boss: Special handling for world bosses
-      if (isWorldBoss(agent._id.toString())) {
+      const isWorldBossEntity = isWorldBoss(agent._id.toString());
+      if (isWorldBossEntity) {
         // Distribute world boss rewards to all contributors
         await distributeWorldBossRewards(agent._id.toString());
         
@@ -551,7 +552,7 @@ export async function executeCombatTick(playerId: string, agentId: string): Prom
         
         gameState.stopCombat(playerId);
         
-        // Send messages to player
+        // Send messages to player with world-boss category
         const playerObj = gameState.getPlayer(playerId);
         if (playerObj && playerObj.ws) {
           messages.forEach(msg => {
@@ -559,8 +560,8 @@ export async function executeCombatTick(playerId: string, agentId: string): Prom
             playerObj.ws.send(JSON.stringify({ 
               type: messageType, 
               message: msg,
-              channel: 'combat',
-              category: 'combat-player'
+              channel: 'main',
+              category: 'world-boss'
             }));
           });
         }
@@ -580,7 +581,17 @@ export async function executeCombatTick(playerId: string, agentId: string): Prom
       
       // Phase 19: Boss rewards
       let totalExp = agent.experience;
-      if (agent.agentType === 'boss') {
+      const isBoss = agent.agentType === 'boss';
+      
+      // Determine message category based on agent type
+      let messageCategory = 'mob'; // default
+      if (isBoss) {
+        messageCategory = 'boss';
+      } else if (agent.agentType === 'elite') {
+        messageCategory = 'elite';
+      }
+      
+      if (isBoss) {
         // Boss kills give 50x EXP
         totalExp = agent.experience * 50;
         messages.push('');
@@ -770,8 +781,8 @@ export async function executeCombatTick(playerId: string, agentId: string): Prom
           playerObj.ws.send(JSON.stringify({ 
             type: messageType, 
             message: msg,
-            channel: 'combat',
-            category: 'combat-player'
+            channel: 'main',
+            category: messageCategory
           }));
         });
         
@@ -779,7 +790,7 @@ export async function executeCombatTick(playerId: string, agentId: string): Prom
         playerObj.ws.send(JSON.stringify({ 
           type: 'system', 
           message: `HP: ${player.hp}/${player.maxHp} | Level: ${player.level} | XP: ${player.experience}/${getExpForLevel(player.level)}`,
-          channel: 'combat',
+          channel: 'main',
           category: 'combat-stats'
         }));
       }
@@ -942,21 +953,21 @@ export async function executeCombatTick(playerId: string, agentId: string): Prom
             playerObj.ws.send(JSON.stringify({ 
               type: 'normal', 
               message: '',
-              channel: 'combat',
+              channel: 'main',
               category: 'combat-player'
             }));
           } else if (msg.includes('[') && msg.includes(']')) {
             playerObj.ws.send(JSON.stringify({ 
               type: 'accent', 
               message: msg,
-              channel: 'combat',
+              channel: 'main',
               category: 'combat-player'
             }));
           } else {
             playerObj.ws.send(JSON.stringify({ 
               type: 'error', 
               message: msg,
-              channel: 'combat',
+              channel: 'main',
               category: 'combat-player'
             }));
           }
@@ -966,7 +977,7 @@ export async function executeCombatTick(playerId: string, agentId: string): Prom
         playerObj.ws.send(JSON.stringify({ 
           type: 'system', 
           message: `HP: ${player.hp}/${player.maxHp} | Level: ${player.level}`,
-          channel: 'combat',
+          channel: 'main',
           category: 'combat-stats'
         }));
       }
@@ -1034,7 +1045,7 @@ export async function executeCombatTick(playerId: string, agentId: string): Prom
         playerObj.ws.send(JSON.stringify({ 
           type: messageType, 
           message: msg,
-          channel: 'combat',
+          channel: 'main',
           category: 'combat-player'
         }));
       });
@@ -1043,7 +1054,7 @@ export async function executeCombatTick(playerId: string, agentId: string): Prom
       playerObj.ws.send(JSON.stringify({ 
         type: 'system', 
         message: `HP: ${player.hp}/${player.maxHp} | [${agent.name}] HP: ${agent.hp}/${agent.maxHp}`,
-        channel: 'combat',
+        channel: 'main',
         category: 'combat-stats'
       }));
     }

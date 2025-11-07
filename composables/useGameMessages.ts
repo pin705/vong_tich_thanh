@@ -10,23 +10,20 @@ export interface Message {
   entityId?: string;
   timestamp: Date | string;
   user?: string;
-  channel?: 'main' | 'combat' | 'chat';
+  channel?: 'main' | 'chat';
 }
 
-const MAX_MAIN_LOG_MESSAGES = 500;
-const MAX_COMBAT_LOG_MESSAGES = 300;
+const MAX_MAIN_LOG_MESSAGES = 800; // Increased to accommodate both main and combat messages
 const MAX_CHAT_MESSAGES = 200;
 
 export function useGameMessages() {
   const mainLog = ref<Message[]>([]);
-  const combatLog = ref<Message[]>([]);
   const chatLog = ref<Message[]>([]);
   
   const mainUnread = ref(false);
-  const combatUnread = ref(false);
   const chatUnread = ref(false);
   
-  const currentChannel = ref<'main' | 'combat' | 'chat'>('main');
+  const currentChannel = ref<'main' | 'chat'>('main');
   
   // Generate unique message ID
   const generateId = () => `msg-${Date.now()}-${Math.random()}`;
@@ -46,31 +43,33 @@ export function useGameMessages() {
     text: string,
     type: string,
     user?: string,
-    channel: 'main' | 'combat' | 'chat' = 'main',
+    channel: 'main' | 'chat' = 'main',
     category?: string
   ) {
+    // Add category prefix based on message category
+    let prefixedText = text;
+    if (category && text) {
+      const prefix = getCategoryPrefix(category);
+      if (prefix) {
+        prefixedText = `${prefix} ${text}`;
+      }
+    }
+    
     const message: Message = {
       id: generateId(),
-      text,
+      text: prefixedText,
       type,
       user,
-      channel,
+      channel: channel,
       category,
       timestamp: new Date()
     };
     
-    if (channel === 'combat') {
-      combatLog.value.push(message);
-      if (combatLog.value.length > MAX_COMBAT_LOG_MESSAGES) {
-        combatLog.value = combatLog.value.slice(-MAX_COMBAT_LOG_MESSAGES);
-      }
-      if (currentChannel.value !== 'combat') {
-        combatUnread.value = true;
-      }
-    } else if (channel === 'chat' || type === 'chat_log') {
+    if (channel === 'chat' || type === 'chat_log') {
       // Route to chat log if explicitly specified as chat channel OR if type is chat_log (backward compatibility)
       addToChatLog(message);
     } else {
+      // All main and combat messages go to mainLog
       mainLog.value.push(message);
       if (mainLog.value.length > MAX_MAIN_LOG_MESSAGES) {
         mainLog.value = mainLog.value.slice(-MAX_MAIN_LOG_MESSAGES);
@@ -81,12 +80,34 @@ export function useGameMessages() {
     }
   }
   
+  // Helper function to get category prefix
+  function getCategoryPrefix(category: string): string {
+    const prefixMap: Record<string, string> = {
+      'npc': '[NPC]',
+      'boss': '[BOSS]',
+      'world-boss': '[WORLD BOSS]',
+      'elite': '[ELITE]',
+      'player': '[PLAYER]',
+      'mob': '[MOB]',
+      'party': '[PARTY]',
+      'guild': '[GUILD]',
+      'system': '[SYSTEM]',
+      'quest': '[QUEST]',
+      'achievement': '[ACHIEVEMENT]',
+      'loot': '[LOOT]',
+      'xp': '[XP]',
+      'level': '[LEVEL UP]',
+      'combat-player': '', // No prefix for player's own combat actions
+    };
+    return prefixMap[category] || '';
+  }
+  
   function addClickableMessage(
     text: string,
     type: string,
     entityType: string,
     entityId: string,
-    channel: 'main' | 'combat' | 'chat' = 'main'
+    channel: 'main' | 'chat' = 'main'
   ) {
     const message: Message = {
       id: generateId(),
@@ -95,49 +116,37 @@ export function useGameMessages() {
       clickable: true,
       entityType,
       entityId,
-      timestamp: new Date()
+      timestamp: new Date(),
+      channel: channel
     };
     
-    if (channel === 'combat') {
-      combatLog.value.push(message);
-      if (combatLog.value.length > MAX_COMBAT_LOG_MESSAGES) {
-        combatLog.value = combatLog.value.slice(-MAX_COMBAT_LOG_MESSAGES);
-      }
-      if (currentChannel.value !== 'combat') {
-        combatUnread.value = true;
-      }
-    } else {
-      mainLog.value.push(message);
-      if (mainLog.value.length > MAX_MAIN_LOG_MESSAGES) {
-        mainLog.value = mainLog.value.slice(-MAX_MAIN_LOG_MESSAGES);
-      }
-      if (currentChannel.value !== 'main') {
-        mainUnread.value = true;
-      }
+    // All messages go to mainLog (combat merged with main)
+    mainLog.value.push(message);
+    if (mainLog.value.length > MAX_MAIN_LOG_MESSAGES) {
+      mainLog.value = mainLog.value.slice(-MAX_MAIN_LOG_MESSAGES);
+    }
+    if (currentChannel.value !== 'main') {
+      mainUnread.value = true;
     }
   }
   
-  function clearChannelUnread(channel: 'main' | 'combat' | 'chat') {
+  function clearChannelUnread(channel: 'main' | 'chat') {
     if (channel === 'main') {
       mainUnread.value = false;
-    } else if (channel === 'combat') {
-      combatUnread.value = false;
     } else if (channel === 'chat') {
       chatUnread.value = false;
     }
   }
   
-  function setCurrentChannel(channel: 'main' | 'combat' | 'chat') {
+  function setCurrentChannel(channel: 'main' | 'chat') {
     currentChannel.value = channel;
     clearChannelUnread(channel);
   }
   
   return {
     mainLog,
-    combatLog,
     chatLog,
     mainUnread,
-    combatUnread,
     chatUnread,
     currentChannel,
     addMessage,
