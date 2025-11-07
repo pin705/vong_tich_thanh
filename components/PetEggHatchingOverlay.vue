@@ -229,11 +229,12 @@ const confirmHatch = async () => {
 
   try {
     // Send command to hatch egg via WebSocket
+    // Access WebSocket from window - it's set up in index.vue as a global reference
     const ws = (window as any).gameWs;
     if (ws && ws.readyState === WebSocket.OPEN) {
       ws.send(JSON.stringify({
         type: 'command',
-        payload: { command: `use ${selectedEgg.value.name}` }
+        payload: { input: `use ${selectedEgg.value.name}` }
       }));
 
       // Wait for hatching animation
@@ -271,20 +272,25 @@ const confirmHatch = async () => {
 };
 
 const handleClose = () => {
+  // Preserve hatchedPet for event emission
+  const hadHatchedPet = hatchedPet.value !== null;
+  
   // Reset state
   selectedEgg.value = null;
   hatching.value = false;
   hatchProgress.value = 0;
   hatchingText.value = '';
-  hatchedPet.value = null;
   errorMessage.value = '';
   
   emit('close');
   
-  // Emit event to refresh inventory/pets
-  if (hatchedPet.value) {
+  // Emit event to refresh inventory/pets if egg was hatched
+  if (hadHatchedPet) {
     emit('eggHatched');
   }
+  
+  // Reset hatchedPet after emitting events
+  hatchedPet.value = null;
 };
 
 onMounted(() => {

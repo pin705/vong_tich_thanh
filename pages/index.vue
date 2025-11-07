@@ -1510,6 +1510,9 @@ const connectWebSocket = () => {
   
   ws.value = new WebSocket(wsUrl);
 
+  // Expose ws globally for child components
+  (window as any).gameWs = ws.value;
+
   ws.value.onopen = () => {
     isConnected.value = true;
     // Show improved welcome banner
