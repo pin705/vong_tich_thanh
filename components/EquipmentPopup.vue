@@ -24,6 +24,22 @@
                   {{ stat }}: +{{ value }}
                 </span>
               </div>
+              <!-- Gem Sockets Display -->
+              <div v-if="hasSocketSupport(getEquippedItem(slot.key))" class="gem-sockets">
+                <div class="socket-label">Lỗ Khảm:</div>
+                <div class="socket-grid">
+                  <div
+                    v-for="(gem, index) in getSocketsDisplay(getEquippedItem(slot.key))"
+                    :key="index"
+                    class="socket-slot"
+                    :class="{ 'has-gem': gem, 'empty-socket': !gem }"
+                    @click.stop="gem && showGemPopover(gem, $event)"
+                  >
+                    <span v-if="gem" class="gem-icon" :class="getGemTypeClass(gem.gemType)">◆</span>
+                    <span v-else class="empty-socket-icon">○</span>
+                  </div>
+                </div>
+              </div>
             </div>
             <div v-else class="empty-slot">
               [Trống]
@@ -52,15 +68,56 @@
 
       <!-- Instructions -->
       <div class="instructions">
-        Click vào ô trang bị để xem/thay đổi. Mở [Túi Đồ] để chọn trang bị.
+        Click vào ô trang bị để xem/thay đổi. Mở [Túi Đồ] để chọn trang bị. Click vào ngọc khảm để xem chi tiết.
       </div>
     </div>
+
+    <!-- Gem Detail Popover -->
+    <Popover
+      :isOpen="gemPopoverOpen"
+      :title="selectedGem?.name"
+      @close="closeGemPopover"
+      width="300px"
+    >
+      <div v-if="selectedGem" class="gem-details">
+        <div class="gem-tier-info">
+          <span class="gem-tier-label">Cấp:</span>
+          <span class="gem-tier-value">Tier {{ selectedGem.gemTier }}</span>
+        </div>
+        
+        <div class="gem-type-info">
+          <span class="gem-type-icon" :class="getGemTypeClass(selectedGem.gemType)">◆</span>
+          <span class="gem-type-name">{{ getGemTypeName(selectedGem.gemType) }}</span>
+        </div>
+        
+        <div class="gem-bonus">
+          <div class="bonus-title">[ Bonus Stats ]</div>
+          <div class="bonus-value">
+            {{ getGemBonusDisplay(selectedGem) }}
+          </div>
+        </div>
+        
+        <div class="gem-description">
+          {{ selectedGem.description }}
+        </div>
+      </div>
+    </Popover>
   </FullscreenOverlay>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
+import { ref, computed } from 'vue';
 import FullscreenOverlay from './FullscreenOverlay.vue';
+import Popover from './Popover.vue';
+
+interface Gem {
+  _id?: string;
+  name: string;
+  description: string;
+  gemType: string;
+  gemTier: number;
+  gemValue: number;
+}
 
 interface Equipment {
   helmet?: any;
@@ -95,6 +152,9 @@ const emit = defineEmits<{
   selectSlot: [slot: string];
 }>();
 
+const gemPopoverOpen = ref(false);
+const selectedGem = ref<Gem | null>(null);
+
 const equipmentSlots = [
   { key: 'helmet', name: 'Mũ', icon: '[H]' },
   { key: 'chest', name: 'Áo', icon: '[A]' },
@@ -105,6 +165,74 @@ const equipmentSlots = [
 
 function getEquippedItem(slot: string): any {
   return props.equipment[slot as keyof Equipment];
+}
+
+function hasSocketSupport(item: any): boolean {
+  return item && (item.maxSockets > 0 || item.currentSockets > 0);
+}
+
+function getSocketsDisplay(item: any): (Gem | null)[] {
+  if (!item) return [];
+  
+  const maxSockets = item.maxSockets || 0;
+  const socketedGems = item.socketedGems || [];
+  const result: (Gem | null)[] = [];
+  
+  // Add socketed gems
+  for (let i = 0; i < socketedGems.length && i < maxSockets; i++) {
+    result.push(socketedGems[i]);
+  }
+  
+  // Add empty sockets
+  const currentSockets = item.currentSockets || 0;
+  for (let i = socketedGems.length; i < currentSockets && i < maxSockets; i++) {
+    result.push(null);
+  }
+  
+  return result;
+}
+
+function showGemPopover(gem: Gem, event: MouseEvent): void {
+  selectedGem.value = gem;
+  gemPopoverOpen.value = true;
+}
+
+function closeGemPopover(): void {
+  gemPopoverOpen.value = false;
+  selectedGem.value = null;
+}
+
+function getGemTypeClass(gemType: string): string {
+  const typeClasses: Record<string, string> = {
+    'attack': 'gem-attack',
+    'hp': 'gem-hp',
+    'defense': 'gem-defense',
+    'critChance': 'gem-crit-chance',
+    'critDamage': 'gem-crit-damage',
+    'dodge': 'gem-dodge',
+    'lifesteal': 'gem-lifesteal'
+  };
+  return typeClasses[gemType] || '';
+}
+
+function getGemTypeName(gemType: string): string {
+  const typeNames: Record<string, string> = {
+    'attack': 'Sát Thương',
+    'hp': 'HP',
+    'defense': 'Phòng Thủ',
+    'critChance': 'Tỷ Lệ Chí Mạng',
+    'critDamage': 'Sát Thương Chí Mạng',
+    'dodge': 'Né Tránh',
+    'lifesteal': 'Hút Máu'
+  };
+  return typeNames[gemType] || gemType;
+}
+
+function getGemBonusDisplay(gem: Gem): string {
+  const percentageTypes = ['critChance', 'dodge', 'lifesteal'];
+  const isPercentage = percentageTypes.includes(gem.gemType);
+  const value = gem.gemValue || 0;
+  return isPercentage ? `+${value}%` : `+${value}`;
 }
 
 function getQualityClass(quality?: string): string {
@@ -286,6 +414,160 @@ function handleSlotClick(slot: string) {
   padding: 1rem;
   background-color: rgba(0, 136, 0, 0.05);
   border: 1px solid rgba(0, 136, 0, 0.2);
+}
+
+/* Gem Sockets Styles */
+.gem-sockets {
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid rgba(0, 136, 0, 0.2);
+}
+
+.socket-label {
+  font-size: 13px;
+  color: var(--text-dim);
+  margin-bottom: 0.5rem;
+}
+
+.socket-grid {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.socket-slot {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid rgba(0, 136, 0, 0.3);
+  background-color: rgba(0, 0, 0, 0.3);
+  transition: all 0.2s;
+  cursor: pointer;
+}
+
+.socket-slot.empty-socket {
+  cursor: default;
+  opacity: 0.5;
+}
+
+.socket-slot.has-gem:hover {
+  border-color: var(--text-bright);
+  transform: scale(1.1);
+  box-shadow: 0 0 10px rgba(0, 255, 0, 0.5);
+}
+
+.gem-icon {
+  font-size: 20px;
+}
+
+.empty-socket-icon {
+  font-size: 16px;
+  color: var(--text-dim);
+}
+
+/* Gem Type Colors */
+.gem-attack {
+  color: #ff4444;
+  text-shadow: 0 0 5px #ff0000;
+}
+
+.gem-hp {
+  color: #44ff44;
+  text-shadow: 0 0 5px #00ff00;
+}
+
+.gem-defense {
+  color: #4444ff;
+  text-shadow: 0 0 5px #0000ff;
+}
+
+.gem-crit-chance {
+  color: #ff8800;
+  text-shadow: 0 0 5px #ff6600;
+}
+
+.gem-crit-damage {
+  color: #ff00ff;
+  text-shadow: 0 0 5px #ff00ff;
+}
+
+.gem-dodge {
+  color: #00ffff;
+  text-shadow: 0 0 5px #00ffff;
+}
+
+.gem-lifesteal {
+  color: #ff0088;
+  text-shadow: 0 0 5px #ff0088;
+}
+
+/* Gem Details Popover */
+.gem-details {
+  color: var(--text-bright);
+  font-size: 15px;
+}
+
+.gem-tier-info {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.75rem;
+  padding: 0.5rem;
+  background-color: rgba(255, 215, 0, 0.1);
+  border-left: 3px solid var(--text-accent);
+}
+
+.gem-tier-label {
+  color: var(--text-dim);
+}
+
+.gem-tier-value {
+  color: var(--text-accent);
+  font-weight: bold;
+}
+
+.gem-type-info {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+  font-size: 16px;
+}
+
+.gem-type-icon {
+  font-size: 24px;
+}
+
+.gem-type-name {
+  font-weight: bold;
+}
+
+.gem-bonus {
+  margin-bottom: 1rem;
+  padding: 0.75rem;
+  background-color: rgba(0, 136, 0, 0.1);
+  border: 1px solid rgba(0, 136, 0, 0.3);
+}
+
+.bonus-title {
+  color: var(--text-accent);
+  font-weight: bold;
+  margin-bottom: 0.5rem;
+  font-size: 14px;
+}
+
+.bonus-value {
+  color: var(--text-bright);
+  font-size: 18px;
+  font-weight: bold;
+}
+
+.gem-description {
+  color: var(--text-dim);
+  font-size: 14px;
+  line-height: 1.5;
+  font-style: italic;
 }
 
 /* Mobile responsiveness */

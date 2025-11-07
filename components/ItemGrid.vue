@@ -39,6 +39,41 @@
           {{ getQualityIcon(selectedItem.quality) }} {{ selectedItem.quality }}
         </div>
         
+        <!-- Gem Info (for GEM type items) -->
+        <div v-if="isGemItem(selectedItem)" class="gem-item-info">
+          <div class="gem-tier-badge">
+            <span class="gem-icon" :class="getGemTypeClass(selectedItem.gemType)">◆</span>
+            <span class="gem-tier-text">Tier {{ selectedItem.gemTier }}</span>
+          </div>
+          <div class="gem-type-display">
+            <span class="gem-type-label">Loại:</span>
+            <span class="gem-type-value" :class="getGemTypeClass(selectedItem.gemType)">
+              {{ getGemTypeName(selectedItem.gemType) }}
+            </span>
+          </div>
+          <div class="gem-bonus-display">
+            <span class="gem-bonus-label">Bonus:</span>
+            <span class="gem-bonus-value">
+              {{ getGemBonusDisplay(selectedItem) }}
+            </span>
+          </div>
+        </div>
+
+        <!-- Socket Info (for equipment with sockets) -->
+        <div v-if="hasSocketInfo(selectedItem)" class="socket-item-info">
+          <div class="socket-info-line">
+            <span class="socket-label">Lỗ Khảm:</span>
+            <span class="socket-value">{{ selectedItem.currentSockets }}/{{ selectedItem.maxSockets }}</span>
+          </div>
+          <div v-if="selectedItem.socketedGems && selectedItem.socketedGems.length > 0" class="socketed-gems-list">
+            <div class="socketed-gems-title">Ngọc Đã Khảm:</div>
+            <div v-for="(gem, index) in selectedItem.socketedGems" :key="index" class="socketed-gem-item">
+              <span class="gem-icon" :class="getGemTypeClass(gem.gemType)">◆</span>
+              <span class="gem-name">{{ gem.name }}</span>
+            </div>
+          </div>
+        </div>
+        
         <div v-if="selectedItem.enhancementLevel" class="item-enhancement">
           Cường hóa: <span class="enhancement-value">+{{ selectedItem.enhancementLevel }}</span>
         </div>
@@ -49,7 +84,7 @@
         
         <div class="item-description">{{ selectedItem.description }}</div>
         
-        <div class="item-stats" v-if="selectedItem.stats">
+        <div class="item-stats" v-if="selectedItem.stats && !isGemItem(selectedItem)">
           <div class="stats-title">[ Chỉ Số ]</div>
           <div v-if="selectedItem.stats.damage" class="stat-line">
             + {{ selectedItem.stats.damage }} Sát thương
@@ -267,6 +302,49 @@ const executeAction = (actionId: string) => {
     closePopover();
   }
 };
+
+// Gem-related helper functions
+function isGemItem(item: any): boolean {
+  return item && item.gemType && item.gemTier && item.gemValue !== undefined;
+}
+
+function hasSocketInfo(item: any): boolean {
+  return item && (item.maxSockets > 0 || item.currentSockets > 0);
+}
+
+function getGemTypeClass(gemType: string): string {
+  const typeClasses: Record<string, string> = {
+    'attack': 'gem-attack',
+    'hp': 'gem-hp',
+    'defense': 'gem-defense',
+    'critChance': 'gem-crit-chance',
+    'critDamage': 'gem-crit-damage',
+    'dodge': 'gem-dodge',
+    'lifesteal': 'gem-lifesteal'
+  };
+  return typeClasses[gemType] || '';
+}
+
+function getGemTypeName(gemType: string): string {
+  const typeNames: Record<string, string> = {
+    'attack': 'Sát Thương',
+    'hp': 'HP',
+    'defense': 'Phòng Thủ',
+    'critChance': 'Tỷ Lệ Chí Mạng',
+    'critDamage': 'Sát Thương Chí Mạng',
+    'dodge': 'Né Tránh',
+    'lifesteal': 'Hút Máu'
+  };
+  return typeNames[gemType] || gemType;
+}
+
+function getGemBonusDisplay(item: any): string {
+  if (!item || !item.gemValue) return '';
+  const percentageTypes = ['critChance', 'dodge', 'lifesteal'];
+  const isPercentage = percentageTypes.includes(item.gemType);
+  const value = item.gemValue;
+  return isPercentage ? `+${value}%` : `+${value}`;
+}
 </script>
 
 <style scoped>
@@ -516,6 +594,138 @@ const executeAction = (actionId: string) => {
 .action-btn:hover {
   background-color: rgba(0, 255, 0, 0.1);
   border-color: var(--text-bright);
+}
+
+/* Gem Item Info Styles */
+.gem-item-info {
+  margin-bottom: 1rem;
+  padding: 0.75rem;
+  background: linear-gradient(135deg, rgba(0, 136, 136, 0.15), rgba(136, 0, 136, 0.15));
+  border: 2px solid rgba(136, 136, 0, 0.3);
+}
+
+.gem-tier-badge {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+  font-size: 18px;
+}
+
+.gem-icon {
+  font-size: 24px;
+}
+
+.gem-tier-text {
+  color: var(--text-accent);
+  font-weight: bold;
+}
+
+.gem-type-display,
+.gem-bonus-display {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+  font-size: 15px;
+}
+
+.gem-type-label,
+.gem-bonus-label {
+  color: var(--text-dim);
+}
+
+.gem-type-value,
+.gem-bonus-value {
+  font-weight: bold;
+  color: var(--text-bright);
+}
+
+/* Gem Type Colors (matching EquipmentPopup) */
+.gem-attack {
+  color: #ff4444;
+  text-shadow: 0 0 5px #ff0000;
+}
+
+.gem-hp {
+  color: #44ff44;
+  text-shadow: 0 0 5px #00ff00;
+}
+
+.gem-defense {
+  color: #4444ff;
+  text-shadow: 0 0 5px #0000ff;
+}
+
+.gem-crit-chance {
+  color: #ff8800;
+  text-shadow: 0 0 5px #ff6600;
+}
+
+.gem-crit-damage {
+  color: #ff00ff;
+  text-shadow: 0 0 5px #ff00ff;
+}
+
+.gem-dodge {
+  color: #00ffff;
+  text-shadow: 0 0 5px #00ffff;
+}
+
+.gem-lifesteal {
+  color: #ff0088;
+  text-shadow: 0 0 5px #ff0088;
+}
+
+/* Socket Item Info Styles */
+.socket-item-info {
+  margin-bottom: 1rem;
+  padding: 0.75rem;
+  background-color: rgba(0, 136, 136, 0.1);
+  border: 1px solid rgba(0, 136, 136, 0.3);
+}
+
+.socket-info-line {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+  font-size: 15px;
+}
+
+.socket-label {
+  color: var(--text-dim);
+}
+
+.socket-value {
+  color: var(--text-accent);
+  font-weight: bold;
+}
+
+.socketed-gems-list {
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid rgba(0, 136, 136, 0.2);
+}
+
+.socketed-gems-title {
+  color: var(--text-dim);
+  font-size: 13px;
+  margin-bottom: 0.5rem;
+}
+
+.socketed-gem-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.25rem;
+  font-size: 14px;
+}
+
+.socketed-gem-item .gem-icon {
+  font-size: 16px;
+}
+
+.socketed-gem-item .gem-name {
+  color: var(--text-bright);
 }
 
 /* Mobile responsiveness */
