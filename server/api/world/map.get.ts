@@ -78,12 +78,12 @@ export default defineEventHandler(async (event) => {
 
       // Get room connections
       const connections = [];
-      if (room.exits.north) connections.push('Bắc');
-      if (room.exits.south) connections.push('Nam');
-      if (room.exits.east) connections.push('Đông');
-      if (room.exits.west) connections.push('Tây');
-      if (room.exits.up) connections.push('Lên');
-      if (room.exits.down) connections.push('Xuống');
+      if (room.exits?.north) connections.push('Bắc');
+      if (room.exits?.south) connections.push('Nam');
+      if (room.exits?.east) connections.push('Đông');
+      if (room.exits?.west) connections.push('Tây');
+      if (room.exits?.up) connections.push('Lên');
+      if (room.exits?.down) connections.push('Xuống');
 
       // Count quest indicators
       const hasNewQuests = npcs.some((npc: any) => npc.hasNewQuest);

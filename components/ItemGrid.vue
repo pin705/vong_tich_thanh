@@ -324,7 +324,7 @@ const executeAction = (actionId: string) => {
 }
 
 .item-name {
-  font-size: 11px;
+  font-size: 14px;
   color: var(--text-bright);
   text-align: center;
   word-break: break-word;
@@ -332,7 +332,7 @@ const executeAction = (actionId: string) => {
 }
 
 .item-price {
-  font-size: 10px;
+  font-size: 12px;
   color: var(--text-accent);
   position: absolute;
   bottom: 2px;
