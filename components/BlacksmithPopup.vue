@@ -182,7 +182,11 @@ async function loadInventory() {
       
       // Filter equipment items (weapons and armor)
       equipmentItems.value = inventory
-        .filter((item: any) => item && (item.type === 'weapon' || item.type === 'armor' || item.type === 'Equipment'))
+        .filter((item: any) => {
+          if (!item) return false;
+          const type = item.type?.toLowerCase();
+          return type === 'weapon' || type === 'armor' || type === 'equipment';
+        })
         .map((item: any) => ({
           id: item._id || item.id,
           name: item.name,

@@ -39,12 +39,13 @@ export default defineEventHandler(async (event) => {
       });
     }
 
-    // Combine class skills and profession skills
-    const allSkills = [...classSkills, ...professionSkills];
+    // Combine class skills and profession skills as available skills
+    const availableSkills = [...classSkills, ...professionSkills];
 
     return {
       success: true,
-      skills: allSkills || [],
+      skills: player.skills || [], // Player's learned skills
+      availableSkills: availableSkills, // All skills player can potentially learn
       playerClass,
       profession: playerProfession,
     };

@@ -1257,7 +1257,10 @@ const loadSkills = async () => {
   try {
     const response = await $fetch('/api/player/skills');
     if (response.success) {
-      playerSkills.value = response.skills || [];
+      // Use available skills if player hasn't learned any yet (for profession skills)
+      playerSkills.value = (response.skills && response.skills.length > 0) 
+        ? response.skills 
+        : (response.availableSkills || []);
       if (response.playerClass) {
         playerState.value.class = response.playerClass;
       }
