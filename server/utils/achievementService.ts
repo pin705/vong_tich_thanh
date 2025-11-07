@@ -17,10 +17,14 @@ export async function postEvent(
   data: { key: string }
 ) {
   try {
-    // Find all achievements matching this event type and key
+    // Find all achievements matching this event type
+    // Support wildcard matching: if criteria.key is '*', it matches any key
     const matchingAchievements = await AchievementSchema.find({
       'criteria.type': eventType,
-      'criteria.key': data.key,
+      $or: [
+        { 'criteria.key': data.key },
+        { 'criteria.key': '*' }
+      ]
     });
 
     if (!matchingAchievements || matchingAchievements.length === 0) {

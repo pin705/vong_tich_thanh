@@ -10,16 +10,32 @@ export default defineEventHandler(async (event) => {
     const body = await readBody(event);
     const { titleKey } = body;
 
-    if (!titleKey) {
-      return { success: false, message: 'Title key is required' };
-    }
-
     const playerId = session.user.id;
 
     // Get player
     const player = await PlayerSchema.findById(playerId);
     if (!player) {
       return { success: false, message: 'Player not found' };
+    }
+
+    // If titleKey is null, unequip current title
+    if (titleKey === null) {
+      player.activeTitleKey = null;
+      await player.save();
+
+      // Recalculate stats
+      const { recalculateStats } = await import('~/server/utils/playerStats');
+      await recalculateStats(playerId);
+
+      return {
+        success: true,
+        message: 'Đã tháo danh hiệu!',
+        activeTitleKey: null,
+      };
+    }
+
+    if (!titleKey) {
+      return { success: false, message: 'Title key is required' };
     }
 
     // Check if player has this title
