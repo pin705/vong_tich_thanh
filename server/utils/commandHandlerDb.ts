@@ -338,6 +338,46 @@ export async function handleCommandDb(command: Command, playerId: string): Promi
         responses.push(`Level: ${player.level} (XP: ${player.experience})`);
         responses.push('');
         
+        // Show equipped items
+        if (player.equipment) {
+          const equippedItems = [];
+          const slots = ['weapon', 'helmet', 'chest', 'legs', 'boots'];
+          
+          for (const slot of slots) {
+            if (player.equipment[slot]) {
+              equippedItems.push({ slot, itemId: player.equipment[slot] });
+            }
+          }
+          
+          if (equippedItems.length > 0) {
+            responses.push('Trang bị:');
+            const equippedItemsData = await ItemSchema.find({ 
+              _id: { $in: equippedItems.map(e => e.itemId) } 
+            }).select('name value slot').lean();
+            
+            // Map items to slots
+            const itemMap = new Map();
+            equippedItemsData.forEach((item: any) => {
+              itemMap.set(item._id.toString(), item);
+            });
+            
+            equippedItems.forEach(({ slot, itemId }) => {
+              const item = itemMap.get(itemId.toString());
+              if (item) {
+                const slotName = {
+                  weapon: 'Vũ khí',
+                  helmet: 'Mũ',
+                  chest: 'Áo',
+                  legs: 'Quần',
+                  boots: 'Giày'
+                }[slot] || slot;
+                responses.push(`  [${slotName}] ${item.name}`);
+              }
+            });
+            responses.push('');
+          }
+        }
+        
         if (player.inventory && player.inventory.length > 0) {
           responses.push('Vật phẩm:');
           const inventory = await ItemSchema.find({ _id: { $in: player.inventory } }).select('name value').lean();
