@@ -29,6 +29,8 @@
 </template>
 
 <script setup lang="ts">
+import FullscreenOverlay from '~/components/FullscreenOverlay.vue';
+
 interface Props {
   title: string;
   message: string;

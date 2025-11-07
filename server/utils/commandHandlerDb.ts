@@ -295,10 +295,8 @@ export async function handleCommandDb(command: Command, playerId: string): Promi
             itemKey: { $in: ['starter_sword', 'starter_chest', 'starter_legs', 'starter_boots'] }
           }).lean();
           
-          // Add items to player inventory
-          for (const item of starterItems) {
-            await addItemToPlayer(player, item._id);
-          }
+          // Add items to player inventory concurrently for better performance
+          await Promise.all(starterItems.map(item => addItemToPlayer(player, item._id)));
           
           await player.save();
           
