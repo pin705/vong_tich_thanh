@@ -32,7 +32,7 @@ export default defineEventHandler(async (event) => {
       professionRequirement: null,
     });
 
-    let professionSkills: any[] = [];
+    let professionSkills: typeof classSkills = [];
     if (playerProfession) {
       professionSkills = await SkillSchema.find({
         professionRequirement: playerProfession,
@@ -40,7 +40,7 @@ export default defineEventHandler(async (event) => {
     }
 
     // Combine class skills and profession skills as available skills
-    const availableSkills = [...classSkills, ...professionSkills];
+    const availableSkills: typeof classSkills = [...classSkills, ...professionSkills];
 
     return {
       success: true,
