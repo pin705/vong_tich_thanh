@@ -335,6 +335,12 @@
       @craft="handleCraft"
     />
 
+    <!-- Blacksmith Popup -->
+    <BlacksmithPopup
+      :isOpen="blacksmithPopupOpen"
+      @close="blacksmithPopupOpen = false"
+    />
+
     <!-- Shop Popup (Phase 25: Vendor System) -->
     <ShopPopup
       ref="shopPopupRef"
@@ -392,6 +398,7 @@ import ShopPopup from '~/components/ShopPopup.vue';
 import MailPopup from '~/components/MailPopup.vue';
 import PetOverlay from '~/components/PetOverlay.vue';
 import LeaderboardOverlay from '~/components/LeaderboardOverlay.vue';
+import BlacksmithPopup from '~/components/BlacksmithPopup.vue';
 import TabSelector from '~/components/TabSelector.vue';
 import MainLogPane from '~/components/MainLogPane.vue';
 import CombatLogPane from '~/components/CombatLogPane.vue';
@@ -579,6 +586,7 @@ const craftingPopupOpen = ref(false);
 const shopPopupOpen = ref(false);
 const mailPopupOpen = ref(false);
 const petPopupOpen = ref(false);
+const blacksmithPopupOpen = ref(false);
 const shopPopupRef = ref<InstanceType<typeof ShopPopup> | null>(null);
 
 // Loading state
@@ -988,6 +996,9 @@ const handleContextualAction = async (action: { command: string }) => {
     await loadCraftingRecipes();
     craftingPopupOpen.value = true;
     isLoading.value = false;
+  } else if (action.command.startsWith('__blacksmith__:')) {
+    // Open blacksmith enhancement menu
+    blacksmithPopupOpen.value = true;
   } else if (action.command.startsWith('__pet_menu__:')) {
     // Open pet menu
     petPopupOpen.value = true;
@@ -1035,6 +1046,11 @@ const getActionsForEntity = (type: 'player' | 'npc' | 'mob', name: string, entit
         actions.push({ 
           label: 'Chế Tạo (Craft)', 
           command: `__crafting__:${entityId}:${name}`, 
+          disabled: false 
+        });
+        actions.push({ 
+          label: 'Cường Hóa Trang Bị (Upgrade)', 
+          command: `__blacksmith__:${entityId}:${name}`, 
           disabled: false 
         });
       }

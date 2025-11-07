@@ -13,8 +13,8 @@ export default defineEventHandler(async (event) => {
 
     const playerId = session.user.id;
 
-    // Get player
-    const player = await PlayerSchema.findById(playerId);
+    // Get player with populated inventory
+    const player = await PlayerSchema.findById(playerId).populate('inventory');
     if (!player) {
       throw createError({
         statusCode: 404,
@@ -27,8 +27,12 @@ export default defineEventHandler(async (event) => {
       player: {
         id: player._id.toString(),
         username: player.username,
+        gold: player.gold,
+        profession: player.profession,
+        professionLevel: player.professionLevel,
         autoCombat: player.autoCombat || false,
-        customAliases: Object.fromEntries(player.customAliases || new Map())
+        customAliases: Object.fromEntries(player.customAliases || new Map()),
+        inventory: player.inventory || []
       }
     };
   } catch (error: any) {
