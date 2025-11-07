@@ -12,7 +12,7 @@ import { RoomSchema } from '../../models/Room';
 import { AgentSchema } from '../../models/Agent';
 import { deduplicateItemsById } from '../utils/itemDeduplication';
 import { commandRateLimiter, chatRateLimiter, sanitizeInput } from '../utils/validation';
-import { EXPERIENCE_PER_LEVEL } from '../utils/constants';
+import { getExpForLevel } from '../utils/constants';
 
 // Store peer to player mapping
 const peerToPlayer = new Map<string, string>();
@@ -38,7 +38,7 @@ async function sendPlayerState(peer: Peer, playerId: string) {
       maxResource: player.maxResource || 100,
       level: player.level,
       exp: player.experience || 0,
-      nextLevelExp: player.level * EXPERIENCE_PER_LEVEL,
+      nextLevelExp: getExpForLevel(player.level),
       gold: player.gold,
       currency: player.gold,
       premiumCurrency: player.premiumCurrency || 0,

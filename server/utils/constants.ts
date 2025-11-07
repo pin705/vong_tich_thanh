@@ -10,6 +10,19 @@ export const HP_GAIN_PER_LEVEL = 10;
 export const TALENT_POINTS_PER_LEVEL = 1; // Talent points gained per level up
 export const SKILL_POINTS_PER_LEVEL = 1; // Skill points gained per level up
 
+/**
+ * Calculate experience required to level up
+ * Uses formula: baseExp * level^1.5 for smooth exponential growth
+ * Level 1->2: 100 EXP
+ * Level 5->6: 559 EXP
+ * Level 10->11: 1581 EXP
+ * Level 20->21: 4472 EXP
+ * Level 50->51: 17677 EXP
+ */
+export function getExpForLevel(level: number): number {
+  return Math.floor(EXPERIENCE_PER_LEVEL * Math.pow(level, 1.5));
+}
+
 // Starting player stats
 export const STARTING_HP = 100;
 export const STARTING_GOLD = 50;
