@@ -364,6 +364,8 @@ export async function executeCombatTick(playerId: string, agentId: string): Prom
     const room = await RoomSchema.findById(player.currentRoomId);
     
     // Check for PACIFIED buff (Pet Trial Tower - player cannot attack)
+    // Note: This query only executes during combat and PACIFIED is rare (only in Pet Trial)
+    // Future optimization: Cache buff status in gameState if needed
     const pacifiedBuff = await BuffSchema.findOne({
       playerId: player._id,
       buffKey: 'PACIFIED',

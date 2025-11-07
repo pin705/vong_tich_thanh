@@ -11,8 +11,12 @@ import { gameState } from './gameState';
  * In this tower, only pets can fight while players act as trainers
  */
 
+// Reward constants
 const TRIAL_BASE_TAMER_BADGE_REWARD = 2;
 const TRIAL_BADGE_FLOOR_DIVISOR = 5;
+
+// Buff duration constants
+const PACIFIED_BUFF_DURATION = 7200000; // 2 hours in milliseconds
 
 /**
  * Get pet trial status for a player
@@ -164,7 +168,7 @@ export async function startTrial(playerId: string) {
       await BuffSchema.create({
         playerId: player._id,
         buffKey: 'PACIFIED',
-        duration: 7200000, // 2 hours - enough for trial
+        duration: PACIFIED_BUFF_DURATION,
         active: true,
         startTime: new Date(),
         metadata: {

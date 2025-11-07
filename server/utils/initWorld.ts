@@ -1598,9 +1598,7 @@ export async function initializeWorld() {
     const trialLobby = await RoomSchema.create({
       name: 'Sảnh Tháp Thử Luyện',
       description: 'Một sảnh cao với ánh sáng xanh phát ra từ các cột pha lê. Trên tường khắc những hình vẽ về các Huấn Luyện Sư huyền thoại cùng thú cưng của họ. Không khí tràn đầy năng lượng kỳ lạ.',
-      exits: {
-        south: cổngThành._id, // Link back to main area
-      },
+      exits: {},
     });
 
     const trialInstance = await RoomSchema.create({
@@ -1613,7 +1611,8 @@ export async function initializeWorld() {
     });
 
     trialLobby.exits.up = trialInstance._id;
-    cổngThành.exits.east = trialLobby._id;
+    trialLobby.exits.east = cổngThành._id; // Link back to main area
+    cổngThành.exits.west = trialLobby._id; // Link to trial tower (use west exit)
     await trialLobby.save();
     await trialInstance.save();
 
