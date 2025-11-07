@@ -133,5 +133,20 @@ export const AgentSchema = defineMongooseModel({
       type: Number,
       default: null,
     },
+    // Pet Trial System - Unique identifier for NPCs
+    agentKey: {
+      type: String,
+      default: null,
+      index: true,
+    },
+    // Pet Trial System - Mark as trial monster
+    isTrialMonster: {
+      type: Boolean,
+      default: false,
+    },
+    trialFloor: {
+      type: Number,
+      default: null,
+    },
   },
 });

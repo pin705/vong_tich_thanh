@@ -320,6 +320,79 @@ export async function initializeWorld() {
       data: { buffKey: 'PET_ATTACK_BUFF', duration: 30000 }
     });
 
+    // Pet Trial System: Premium Pet Items (Tamer Badge Shop)
+    const trungPhuongHoang = await ItemSchema.create({
+      name: 'Trứng Phượng Hoàng',
+      description: 'Một quả trứng huyền thoại phát sáng ánh vàng rực rỡ. Bên trong là sinh vật huyền thoại Phượng Hoàng.',
+      type: 'PET_EGG',
+      itemKey: 'egg_phoenix',
+      value: 0,
+      price: 0,
+      sellValue: 0,
+      quality: 'Sử Thi',
+      rarity: 'legendary',
+      data: { grantsPetKey: 'phoenix' }
+    });
+
+    const thucAnPetSieuCap = await ItemSchema.create({
+      name: 'Thức Ăn Pet Siêu Cấp',
+      description: 'Thức ăn đặc biệt được chế biến từ nguyên liệu quý hiếm. Cung cấp 1000 điểm kinh nghiệm cho thú cưng.',
+      type: 'PET_FOOD',
+      itemKey: 'pet_food_3',
+      value: 0,
+      price: 0,
+      sellValue: 0,
+      quality: 'Hiếm',
+      data: { expValue: 1000 }
+    });
+
+    const sachKyNangPetPhunLua = await ItemSchema.create({
+      name: 'Sách Kỹ Năng Pet: Phun Lửa',
+      description: 'Một cuốn sách quý hiếm dạy thú cưng kỹ năng Phun Lửa mạnh mẽ.',
+      type: 'PET_SKILLBOOK',
+      itemKey: 'pet_skillbook_fire_breath',
+      value: 0,
+      price: 0,
+      sellValue: 0,
+      quality: 'Hiếm',
+      rarity: 'rare',
+      data: { skillKey: 'fire_breath' }
+    });
+
+    const sachKyNangPetTanCong = await ItemSchema.create({
+      name: 'Sách Kỹ Năng Pet: Tấn Công Liên Hoàn',
+      description: 'Cuốn sách dạy thú cưng kỹ năng tấn công nhiều lần liên tiếp.',
+      type: 'PET_SKILLBOOK',
+      itemKey: 'pet_skillbook_multi_attack',
+      value: 0,
+      price: 0,
+      sellValue: 0,
+      quality: 'Tốt',
+      data: { skillKey: 'multi_attack' }
+    });
+
+    const binhMauPetLon = await ItemSchema.create({
+      name: 'Bình Máu Pet Lớn',
+      description: 'Một bình thuốc lớn chuyên dụng cho thú cưng. Hồi phục 500 HP cho pet.',
+      type: 'PET_CONSUMABLE',
+      itemKey: 'pet_heal_potion_2',
+      value: 0,
+      price: 0,
+      sellValue: 0,
+      data: { healAmount: 500 }
+    });
+
+    const thuocPhongThuPet = await ItemSchema.create({
+      name: 'Thuốc Phòng Thủ Pet',
+      description: 'Một lọ thuốc màu xanh lục. Tăng phòng thủ của pet trong 30 giây.',
+      type: 'PET_CONSUMABLE',
+      itemKey: 'pet_defense_potion_1',
+      value: 0,
+      price: 0,
+      sellValue: 0,
+      data: { buffKey: 'PET_DEFENSE_BUFF', duration: 30000 }
+    });
+
     // Phase 21 & 22: Crafting Materials
     // Zone 1 Materials (Level 1-10)
     const daChuot = await ItemSchema.create({
@@ -1521,6 +1594,29 @@ export async function initializeWorld() {
     await dungeonLobby.save();
     await dungeonInstance.save();
 
+    // Pet Trial System: Create trial tower rooms
+    const trialLobby = await RoomSchema.create({
+      name: 'Sảnh Tháp Thử Luyện',
+      description: 'Một sảnh cao với ánh sáng xanh phát ra từ các cột pha lê. Trên tường khắc những hình vẽ về các Huấn Luyện Sư huyền thoại cùng thú cưng của họ. Không khí tràn đầy năng lượng kỳ lạ.',
+      exits: {
+        south: cổngThành._id, // Link back to main area
+      },
+    });
+
+    const trialInstance = await RoomSchema.create({
+      name: 'Tháp Thử Luyện - Đấu Trường',
+      description: 'Một đấu trường rộng lớn với sàn đá cứng. Xung quanh là các hàng ghế đá trống rỗng, như thể từng chứng kiến vô số trận chiến. Đây là nơi thú cưng của bạn phải chiến đấu một mình.',
+      exits: {
+        down: trialLobby._id,
+      },
+      isSafeZone: false,
+    });
+
+    trialLobby.exits.up = trialInstance._id;
+    cổngThành.exits.east = trialLobby._id;
+    await trialLobby.save();
+    await trialInstance.save();
+
     // Create NPCs
     const linhGac = await AgentSchema.create({
       name: 'Lính Gác',
@@ -1575,6 +1671,7 @@ export async function initializeWorld() {
       name: 'Huấn Luyện Sư Kito',
       description: 'Một người đàn ông với mái tóc bạc và đôi mắt sắc bén. Xung quanh ông có vài con thú nhỏ đang chơi đùa.',
       type: 'npc',
+      agentKey: 'pet_tamer',
       currentRoomId: cổngThành._id,
       hp: 120,
       maxHp: 120,
@@ -1589,6 +1686,7 @@ export async function initializeWorld() {
       ],
       isVendor: true,
       shopInventory: [
+        // Basic items - can be bought with gold
         trungSoi._id,
         thucAnPetSoCap._id,
         thucAnPetCaoCap._id,
@@ -1596,7 +1694,14 @@ export async function initializeWorld() {
         theDoiTenPet._id,
         binhMauPetNho._id,
         thuocCuongHoaPet._id,
-        daTayTuyPet._id
+        // Premium items - require Tamer Badge from Pet Trial Tower
+        daTayTuyPet._id,
+        trungPhuongHoang._id,
+        thucAnPetSieuCap._id,
+        sachKyNangPetPhunLua._id,
+        sachKyNangPetTanCong._id,
+        binhMauPetLon._id,
+        thuocPhongThuPet._id
       ],
       shopType: 'gold',
       shopCurrency: 'tamer_badge'

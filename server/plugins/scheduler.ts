@@ -1,8 +1,11 @@
 import { resetDungeonProgress } from '../utils/dungeonService';
+import { resetPetTrialProgress } from '../utils/petTrialService';
 
 /**
  * Scheduler Plugin - Handle periodic tasks
- * Runs weekly dungeon reset on Sundays at 00:00
+ * Runs weekly resets on Sundays at 00:00
+ * - Dungeon progress reset
+ * - Pet Trial progress reset
  * 
  * NOTE: This implementation uses setTimeout which will be lost on server restart.
  * For production, consider using:
@@ -29,13 +32,18 @@ export default defineNitroPlugin((nitroApp) => {
   function scheduleWeeklyReset() {
     const msUntilSunday = getNextSundayMidnight();
     
-    console.log(`[Scheduler] Next dungeon reset in ${Math.floor(msUntilSunday / 1000 / 60 / 60)} hours`);
+    console.log(`[Scheduler] Next weekly reset in ${Math.floor(msUntilSunday / 1000 / 60 / 60)} hours`);
     
     setTimeout(async () => {
-      console.log('[Scheduler] Running weekly dungeon reset...');
+      console.log('[Scheduler] Running weekly resets...');
       try {
+        // Reset dungeon progress
         await resetDungeonProgress();
         console.log('[Scheduler] Weekly dungeon reset completed');
+        
+        // Reset pet trial progress
+        await resetPetTrialProgress();
+        console.log('[Scheduler] Weekly pet trial reset completed');
       } catch (error) {
         console.error('[Scheduler] Error during weekly reset:', error);
       }
