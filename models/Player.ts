@@ -206,8 +206,26 @@ export const PlayerSchema = defineMongooseModel({
       enum: ['player', 'admin'],
       default: 'player',
     },
-    // Title system
+    // Title system (legacy)
     title: {
+      type: String,
+      default: null,
+    },
+    // Achievement & Title System
+    unlockedTitles: [{
+      key: { type: String },
+      name: { type: String },
+      stats: {
+        attack: { type: Number },
+        hp: { type: Number },
+        defense: { type: Number },
+        critChance: { type: Number },
+        critDamage: { type: Number },
+        dodge: { type: Number },
+        lifesteal: { type: Number },
+      },
+    }],
+    activeTitleKey: {
       type: String,
       default: null,
     },

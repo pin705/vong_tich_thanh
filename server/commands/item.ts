@@ -7,6 +7,7 @@ import { BuffSchema } from '../../models/Buff';
 import { gameState } from '../utils/gameState';
 import { partyService } from '../utils/partyService';
 import { deduplicateItemsById } from '../utils/itemDeduplication';
+import { postEvent as postAchievementEvent } from '../utils/achievementService';
 
 /**
  * Handle item-related commands (get, drop, use, inventory, list, buy, sell)
@@ -82,6 +83,11 @@ export async function handleItemCommand(command: Command, playerId: string): Pro
         await player.save();
 
         responses.push(`Bạn nhặt [${item.name}].`);
+        
+        // Achievement system - post GET_ITEM event
+        if (item.itemKey) {
+          await postAchievementEvent(playerId, 'GET_ITEM', { key: item.itemKey });
+        }
         
         // Advance loot turn if in party with round-robin
         const playerParty = partyService.getPlayerParty(playerId);

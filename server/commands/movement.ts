@@ -8,6 +8,7 @@ import { gameState } from '../utils/gameState';
 import { formatRoomDescription, DIRECTION_MAP, DIRECTION_NAMES_VI, getOppositeDirection } from '../utils/roomUtils';
 import { movePetToRoom } from '../utils/petService';
 import { removeItemFromPlayer } from '../utils/inventoryService';
+import { postEvent as postAchievementEvent } from '../utils/achievementService';
 import type { Types } from 'mongoose';
 
 /**
@@ -239,6 +240,11 @@ export async function handleMovementCommand(command: Command, playerId: string):
     const alreadyVisited = player.visitedRooms.some((id: Types.ObjectId) => id.toString() === roomIdStr);
     if (!alreadyVisited) {
       player.visitedRooms.push(nextRoom._id);
+      
+      // Achievement system - post VISIT_ROOM event for new rooms
+      if (nextRoom.roomKey) {
+        await postAchievementEvent(playerId, 'VISIT_ROOM', { key: nextRoom.roomKey });
+      }
     }
     
     await player.save();
