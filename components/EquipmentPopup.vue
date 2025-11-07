@@ -109,8 +109,9 @@
 import { ref, computed } from 'vue';
 import FullscreenOverlay from './FullscreenOverlay.vue';
 import Popover from './Popover.vue';
+import { getGemTypeClass, getGemTypeName, getGemBonusDisplay, type GemData } from '~/utils/gemHelpers';
 
-interface Gem {
+interface Gem extends GemData {
   _id?: string;
   name: string;
   description: string;
@@ -171,21 +172,29 @@ function hasSocketSupport(item: any): boolean {
   return item && (item.maxSockets > 0 || item.currentSockets > 0);
 }
 
+/**
+ * Generate socket display array with socketed gems and empty slots
+ * Returns array of gems (filled sockets) and nulls (empty sockets)
+ * Note: currentSockets should always be >= socketedGems.length
+ */
 function getSocketsDisplay(item: any): (Gem | null)[] {
   if (!item) return [];
   
   const maxSockets = item.maxSockets || 0;
   const socketedGems = item.socketedGems || [];
+  const currentSockets = item.currentSockets || 0;
   const result: (Gem | null)[] = [];
   
-  // Add socketed gems
-  for (let i = 0; i < socketedGems.length && i < maxSockets; i++) {
+  // Ensure data integrity: currentSockets should not exceed maxSockets
+  const validCurrentSockets = Math.min(currentSockets, maxSockets);
+  
+  // Add socketed gems (should not exceed currentSockets)
+  for (let i = 0; i < Math.min(socketedGems.length, validCurrentSockets); i++) {
     result.push(socketedGems[i]);
   }
   
   // Add empty sockets
-  const currentSockets = item.currentSockets || 0;
-  for (let i = socketedGems.length; i < currentSockets && i < maxSockets; i++) {
+  for (let i = socketedGems.length; i < validCurrentSockets; i++) {
     result.push(null);
   }
   
@@ -200,39 +209,6 @@ function showGemPopover(gem: Gem, event: MouseEvent): void {
 function closeGemPopover(): void {
   gemPopoverOpen.value = false;
   selectedGem.value = null;
-}
-
-function getGemTypeClass(gemType: string): string {
-  const typeClasses: Record<string, string> = {
-    'attack': 'gem-attack',
-    'hp': 'gem-hp',
-    'defense': 'gem-defense',
-    'critChance': 'gem-crit-chance',
-    'critDamage': 'gem-crit-damage',
-    'dodge': 'gem-dodge',
-    'lifesteal': 'gem-lifesteal'
-  };
-  return typeClasses[gemType] || '';
-}
-
-function getGemTypeName(gemType: string): string {
-  const typeNames: Record<string, string> = {
-    'attack': 'Sát Thương',
-    'hp': 'HP',
-    'defense': 'Phòng Thủ',
-    'critChance': 'Tỷ Lệ Chí Mạng',
-    'critDamage': 'Sát Thương Chí Mạng',
-    'dodge': 'Né Tránh',
-    'lifesteal': 'Hút Máu'
-  };
-  return typeNames[gemType] || gemType;
-}
-
-function getGemBonusDisplay(gem: Gem): string {
-  const percentageTypes = ['critChance', 'dodge', 'lifesteal'];
-  const isPercentage = percentageTypes.includes(gem.gemType);
-  const value = gem.gemValue || 0;
-  return isPercentage ? `+${value}%` : `+${value}`;
 }
 
 function getQualityClass(quality?: string): string {

@@ -144,6 +144,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue';
 import Popover from './Popover.vue';
+import { isGemItem as isGem, getGemTypeClass, getGemTypeName, getGemBonusDisplay } from '~/utils/gemHelpers';
 
 interface ItemStats {
   damage?: number;
@@ -303,47 +304,14 @@ const executeAction = (actionId: string) => {
   }
 };
 
-// Gem-related helper functions
+// Use shared gem helper
 function isGemItem(item: any): boolean {
-  return item && item.gemType && item.gemTier && item.gemValue !== undefined;
+  return isGem(item);
 }
 
+// Socket-related helper functions
 function hasSocketInfo(item: any): boolean {
   return item && (item.maxSockets > 0 || item.currentSockets > 0);
-}
-
-function getGemTypeClass(gemType: string): string {
-  const typeClasses: Record<string, string> = {
-    'attack': 'gem-attack',
-    'hp': 'gem-hp',
-    'defense': 'gem-defense',
-    'critChance': 'gem-crit-chance',
-    'critDamage': 'gem-crit-damage',
-    'dodge': 'gem-dodge',
-    'lifesteal': 'gem-lifesteal'
-  };
-  return typeClasses[gemType] || '';
-}
-
-function getGemTypeName(gemType: string): string {
-  const typeNames: Record<string, string> = {
-    'attack': 'Sát Thương',
-    'hp': 'HP',
-    'defense': 'Phòng Thủ',
-    'critChance': 'Tỷ Lệ Chí Mạng',
-    'critDamage': 'Sát Thương Chí Mạng',
-    'dodge': 'Né Tránh',
-    'lifesteal': 'Hút Máu'
-  };
-  return typeNames[gemType] || gemType;
-}
-
-function getGemBonusDisplay(item: any): string {
-  if (!item || !item.gemValue) return '';
-  const percentageTypes = ['critChance', 'dodge', 'lifesteal'];
-  const isPercentage = percentageTypes.includes(item.gemType);
-  const value = item.gemValue;
-  return isPercentage ? `+${value}%` : `+${value}`;
 }
 </script>
 
