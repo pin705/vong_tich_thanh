@@ -12,26 +12,33 @@
         </button>
         <button
           class="tab-button"
-          :class="{ active: activeTab === 'inventory' }"
-          @click="activeTab = 'inventory'"
+          :class="{ active: activeTab === 'items' }"
+          @click="activeTab = 'items'"
         >
-          [2] Túi Đồ
+          [2] Vật Phẩm
         </button>
         <button
-          v-if="profession"
+          class="tab-button"
+          :class="{ active: activeTab === 'equipment' }"
+          @click="activeTab = 'equipment'"
+        >
+          [3] Trang Bị
+        </button>
+        <button
+          v-if="profession && level >= 5"
           class="tab-button"
           :class="{ active: activeTab === 'skills' }"
           @click="activeTab = 'skills'"
         >
-          [3] Kỹ Năng
+          [4] Kỹ Năng
         </button>
         <button
-          v-if="profession"
+          v-if="profession && level >= 10"
           class="tab-button"
           :class="{ active: activeTab === 'talents' }"
           @click="activeTab = 'talents'"
         >
-          [4] Thiên Phú
+          [5] Thiên Phú
         </button>
       </div>
 
@@ -111,13 +118,13 @@
         </div>
       </div>
 
-      <!-- Inventory Tab -->
-      <div v-if="activeTab === 'inventory'" class="tab-content inventory-content">
+      <!-- Items Tab -->
+      <div v-if="activeTab === 'items'" class="tab-content inventory-content">
         <div class="inventory-section">
-          <div class="section-title">[ Túi Đồ ]</div>
+          <div class="section-title">[ Vật Phẩm ]</div>
           <div class="inventory-grid">
             <div
-              v-for="(item, index) in inventoryItems"
+              v-for="(item, index) in regularItems"
               :key="index"
               class="inventory-slot"
               :class="{ 'has-item': item }"
@@ -125,6 +132,31 @@
             >
               <div v-if="item" class="item-content">
                 <div class="item-name">{{ item.name }}</div>
+                <div v-if="item.quantity && item.quantity > 1" class="item-quantity">x{{ item.quantity }}</div>
+              </div>
+              <div v-else class="empty-slot">
+                <span class="slot-number">{{ index + 1 }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Equipment Tab -->
+      <div v-if="activeTab === 'equipment'" class="tab-content inventory-content">
+        <div class="inventory-section">
+          <div class="section-title">[ Trang Bị ]</div>
+          <div class="inventory-grid">
+            <div
+              v-for="(item, index) in equipmentItems"
+              :key="index"
+              class="inventory-slot"
+              :class="{ 'has-item': item, 'equipped': item?.equipped }"
+              @click="item && handleItemClick(item)"
+            >
+              <div v-if="item" class="item-content">
+                <div class="item-name">{{ item.name }}</div>
+                <div v-if="item.equipped" class="equipped-badge">[E]</div>
                 <div v-if="item.quantity && item.quantity > 1" class="item-quantity">x{{ item.quantity }}</div>
               </div>
               <div v-else class="empty-slot">
@@ -271,8 +303,21 @@ const emit = defineEmits<{
   inventoryAction: [action: string, itemId: string];
 }>();
 
-const activeTab = ref<'info' | 'inventory' | 'skills' | 'talents'>('info');
+const activeTab = ref<'info' | 'items' | 'equipment' | 'skills' | 'talents'>('info');
 const loading = ref(false);
+
+// Separate items into regular items and equipment
+const regularItems = computed(() => {
+  return props.inventoryItems.filter(item => 
+    item && item.type !== 'weapon' && item.type !== 'armor'
+  );
+});
+
+const equipmentItems = computed(() => {
+  return props.inventoryItems.filter(item => 
+    item && (item.type === 'weapon' || item.type === 'armor')
+  );
+});
 
 // Handle inventory item click
 const handleItemClick = (item: any) => {
@@ -638,6 +683,12 @@ const handleItemClick = (item: any) => {
   transform: scale(1.05);
 }
 
+.inventory-slot.equipped {
+  background-color: rgba(255, 176, 0, 0.1);
+  border-color: var(--text-accent);
+  box-shadow: 0 0 10px rgba(255, 176, 0, 0.3);
+}
+
 .item-content {
   text-align: center;
   width: 100%;
@@ -655,6 +706,14 @@ const handleItemClick = (item: any) => {
   color: var(--text-accent);
   font-size: 12px;
   margin-top: 0.25rem;
+}
+
+.equipped-badge {
+  color: var(--text-accent);
+  font-size: 11px;
+  font-weight: bold;
+  margin-top: 0.15rem;
+  text-shadow: 0 0 5px rgba(255, 176, 0, 0.5);
 }
 
 .empty-slot {

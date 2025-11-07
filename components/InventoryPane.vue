@@ -10,10 +10,17 @@
       </button>
       <button
         class="tab-button"
-        :class="{ active: activeTab === 'inventory' }"
-        @click="activeTab = 'inventory'"
+        :class="{ active: activeTab === 'items' }"
+        @click="activeTab = 'items'"
       >
-        [Túi Đồ]
+        [Vật Phẩm]
+      </button>
+      <button
+        class="tab-button"
+        :class="{ active: activeTab === 'equipment' }"
+        @click="activeTab = 'equipment'"
+      >
+        [Trang Bị]
       </button>
     </div>
 
@@ -68,11 +75,20 @@
       </div>
     </div>
 
-    <!-- Inventory Tab -->
-    <div v-if="activeTab === 'inventory'" class="tab-content">
+    <!-- Items Tab -->
+    <div v-if="activeTab === 'items'" class="tab-content">
       <ItemGrid
-        :items="inventoryItems"
+        :items="regularItems"
         :actions="itemActions"
+        @itemAction="handleItemAction"
+      />
+    </div>
+
+    <!-- Equipment Tab -->
+    <div v-if="activeTab === 'equipment'" class="tab-content">
+      <ItemGrid
+        :items="equipmentItems"
+        :actions="equipmentActions"
         @itemAction="handleItemAction"
       />
     </div>
@@ -127,9 +143,22 @@ const emit = defineEmits<{
   executeAction: [action: string, itemId: string];
 }>();
 
-const activeTab = ref<'info' | 'inventory'>('info');
+const activeTab = ref<'info' | 'items' | 'equipment'>('info');
 
-// Define actions for ItemGrid
+// Separate items into regular items and equipment
+const regularItems = computed(() => {
+  return props.inventoryItems.filter(item => 
+    item && item.type !== 'weapon' && item.type !== 'armor'
+  );
+});
+
+const equipmentItems = computed(() => {
+  return props.inventoryItems.filter(item => 
+    item && (item.type === 'weapon' || item.type === 'armor')
+  );
+});
+
+// Define actions for regular items
 const itemActions = computed(() => [
   {
     id: 'use',
@@ -138,21 +167,30 @@ const itemActions = computed(() => [
     condition: (item: InventoryItem) => item.type === 'consumable'
   },
   {
+    id: 'drop',
+    label: 'Vứt bỏ',
+    number: 3
+  }
+]);
+
+// Define actions for equipment
+const equipmentActions = computed(() => [
+  {
     id: 'equip',
     label: 'Trang bị',
-    number: 2,
-    condition: (item: InventoryItem) => item.type === 'weapon' || item.type === 'armor'
+    number: 1,
+    condition: (item: InventoryItem) => !item.equipped
   },
   {
     id: 'unequip',
     label: 'Tháo',
-    number: 2,
-    condition: (item: InventoryItem) => (item.type === 'weapon' || item.type === 'armor') && item.equipped
+    number: 1,
+    condition: (item: InventoryItem) => item.equipped
   },
   {
     id: 'drop',
     label: 'Vứt bỏ',
-    number: 3
+    number: 2
   }
 ]);
 

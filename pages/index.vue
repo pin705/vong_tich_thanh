@@ -318,6 +318,12 @@
       @mailUpdated="handleMailUpdated"
     />
 
+    <!-- Pet Popup -->
+    <PetOverlay
+      :isOpen="petPopupOpen"
+      @close="petPopupOpen = false"
+    />
+
     <!-- Crafting Popup -->
     <CraftingPopup
       :isOpen="craftingPopupOpen"
@@ -383,6 +389,7 @@ import CraftingPopup from '~/components/CraftingPopup.vue';
 import PremiumShopPopup from '~/components/PremiumShopPopup.vue';
 import ShopPopup from '~/components/ShopPopup.vue';
 import MailPopup from '~/components/MailPopup.vue';
+import PetOverlay from '~/components/PetOverlay.vue';
 import LeaderboardOverlay from '~/components/LeaderboardOverlay.vue';
 import TabSelector from '~/components/TabSelector.vue';
 import MainLogPane from '~/components/MainLogPane.vue';
@@ -434,7 +441,7 @@ const MAX_COMMAND_HISTORY = 100; // Limit stored commands
 
 // Message limits to prevent accumulation
 const MAX_MAIN_LOG_MESSAGES = 500; // Keep last 500 messages in main log
-const MAX_COMBAT_LOG_MESSAGES = 300; // Keep last 300 messages in combat log
+const MAX_COMBAT_LOG_MESSAGES = 100; // Keep last 100 messages in combat log for better performance
 
 // Load chat messages from localStorage
 const loadChatFromStorage = () => {
@@ -564,11 +571,13 @@ const tradingPopupOpen = ref(false);
 const partyPopupOpen = ref(false);
 const partyInvitationPopupOpen = ref(false);
 const guildPopupOpen = ref(false);
+const guildInvitationPopupOpen = ref(false);
 const auctionHousePopupOpen = ref(false);
 const premiumShopPopupOpen = ref(false);
 const craftingPopupOpen = ref(false);
 const shopPopupOpen = ref(false);
 const mailPopupOpen = ref(false);
+const petPopupOpen = ref(false);
 const shopPopupRef = ref<InstanceType<typeof ShopPopup> | null>(null);
 
 // Loading state
@@ -913,6 +922,9 @@ const handleTabClick = async (tabId: string) => {
         loadingText.value = 'Đang tải nhiệm vụ...';
         await loadQuests();
         questsOpen.value = true;
+        break;
+      case 'pet':
+        petPopupOpen.value = true;
         break;
     }
   } finally {
