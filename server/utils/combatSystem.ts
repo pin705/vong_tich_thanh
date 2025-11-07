@@ -771,13 +771,11 @@ export async function executeCombatTick(playerId: string, agentId: string): Prom
       if (playerObj && playerObj.ws) {
         messages.forEach(msg => {
           const messageType = getCombatMessageType(msg);
-          // Use boss category for boss-related messages
-          const msgCategory = isBoss ? 'boss' : messageCategory;
           playerObj.ws.send(JSON.stringify({ 
             type: messageType, 
             message: msg,
             channel: 'main',
-            category: msgCategory
+            category: isBoss ? 'boss' : messageCategory
           }));
         });
         

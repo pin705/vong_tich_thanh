@@ -43,7 +43,7 @@ export function useGameMessages() {
     text: string,
     type: string,
     user?: string,
-    channel: 'main' | 'combat' | 'chat' = 'main',
+    channel: 'main' | 'chat' = 'main',
     category?: string
   ) {
     // Add category prefix based on message category
@@ -60,7 +60,7 @@ export function useGameMessages() {
       text: prefixedText,
       type,
       user,
-      channel: channel === 'combat' ? 'main' : channel, // Merge combat into main
+      channel: channel,
       category,
       timestamp: new Date()
     };
@@ -97,7 +97,6 @@ export function useGameMessages() {
       'xp': '[XP]',
       'level': '[LEVEL UP]',
       'combat-player': '', // No prefix for player's own combat actions
-      'combat-enemy': '[ENEMY]',
     };
     return prefixMap[category] || '';
   }
@@ -107,7 +106,7 @@ export function useGameMessages() {
     type: string,
     entityType: string,
     entityId: string,
-    channel: 'main' | 'combat' | 'chat' = 'main'
+    channel: 'main' | 'chat' = 'main'
   ) {
     const message: Message = {
       id: generateId(),
@@ -117,7 +116,7 @@ export function useGameMessages() {
       entityType,
       entityId,
       timestamp: new Date(),
-      channel: channel === 'combat' ? 'main' : channel // Merge combat into main
+      channel: channel
     };
     
     // All messages go to mainLog (combat merged with main)
