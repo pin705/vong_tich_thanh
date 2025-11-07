@@ -110,7 +110,7 @@ export async function initializeWorld() {
     console.log('\n[Phase 1] Seeding Items...');
     
     // Using findOneAndUpdate with upsert: true for stable _id references
-    const binhMau = await ItemSitemKechema.findOneAndUpdate(
+    const binhMau = await ItemSchema.findOneAndUpdate(
       { itemKey: 'binh_mau_nho' },
       {
         itemKey: 'binh_mau_nho',
