@@ -3,9 +3,10 @@ import { PlayerSchema } from '../../models/Player';
 import { AgentSchema } from '../../models/Agent';
 import { RoomSchema } from '../../models/Room';
 import { startCombat, fleeCombat } from '../utils/combatSystem';
+import { gameState } from '../utils/gameState';
 
 /**
- * Handle combat-related commands (attack, kill, flee, run)
+ * Handle combat-related commands (attack, kill, flee, run, auto)
  */
 export async function handleCombatCommand(command: Command, playerId: string): Promise<string[]> {
   const { action, target } = command;
@@ -97,6 +98,38 @@ export async function handleCombatCommand(command: Command, playerId: string): P
 
       const fleeMessages = await fleeCombat(playerId);
       responses.push(...fleeMessages);
+    }
+
+    // Handle auto command - toggle auto-attack mode
+    if (action === 'auto') {
+      const playerState = gameState.getPlayerState(playerId);
+      
+      // Check if player is in combat
+      if (!player.inCombat) {
+        // Toggle global autoCombat setting when not in combat
+        player.autoCombat = !player.autoCombat;
+        await player.save();
+        
+        if (player.autoCombat) {
+          responses.push('✓ Tự động tấn công đã được BẬT. Bạn sẽ tự động tấn công quái khi bắt đầu chiến đấu.');
+        } else {
+          responses.push('✗ Tự động tấn công đã được TẮT. Bạn sẽ phải đánh thủ công khi trong chiến đấu.');
+        }
+      } else {
+        // Toggle auto-attack for current combat
+        if (!playerState) {
+          responses.push('Lỗi: Không tìm thấy trạng thái người chơi.');
+          return responses;
+        }
+        
+        playerState.isAutoAttacking = !playerState.isAutoAttacking;
+        
+        if (playerState.isAutoAttacking) {
+          responses.push('[AUTO] Đã BẬT tự động tấn công cho trận chiến này.');
+        } else {
+          responses.push('[AUTO] Đã TẮT tự động tấn công. Sử dụng lệnh "attack" hoặc kỹ năng để tấn công.');
+        }
+      }
     }
 
   } catch (error) {
