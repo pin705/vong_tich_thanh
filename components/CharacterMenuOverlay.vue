@@ -122,11 +122,9 @@
           <div class="section-title">[ Truy Cập Nhanh ]</div>
           <div class="quick-access-buttons">
             <button class="quick-access-button" @click="emit('openAchievements')">
-              <span class="button-icon">🏆</span>
               <span class="button-label">Thành Tựu</span>
             </button>
             <button class="quick-access-button" @click="emit('openTitles')">
-              <span class="button-icon">👑</span>
               <span class="button-label">Danh Hiệu</span>
             </button>
           </div>

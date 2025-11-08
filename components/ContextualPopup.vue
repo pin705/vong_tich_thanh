@@ -10,7 +10,7 @@
         
         <div class="popup-body">
           <!-- Entity HP/Status -->
-          <div v-if="entityData?.hp !== undefined" class="entity-status">
+          <div v-if="entityData?.hp !== undefined && entityType != 'npc'" class="entity-status">
             <div class="hp-label">HP:</div>
             <div class="hp-bar-container">
               <div 
@@ -31,19 +31,19 @@
           </div>
 
           <!-- Guild Information (Phase 20.2) -->
-          <div v-if="entityData?.guild" class="entity-guild-info">
+          <div v-if="entityData?.guild && entityType != 'npc'" class="entity-guild-info">
             <span class="guild-label">Bang hội:</span>
             <span class="guild-value">[{{ entityData.guild.tag }}] {{ entityData.guild.name }}</span>
           </div>
 
           <!-- Pet Information -->
-          <div v-if="entityData?.pet" class="entity-pet-info">
+          <div v-if="entityData?.pet && entityType != 'npc'" class="entity-pet-info">
             <span class="pet-label">Pet triệu hồi:</span>
             <span class="pet-value">{{ entityData.pet.name }} (Lv.{{ entityData.pet.level }})</span>
           </div>
 
           <!-- Agent/Mob Stats -->
-          <div v-if="entityData?.level !== undefined" class="entity-stats">
+          <div v-if="entityData?.level !== undefined && entityType != 'npc'" class="entity-stats">
             <div class="stat-row">
               <span class="stat-label">Cấp độ:</span>
               <span class="stat-value">{{ entityData.level }}</span>
@@ -59,7 +59,7 @@
           </div>
 
           <!-- Rewards Section -->
-          <div v-if="entityData?.experience !== undefined || entityData?.estimatedGold !== undefined" class="rewards-section">
+          <div v-if="(entityData?.experience || entityData?.estimatedGold) && entityType != 'npc'" class="rewards-section">
             <div class="rewards-title">--- Phần Thưởng ---</div>
             <div v-if="entityData?.experience" class="reward-row">
               <span class="reward-label">EXP:</span>
