@@ -2983,9 +2983,14 @@ export async function initializeWorld() {
               behavior: 'patrol',
               patrolRoute: [quảngTrường._id, phòngKhóTreasure._id, quảngTrường._id],
               dialogue: [
-                'Mọi thứ đều yên ổn ở đây.',
-                'Đừng gây rối trong khu vực này.',
-                'Tôi đang làm nhiệm vụ.'
+                'Mọi thứ đều yên ổn ở đây... Ít nhất là cho đến bây giờ.',
+                'Đừng gây rối trong khu vực này. Ta không muốn phải dùng vũ lực đâu.',
+                'Tôi đang làm nhiệm vụ tuần tra. Nếu thấy gì đáng ngờ, hãy báo ngay cho ta.',
+                'Thành phố này từng thịnh vượng lắm, nhưng giờ... ta chỉ cố gắng giữ gìn trật tự thôi.',
+                'Đêm qua ta nghe thấy tiếng lạ từ khu chợ. Cẩn thận nếu đi về hướng đó.',
+                'Ngươi trông có vẻ mạnh mẽ. Có lẽ ngươi sẽ sống sót được ở đây.',
+                'Ta đã phục vụ tại đây 10 năm rồi. Đã thấy nhiều người đến... và ít người ra đi.',
+                'Nếu gặp rắc rối, đừng chạy về phía ta. Ta chỉ là lính tuần, không phải anh hùng.'
               ],
               experience: 0
       },
