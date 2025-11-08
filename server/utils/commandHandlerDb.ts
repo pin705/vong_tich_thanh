@@ -1853,39 +1853,6 @@ export async function handleCommandDb(command: Command, playerId: string): Promi
         responses.push(...await handleGuildChatCommand(playerId, player, target, args));
         break;
 
-      case 'auto': {
-        // Toggle auto-attack mode
-        const playerState = gameState.getPlayerState(playerId);
-        
-        // Check if player is in combat
-        if (!player.inCombat) {
-          // Toggle global autoCombat setting when not in combat
-          player.autoCombat = !player.autoCombat;
-          await player.save();
-          
-          if (player.autoCombat) {
-            responses.push('✓ Tự động tấn công đã được BẬT. Bạn sẽ tự động tấn công quái khi bắt đầu chiến đấu.');
-          } else {
-            responses.push('✗ Tự động tấn công đã được TẮT. Bạn sẽ phải đánh thủ công khi trong chiến đấu.');
-          }
-        } else {
-          // Toggle auto-attack for current combat
-          if (!playerState) {
-            responses.push('Lỗi: Không tìm thấy trạng thái người chơi.');
-            break;
-          }
-          
-          playerState.isAutoAttacking = !playerState.isAutoAttacking;
-          
-          if (playerState.isAutoAttacking) {
-            responses.push('[AUTO] Đã BẬT tự động tấn công cho trận chiến này.');
-          } else {
-            responses.push('[AUTO] Đã TẮT tự động tấn công. Sử dụng lệnh "attack" hoặc kỹ năng để tấn công.');
-          }
-        }
-        break;
-      }
-
       case 'quit':
         responses.push('Tạm biệt! Hẹn gặp lại.');
         break;
