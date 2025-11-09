@@ -2,9 +2,13 @@
   <div class="terminal-container">
     <div class="auth-content">
       <div class="auth-header">
-        <div class="message message-normal"></div>
-        <div class="message message-accent">[ ĐĂNG KÝ TÀI KHOẢN ]</div>
-        <div class="message message-normal"></div>
+        <div class="ascii-art">
+          🌟  ⚔️  🌟
+        </div>
+        <div class="title-border">╔════════════════════════════════════════╗</div>
+        <div class="message message-accent">║     VÒNG TÍCH THÀNH - ĐĂNG KÝ         ║</div>
+        <div class="title-border">╚════════════════════════════════════════╝</div>
+        <div class="subtitle">Bắt đầu hành trình của bạn!</div>
       </div>
 
       <form @submit.prevent="handleRegister" class="auth-form">
@@ -150,6 +154,29 @@ const handleRegister = async () => {
 
 .auth-header {
   margin-bottom: 2rem;
+}
+
+.ascii-art {
+  text-align: center;
+  font-size: 24px;
+  margin-bottom: 1rem;
+}
+
+.title-border {
+  color: var(--text-accent);
+  font-family: 'VT323', 'Source Code Pro', monospace;
+  font-size: 18px;
+  text-align: center;
+  line-height: 1.2;
+}
+
+.subtitle {
+  color: var(--text-cyan);
+  font-family: 'VT323', 'Source Code Pro', monospace;
+  font-size: 16px;
+  text-align: center;
+  margin-top: 0.5rem;
+  font-style: italic;
 }
 
 .message {
