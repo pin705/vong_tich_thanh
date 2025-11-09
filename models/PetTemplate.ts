@@ -18,6 +18,11 @@ export const PetTemplateSchema = defineMongooseModel({
       type: String,
       required: true,
     },
+    element: {
+      type: String,
+      enum: ['FIRE', 'WATER', 'EARTH', 'WIND', 'LIGHTNING', 'NEUTRAL'],
+      default: 'NEUTRAL',
+    },
     baseStats: {
       hp: {
         type: Number,

@@ -28,6 +28,11 @@ export const SkillSchema = defineMongooseModel({
       enum: ['active', 'passive'],
       default: 'active',
     },
+    element: {
+      type: String,
+      enum: ['FIRE', 'WATER', 'EARTH', 'WIND', 'LIGHTNING', 'NEUTRAL'],
+      default: 'NEUTRAL',
+    },
     resourceCost: {
       type: Number,
       default: 0,

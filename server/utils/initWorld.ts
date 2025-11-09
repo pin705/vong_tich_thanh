@@ -35,6 +35,7 @@ import { ItemSchema } from '../../models/Item';
 import { AgentSchema } from '../../models/Agent';
 import { QuestSchema } from '../../models/Quest';
 import { PetTemplateSchema } from '../../models/PetTemplate';
+import { SkillSchema } from '../../models/Skill';
 
 // Type definitions for the ID maps used in linking
 interface IdMaps {
@@ -850,6 +851,147 @@ export async function initializeWorld() {
               rarity: 'legendary',
               tamerBadgePrice: 20, // ~50 floors - legendary pet
               data: { grantsPetKey: 'phoenix' }
+      },
+      { upsert: true, new: true, setDefaultsOnInsert: true }
+    );
+
+    const trungRong = await ItemSchema.findOneAndUpdate(
+      { itemKey: 'egg_dragon' },
+      {
+        name: 'Trứng Rồng Lửa',
+        description: 'Quả trứng nóng như dung nham với vân đỏ rực. Chứa sức mạnh rồng cổ đại.',
+        type: 'PET_EGG',
+        itemKey: 'egg_dragon',
+        value: 0,
+        price: 0,
+        sellValue: 0,
+        quality: 'Sử Thi',
+        rarity: 'legendary',
+        tamerBadgePrice: 25,
+        data: { grantsPetKey: 'dragon' }
+      },
+      { upsert: true, new: true, setDefaultsOnInsert: true }
+    );
+
+    const trungRua = await ItemSchema.findOneAndUpdate(
+      { itemKey: 'egg_turtle' },
+      {
+        name: 'Trứng Rùa Thần',
+        description: 'Trứng màu xanh biển với vỏ cứng như ngọc. Mát lạnh khi chạm vào.',
+        type: 'PET_EGG',
+        itemKey: 'egg_turtle',
+        value: 0,
+        price: 800,
+        sellValue: 0,
+        quality: 'Hiếm',
+        rarity: 'rare',
+        data: { grantsPetKey: 'turtle' }
+      },
+      { upsert: true, new: true, setDefaultsOnInsert: true }
+    );
+
+    const trungHaiXa = await ItemSchema.findOneAndUpdate(
+      { itemKey: 'egg_serpent' },
+      {
+        name: 'Trứng Hải Xà',
+        description: 'Trứng dài với vảy xanh lấp lánh như sóng biển.',
+        type: 'PET_EGG',
+        itemKey: 'egg_serpent',
+        value: 0,
+        price: 1200,
+        sellValue: 0,
+        quality: 'Hiếm',
+        rarity: 'epic',
+        tamerBadgePrice: 10,
+        data: { grantsPetKey: 'serpent' }
+      },
+      { upsert: true, new: true, setDefaultsOnInsert: true }
+    );
+
+    const trungGolem = await ItemSchema.findOneAndUpdate(
+      { itemKey: 'egg_golem' },
+      {
+        name: 'Lõi Golem',
+        description: 'Một khối đá phát sáng với rune cổ đại. Có thể triệu hồi Golem.',
+        type: 'PET_EGG',
+        itemKey: 'egg_golem',
+        value: 0,
+        price: 0,
+        sellValue: 0,
+        quality: 'Hiếm',
+        rarity: 'epic',
+        tamerBadgePrice: 15,
+        data: { grantsPetKey: 'golem' }
+      },
+      { upsert: true, new: true, setDefaultsOnInsert: true }
+    );
+
+    const trungGau = await ItemSchema.findOneAndUpdate(
+      { itemKey: 'egg_bear' },
+      {
+        name: 'Trứng Gấu Núi',
+        description: 'Trứng to lớn màu nâu với vân như vỏ cây. Nặng và chắc chắn.',
+        type: 'PET_EGG',
+        itemKey: 'egg_bear',
+        value: 0,
+        price: 700,
+        sellValue: 0,
+        quality: 'Tốt',
+        rarity: 'uncommon',
+        data: { grantsPetKey: 'bear' }
+      },
+      { upsert: true, new: true, setDefaultsOnInsert: true }
+    );
+
+    const trungDaiBang = await ItemSchema.findOneAndUpdate(
+      { itemKey: 'egg_eagle' },
+      {
+        name: 'Trứng Đại Bàng',
+        description: 'Trứng trắng với đốm nâu. Nhẹ như không khí.',
+        type: 'PET_EGG',
+        itemKey: 'egg_eagle',
+        value: 0,
+        price: 600,
+        sellValue: 0,
+        quality: 'Thường',
+        rarity: 'common',
+        data: { grantsPetKey: 'eagle' }
+      },
+      { upsert: true, new: true, setDefaultsOnInsert: true }
+    );
+
+    const trungGriffin = await ItemSchema.findOneAndUpdate(
+      { itemKey: 'egg_griffin' },
+      {
+        name: 'Trứng Kỳ Lân Có Cánh',
+        description: 'Trứng vàng ánh kim với vân cánh. Cao quý và huyền bí.',
+        type: 'PET_EGG',
+        itemKey: 'egg_griffin',
+        value: 0,
+        price: 0,
+        sellValue: 0,
+        quality: 'Hiếm',
+        rarity: 'epic',
+        tamerBadgePrice: 12,
+        data: { grantsPetKey: 'griffin' }
+      },
+      { upsert: true, new: true, setDefaultsOnInsert: true }
+    );
+
+    const trungChimSam = await ItemSchema.findOneAndUpdate(
+      { itemKey: 'egg_thunderbird' },
+      {
+        name: 'Trứng Chim Sấm',
+        description: 'Trứng điện quang lung linh. Chạm vào có cảm giác tê tê.',
+        type: 'PET_EGG',
+        itemKey: 'egg_thunderbird',
+        value: 0,
+        price: 0,
+        sellValue: 0,
+        quality: 'Sử Thi',
+        rarity: 'legendary',
+        tamerBadgePrice: 18,
+        data: { grantsPetKey: 'thunderbird' }
       },
       { upsert: true, new: true, setDefaultsOnInsert: true }
     );
@@ -2002,6 +2144,7 @@ export async function initializeWorld() {
         petKey: 'wolf',
               name: 'Sói',
               description: 'Một con sói dũng mãnh với bộ lông bạc óng ánh. Trung thành và mạnh mẽ.',
+              element: 'NEUTRAL',
               baseStats: {
                 hp: 80,
                 attack: 12,
@@ -2012,6 +2155,690 @@ export async function initializeWorld() {
                 attackPerLevel: 2,
                 defensePerLevel: 1
               }
+      },
+      { upsert: true, new: true, setDefaultsOnInsert: true }
+    );
+
+    const phoenixTemplate = await PetTemplateSchema.findOneAndUpdate(
+      { petKey: 'phoenix' },
+      {
+        petKey: 'phoenix',
+        name: 'Phượng Hoàng',
+        description: 'Chim thần thoại với bộ lông rực lửa. Biểu tượng của sự tái sinh và sức mạnh.',
+        element: 'FIRE',
+        baseStats: {
+          hp: 100,
+          attack: 18,
+          defense: 8
+        },
+        statGrowth: {
+          hpPerLevel: 20,
+          attackPerLevel: 3,
+          defensePerLevel: 1.5
+        }
+      },
+      { upsert: true, new: true, setDefaultsOnInsert: true }
+    );
+
+    const dragonTemplate = await PetTemplateSchema.findOneAndUpdate(
+      { petKey: 'dragon' },
+      {
+        petKey: 'dragon',
+        name: 'Rồng Lửa',
+        description: 'Rồng cổ đại với hơi thở như núi lửa. Sức mạnh hủy diệt và oai phong.',
+        element: 'FIRE',
+        baseStats: {
+          hp: 120,
+          attack: 20,
+          defense: 10
+        },
+        statGrowth: {
+          hpPerLevel: 22,
+          attackPerLevel: 3.5,
+          defensePerLevel: 2
+        }
+      },
+      { upsert: true, new: true, setDefaultsOnInsert: true }
+    );
+
+    const turtleTemplate = await PetTemplateSchema.findOneAndUpdate(
+      { petKey: 'turtle' },
+      {
+        petKey: 'turtle',
+        name: 'Rùa Thần',
+        description: 'Rùa biển cổ đại với mai cứng như kim cương. Thủ hộ đại dương.',
+        element: 'WATER',
+        baseStats: {
+          hp: 150,
+          attack: 10,
+          defense: 15
+        },
+        statGrowth: {
+          hpPerLevel: 25,
+          attackPerLevel: 1.5,
+          defensePerLevel: 2.5
+        }
+      },
+      { upsert: true, new: true, setDefaultsOnInsert: true }
+    );
+
+    const serpentTemplate = await PetTemplateSchema.findOneAndUpdate(
+      { petKey: 'serpent' },
+      {
+        petKey: 'serpent',
+        name: 'Hải Xà',
+        description: 'Rắn biển khổng lồ với vảy xanh lấp lánh. Linh hoạt và nguy hiểm.',
+        element: 'WATER',
+        baseStats: {
+          hp: 90,
+          attack: 16,
+          defense: 7
+        },
+        statGrowth: {
+          hpPerLevel: 18,
+          attackPerLevel: 2.8,
+          defensePerLevel: 1.2
+        }
+      },
+      { upsert: true, new: true, setDefaultsOnInsert: true }
+    );
+
+    const golemTemplate = await PetTemplateSchema.findOneAndUpdate(
+      { petKey: 'golem' },
+      {
+        petKey: 'golem',
+        name: 'Golem Đá',
+        description: 'Người khổng lồ bằng đá với sức mạnh vô song. Bất khả chiến bại.',
+        element: 'EARTH',
+        baseStats: {
+          hp: 140,
+          attack: 14,
+          defense: 18
+        },
+        statGrowth: {
+          hpPerLevel: 24,
+          attackPerLevel: 2,
+          defensePerLevel: 3
+        }
+      },
+      { upsert: true, new: true, setDefaultsOnInsert: true }
+    );
+
+    const bearTemplate = await PetTemplateSchema.findOneAndUpdate(
+      { petKey: 'bear' },
+      {
+        petKey: 'bear',
+        name: 'Gấu Núi',
+        description: 'Gấu nâu khổng lồ từ vùng núi cao. Vững chãi như núi đá.',
+        element: 'EARTH',
+        baseStats: {
+          hp: 110,
+          attack: 15,
+          defense: 12
+        },
+        statGrowth: {
+          hpPerLevel: 20,
+          attackPerLevel: 2.5,
+          defensePerLevel: 2
+        }
+      },
+      { upsert: true, new: true, setDefaultsOnInsert: true }
+    );
+
+    const eagleTemplate = await PetTemplateSchema.findOneAndUpdate(
+      { petKey: 'eagle' },
+      {
+        petKey: 'eagle',
+        name: 'Đại Bàng',
+        description: 'Chúa tể bầu trời với đôi cánh dũng mãnh. Nhanh như gió.',
+        element: 'WIND',
+        baseStats: {
+          hp: 70,
+          attack: 14,
+          defense: 6
+        },
+        statGrowth: {
+          hpPerLevel: 14,
+          attackPerLevel: 2.5,
+          defensePerLevel: 1
+        }
+      },
+      { upsert: true, new: true, setDefaultsOnInsert: true }
+    );
+
+    const griffinTemplate = await PetTemplateSchema.findOneAndUpdate(
+      { petKey: 'griffin' },
+      {
+        petKey: 'griffin',
+        name: 'Kỳ Lân Có Cánh',
+        description: 'Sinh vật huyền thoại nửa sư tử nửa đại bàng. Cao quý và hùng mạnh.',
+        element: 'WIND',
+        baseStats: {
+          hp: 95,
+          attack: 17,
+          defense: 9
+        },
+        statGrowth: {
+          hpPerLevel: 18,
+          attackPerLevel: 3,
+          defensePerLevel: 1.5
+        }
+      },
+      { upsert: true, new: true, setDefaultsOnInsert: true }
+    );
+
+    const thunderbirdTemplate = await PetTemplateSchema.findOneAndUpdate(
+      { petKey: 'thunderbird' },
+      {
+        petKey: 'thunderbird',
+        name: 'Chim Sấm',
+        description: 'Chim huyền thoại điều khiển sấm sét. Mỗi cú vỗ cánh tạo ra sấm chớp.',
+        element: 'LIGHTNING',
+        baseStats: {
+          hp: 85,
+          attack: 19,
+          defense: 7
+        },
+        statGrowth: {
+          hpPerLevel: 16,
+          attackPerLevel: 3.2,
+          defensePerLevel: 1.2
+        }
+      },
+      { upsert: true, new: true, setDefaultsOnInsert: true }
+    );
+
+    // ============================================================================
+    // SKILLS - Character Skills with Level Requirements and Elemental Types
+    // ============================================================================
+    
+    // Mutant Warrior Skills
+    await SkillSchema.findOneAndUpdate(
+      { skillKey: 'flame_strike' },
+      {
+        skillKey: 'flame_strike',
+        name: 'Chém Lửa',
+        description: 'Một đòn chém mạnh mẽ phủ đầy ngọn lửa. Gây sát thương lửa cao.',
+        class: 'mutant_warrior',
+        type: 'active',
+        element: 'FIRE',
+        resourceCost: 15,
+        cooldown: 5000,
+        damage: 50,
+        levelRequirement: 1,
+        targetType: 'single',
+        tier: 1,
+      },
+      { upsert: true, new: true, setDefaultsOnInsert: true }
+    );
+
+    await SkillSchema.findOneAndUpdate(
+      { skillKey: 'earth_shield' },
+      {
+        skillKey: 'earth_shield',
+        name: 'Khiên Đất',
+        description: 'Tạo lá chắn bằng đá bao quanh bản thân. Tăng phòng thủ 30% trong 10 giây.',
+        class: 'mutant_warrior',
+        type: 'active',
+        element: 'EARTH',
+        resourceCost: 20,
+        cooldown: 15000,
+        levelRequirement: 5,
+        targetType: 'self',
+        tier: 1,
+        effects: new Map([['defenseBonus', 0.3], ['duration', 10000]])
+      },
+      { upsert: true, new: true, setDefaultsOnInsert: true }
+    );
+
+    await SkillSchema.findOneAndUpdate(
+      { skillKey: 'thunder_slash' },
+      {
+        skillKey: 'thunder_slash',
+        name: 'Chém Sấm',
+        description: 'Chém với sức mạnh của sấm sét. Gây sát thương cao và tê liệt kẻ địch.',
+        class: 'mutant_warrior',
+        type: 'active',
+        element: 'LIGHTNING',
+        resourceCost: 30,
+        cooldown: 10000,
+        damage: 100,
+        levelRequirement: 10,
+        targetType: 'single',
+        tier: 2,
+        effects: new Map([['stun', true], ['stunDuration', 2000]])
+      },
+      { upsert: true, new: true, setDefaultsOnInsert: true }
+    );
+
+    await SkillSchema.findOneAndUpdate(
+      { skillKey: 'inferno_cleave' },
+      {
+        skillKey: 'inferno_cleave',
+        name: 'Chém Địa Ngục',
+        description: 'Đòn chém mạnh nhất của chiến binh. Tạo lửa địa ngục thiêu đốt mọi kẻ địch.',
+        class: 'mutant_warrior',
+        type: 'active',
+        element: 'FIRE',
+        resourceCost: 50,
+        cooldown: 20000,
+        damage: 200,
+        levelRequirement: 20,
+        targetType: 'area',
+        tier: 3,
+      },
+      { upsert: true, new: true, setDefaultsOnInsert: true }
+    );
+
+    await SkillSchema.findOneAndUpdate(
+      { skillKey: 'titan_strength' },
+      {
+        skillKey: 'titan_strength',
+        name: 'Sức Mạnh Titan',
+        description: 'Triệu hồi sức mạnh của Titan cổ đại. Tăng 50% sát thương trong 15 giây.',
+        class: 'mutant_warrior',
+        type: 'active',
+        element: 'NEUTRAL',
+        resourceCost: 40,
+        cooldown: 30000,
+        levelRequirement: 25,
+        targetType: 'self',
+        tier: 3,
+        effects: new Map([['damageBonus', 0.5], ['duration', 15000]])
+      },
+      { upsert: true, new: true, setDefaultsOnInsert: true }
+    );
+
+    // Rune Historian Skills
+    await SkillSchema.findOneAndUpdate(
+      { skillKey: 'water_bolt' },
+      {
+        skillKey: 'water_bolt',
+        name: 'Tên Nước',
+        description: 'Bắn một tên nước sắc bén vào kẻ địch. Gây sát thương nước.',
+        class: 'rune_historian',
+        type: 'active',
+        element: 'WATER',
+        resourceCost: 10,
+        cooldown: 3000,
+        damage: 40,
+        levelRequirement: 1,
+        targetType: 'single',
+        tier: 1,
+      },
+      { upsert: true, new: true, setDefaultsOnInsert: true }
+    );
+
+    await SkillSchema.findOneAndUpdate(
+      { skillKey: 'wind_barrier' },
+      {
+        skillKey: 'wind_barrier',
+        name: 'Rào Cản Gió',
+        description: 'Tạo một lớp gió bảo vệ. Tăng né tránh 20% trong 8 giây.',
+        class: 'rune_historian',
+        type: 'active',
+        element: 'WIND',
+        resourceCost: 15,
+        cooldown: 12000,
+        levelRequirement: 5,
+        targetType: 'self',
+        tier: 1,
+        effects: new Map([['dodgeBonus', 0.2], ['duration', 8000]])
+      },
+      { upsert: true, new: true, setDefaultsOnInsert: true }
+    );
+
+    await SkillSchema.findOneAndUpdate(
+      { skillKey: 'lightning_storm' },
+      {
+        skillKey: 'lightning_storm',
+        name: 'Bão Sét',
+        description: 'Triệu hồi một cơn bão sét tấn công nhiều kẻ địch trong khu vực.',
+        class: 'rune_historian',
+        type: 'active',
+        element: 'LIGHTNING',
+        resourceCost: 35,
+        cooldown: 15000,
+        damage: 120,
+        levelRequirement: 10,
+        targetType: 'area',
+        tier: 2,
+      },
+      { upsert: true, new: true, setDefaultsOnInsert: true }
+    );
+
+    await SkillSchema.findOneAndUpdate(
+      { skillKey: 'frost_nova' },
+      {
+        skillKey: 'frost_nova',
+        name: 'Băng Nổ',
+        description: 'Giải phóng năng lượng băng giá xung quanh. Làm chậm và gây sát thương.',
+        class: 'rune_historian',
+        type: 'active',
+        element: 'WATER',
+        resourceCost: 30,
+        cooldown: 18000,
+        damage: 90,
+        levelRequirement: 15,
+        targetType: 'area',
+        tier: 2,
+        effects: new Map([['slow', 0.3], ['duration', 5000]])
+      },
+      { upsert: true, new: true, setDefaultsOnInsert: true }
+    );
+
+    await SkillSchema.findOneAndUpdate(
+      { skillKey: 'arcane_mastery' },
+      {
+        skillKey: 'arcane_mastery',
+        name: 'Tinh Thông Phép Thuật',
+        description: 'Tăng cường khả năng phép thuật. Giảm 30% thời gian hồi chiêu trong 20 giây.',
+        class: 'rune_historian',
+        type: 'active',
+        element: 'NEUTRAL',
+        resourceCost: 25,
+        cooldown: 40000,
+        levelRequirement: 20,
+        targetType: 'self',
+        tier: 3,
+        effects: new Map([['cooldownReduction', 0.3], ['duration', 20000]])
+      },
+      { upsert: true, new: true, setDefaultsOnInsert: true }
+    );
+
+    // Stalker Skills
+    await SkillSchema.findOneAndUpdate(
+      { skillKey: 'wind_strike' },
+      {
+        skillKey: 'wind_strike',
+        name: 'Đòn Gió',
+        description: 'Tấn công nhanh như gió. Gây sát thương trung bình nhưng hồi chiêu ngắn.',
+        class: 'stalker',
+        type: 'active',
+        element: 'WIND',
+        resourceCost: 12,
+        cooldown: 4000,
+        damage: 45,
+        levelRequirement: 1,
+        targetType: 'single',
+        tier: 1,
+      },
+      { upsert: true, new: true, setDefaultsOnInsert: true }
+    );
+
+    await SkillSchema.findOneAndUpdate(
+      { skillKey: 'shadow_step' },
+      {
+        skillKey: 'shadow_step',
+        name: 'Bước Bóng',
+        description: 'Hòa mình vào bóng tối. Tăng 40% né tránh trong 5 giây.',
+        class: 'stalker',
+        type: 'active',
+        element: 'NEUTRAL',
+        resourceCost: 18,
+        cooldown: 10000,
+        levelRequirement: 5,
+        targetType: 'self',
+        tier: 1,
+        effects: new Map([['dodgeBonus', 0.4], ['duration', 5000]])
+      },
+      { upsert: true, new: true, setDefaultsOnInsert: true }
+    );
+
+    await SkillSchema.findOneAndUpdate(
+      { skillKey: 'poison_blade' },
+      {
+        skillKey: 'poison_blade',
+        name: 'Lưỡi Độc',
+        description: 'Tấn công với độc dược. Gây sát thương theo thời gian.',
+        class: 'stalker',
+        type: 'active',
+        element: 'EARTH',
+        resourceCost: 20,
+        cooldown: 8000,
+        damage: 60,
+        levelRequirement: 10,
+        targetType: 'single',
+        tier: 2,
+        effects: new Map([['poison', true], ['poisonDamage', 10], ['poisonDuration', 10000]])
+      },
+      { upsert: true, new: true, setDefaultsOnInsert: true }
+    );
+
+    await SkillSchema.findOneAndUpdate(
+      { skillKey: 'assassinate' },
+      {
+        skillKey: 'assassinate',
+        name: 'Ám Sát',
+        description: 'Đòn chí mạng từ bóng tối. Gây sát thương cực cao với tỷ lệ chí mạng 100%.',
+        class: 'stalker',
+        type: 'active',
+        element: 'NEUTRAL',
+        resourceCost: 40,
+        cooldown: 25000,
+        damage: 180,
+        levelRequirement: 15,
+        targetType: 'single',
+        tier: 3,
+        effects: new Map([['guaranteedCrit', true]])
+      },
+      { upsert: true, new: true, setDefaultsOnInsert: true }
+    );
+
+    await SkillSchema.findOneAndUpdate(
+      { skillKey: 'blade_fury' },
+      {
+        skillKey: 'blade_fury',
+        name: 'Cuồng Nộ Kiếm',
+        description: 'Tấn công liên hoàn với tốc độ kinh hoàng. Tăng 80% tốc độ đánh trong 12 giây.',
+        class: 'stalker',
+        type: 'active',
+        element: 'WIND',
+        resourceCost: 35,
+        cooldown: 30000,
+        levelRequirement: 25,
+        targetType: 'self',
+        tier: 3,
+        effects: new Map([['attackSpeedBonus', 0.8], ['duration', 12000]])
+      },
+      { upsert: true, new: true, setDefaultsOnInsert: true }
+    );
+
+    // Scrap Engineer Skills
+    await SkillSchema.findOneAndUpdate(
+      { skillKey: 'flame_turret' },
+      {
+        skillKey: 'flame_turret',
+        name: 'Súng Lửa',
+        description: 'Đặt một khẩu súng tự động bắn lửa. Gây sát thương liên tục.',
+        class: 'scrap_engineer',
+        type: 'active',
+        element: 'FIRE',
+        resourceCost: 25,
+        cooldown: 20000,
+        damage: 30,
+        levelRequirement: 1,
+        targetType: 'area',
+        tier: 1,
+        effects: new Map([['turretDuration', 15000], ['tickDamage', 10]])
+      },
+      { upsert: true, new: true, setDefaultsOnInsert: true }
+    );
+
+    await SkillSchema.findOneAndUpdate(
+      { skillKey: 'shock_mine' },
+      {
+        skillKey: 'shock_mine',
+        name: 'Mìn Điện',
+        description: 'Đặt mìn điện trên mặt đất. Phát nổ khi kẻ địch đi gần.',
+        class: 'scrap_engineer',
+        type: 'active',
+        element: 'LIGHTNING',
+        resourceCost: 20,
+        cooldown: 12000,
+        damage: 80,
+        levelRequirement: 5,
+        targetType: 'area',
+        tier: 1,
+        effects: new Map([['stun', true], ['stunDuration', 1500]])
+      },
+      { upsert: true, new: true, setDefaultsOnInsert: true }
+    );
+
+    await SkillSchema.findOneAndUpdate(
+      { skillKey: 'repair_bot' },
+      {
+        skillKey: 'repair_bot',
+        name: 'Robot Sửa Chữa',
+        description: 'Triệu hồi robot hỗ trợ hồi máu. Hồi 50 HP mỗi 2 giây.',
+        class: 'scrap_engineer',
+        type: 'active',
+        element: 'NEUTRAL',
+        resourceCost: 30,
+        cooldown: 25000,
+        healing: 50,
+        levelRequirement: 10,
+        targetType: 'self',
+        tier: 2,
+        effects: new Map([['botDuration', 10000], ['healInterval', 2000]])
+      },
+      { upsert: true, new: true, setDefaultsOnInsert: true }
+    );
+
+    await SkillSchema.findOneAndUpdate(
+      { skillKey: 'emp_blast' },
+      {
+        skillKey: 'emp_blast',
+        name: 'Nổ Điện Từ',
+        description: 'Phát ra xung điện từ mạnh mẽ. Gây sát thương và vô hiệu hóa kỹ năng kẻ địch.',
+        class: 'scrap_engineer',
+        type: 'active',
+        element: 'LIGHTNING',
+        resourceCost: 45,
+        cooldown: 30000,
+        damage: 110,
+        levelRequirement: 15,
+        targetType: 'area',
+        tier: 2,
+        effects: new Map([['silence', true], ['silenceDuration', 5000]])
+      },
+      { upsert: true, new: true, setDefaultsOnInsert: true }
+    );
+
+    await SkillSchema.findOneAndUpdate(
+      { skillKey: 'mech_suit' },
+      {
+        skillKey: 'mech_suit',
+        name: 'Giáp Máy',
+        description: 'Kích hoạt bộ giáp cơ khí. Tăng 60% HP và phòng thủ trong 20 giây.',
+        class: 'scrap_engineer',
+        type: 'active',
+        element: 'EARTH',
+        resourceCost: 50,
+        cooldown: 45000,
+        levelRequirement: 20,
+        targetType: 'self',
+        tier: 3,
+        effects: new Map([['hpBonus', 0.6], ['defenseBonus', 0.6], ['duration', 20000]])
+      },
+      { upsert: true, new: true, setDefaultsOnInsert: true }
+    );
+
+    // High-Level Skills (Level 30+)
+    await SkillSchema.findOneAndUpdate(
+      { skillKey: 'volcanic_rage' },
+      {
+        skillKey: 'volcanic_rage',
+        name: 'Thịnh Nộ Núi Lửa',
+        description: 'Giải phóng sức mạnh núi lửa từ lòng đất. Gây sát thương lửa khổng lồ trong khu vực rộng.',
+        class: 'mutant_warrior',
+        type: 'active',
+        element: 'FIRE',
+        resourceCost: 60,
+        cooldown: 35000,
+        damage: 250,
+        levelRequirement: 30,
+        targetType: 'area',
+        tier: 4,
+        effects: new Map([['burnDamage', 20], ['burnDuration', 8000]])
+      },
+      { upsert: true, new: true, setDefaultsOnInsert: true }
+    );
+
+    await SkillSchema.findOneAndUpdate(
+      { skillKey: 'meteor_strike' },
+      {
+        skillKey: 'meteor_strike',
+        name: 'Thiên Thạch Rơi',
+        description: 'Triệu hồi thiên thạch từ trời rơi xuống kẻ địch. Sát thương cực cao và choáng mục tiêu.',
+        class: 'rune_historian',
+        type: 'active',
+        element: 'FIRE',
+        resourceCost: 70,
+        cooldown: 40000,
+        damage: 300,
+        levelRequirement: 30,
+        targetType: 'single',
+        tier: 4,
+        effects: new Map([['stun', true], ['stunDuration', 3000]])
+      },
+      { upsert: true, new: true, setDefaultsOnInsert: true }
+    );
+
+    await SkillSchema.findOneAndUpdate(
+      { skillKey: 'shadow_dance' },
+      {
+        skillKey: 'shadow_dance',
+        name: 'Vũ Điệu Bóng Tối',
+        description: 'Hòa mình vào bóng tối và tấn công liên tục. Tấn công 5 lần trong 3 giây.',
+        class: 'stalker',
+        type: 'active',
+        element: 'NEUTRAL',
+        resourceCost: 65,
+        cooldown: 38000,
+        damage: 80,
+        levelRequirement: 30,
+        targetType: 'single',
+        tier: 4,
+        effects: new Map([['multiHit', 5], ['invulnerable', true]])
+      },
+      { upsert: true, new: true, setDefaultsOnInsert: true }
+    );
+
+    await SkillSchema.findOneAndUpdate(
+      { skillKey: 'orbital_cannon' },
+      {
+        skillKey: 'orbital_cannon',
+        name: 'Pháo Quỹ Đạo',
+        description: 'Triệu hồi vệ tinh bắn tia laser từ không gian. Sát thương điện cực mạnh.',
+        class: 'scrap_engineer',
+        type: 'active',
+        element: 'LIGHTNING',
+        resourceCost: 75,
+        cooldown: 50000,
+        damage: 280,
+        levelRequirement: 30,
+        targetType: 'line',
+        tier: 4,
+      },
+      { upsert: true, new: true, setDefaultsOnInsert: true }
+    );
+
+    await SkillSchema.findOneAndUpdate(
+      { skillKey: 'elemental_mastery' },
+      {
+        skillKey: 'elemental_mastery',
+        name: 'Tinh Thông Nguyên Tố',
+        description: 'Làm chủ sức mạnh nguyên tố. Tăng 100% sát thương nguyên tố trong 25 giây.',
+        class: 'rune_historian',
+        type: 'active',
+        element: 'NEUTRAL',
+        resourceCost: 50,
+        cooldown: 60000,
+        levelRequirement: 35,
+        targetType: 'self',
+        tier: 5,
+        effects: new Map([['elementalDamageBonus', 1.0], ['duration', 25000]])
       },
       { upsert: true, new: true, setDefaultsOnInsert: true }
     );
@@ -2791,6 +3618,9 @@ export async function initializeWorld() {
               shopInventory: [
                 // Basic items - can be bought with gold
                 trungSoi._id,
+                trungRua._id,
+                trungGau._id,
+                trungDaiBang._id,
                 thucAnPetSoCap._id,
                 thucAnPetCaoCap._id,
                 sachKyNangPetCanXe._id,
@@ -2800,6 +3630,11 @@ export async function initializeWorld() {
                 // Premium items - require Tamer Badge from Pet Trial Tower
                 daTayTuyPet._id,
                 trungPhuongHoang._id,
+                trungRong._id,
+                trungHaiXa._id,
+                trungGolem._id,
+                trungGriffin._id,
+                trungChimSam._id,
                 thucAnPetSieuCap._id,
                 sachKyNangPetPhunLua._id,
                 sachKyNangPetTanCong._id,
@@ -4101,6 +4936,7 @@ export async function initializeWorld() {
     console.log(`✓ Agents: ${await AgentSchema.countDocuments()}`);
     console.log(`✓ Quests: ${await QuestSchema.countDocuments()}`);
     console.log(`✓ Pet Templates: ${await PetTemplateSchema.countDocuments()}`);
+    console.log(`✓ Skills: ${await SkillSchema.countDocuments()}`);
     console.log('='.repeat(60));
     
     return {

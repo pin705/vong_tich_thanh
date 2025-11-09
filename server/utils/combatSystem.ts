@@ -16,6 +16,8 @@ import { addExp as addPetExp, petDefeated } from './petService';
 import { COMBAT_TICK_INTERVAL, FLEE_SUCCESS_CHANCE, getExpForLevel, HP_GAIN_PER_LEVEL, MINIMUM_DAMAGE, TALENT_POINTS_PER_LEVEL, SKILL_POINTS_PER_LEVEL } from './constants';
 import { trackBossContribution, isWorldBoss, distributeWorldBossRewards } from './worldBossService';
 import { postEvent as postAchievementEvent } from './achievementService';
+import type { ElementType } from '../../types';
+import { ELEMENT_COUNTERS, ELEMENT_EFFECTIVENESS } from '../../types';
 
 // Boss reward constants
 const BOSS_PREMIUM_CURRENCY_MULTIPLIER = 10;
@@ -117,6 +119,51 @@ function calculateDamage(baseDamage: number): number {
   const min = Math.floor(baseDamage * (1 - variance));
   const max = Math.ceil(baseDamage * (1 + variance));
   return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+/**
+ * Calculate elemental damage modifier based on attacker and defender elements
+ * @param attackerElement - Element of the attacker (from skill, pet, or player affinity)
+ * @param defenderElement - Element of the defender (from pet or player affinity)
+ * @returns Damage multiplier (1.5 for strong, 1.0 for neutral, 0.75 for weak)
+ */
+function calculateElementalModifier(attackerElement: ElementType | null, defenderElement: ElementType | null): number {
+  // If either element is null or NEUTRAL, no modifier
+  if (!attackerElement || !defenderElement || attackerElement === 'NEUTRAL' || defenderElement === 'NEUTRAL') {
+    return ELEMENT_EFFECTIVENESS.NORMAL;
+  }
+  
+  // Check if attacker element counters defender element
+  const counterElement = ELEMENT_COUNTERS[attackerElement];
+  if (counterElement === defenderElement) {
+    return ELEMENT_EFFECTIVENESS.STRONG; // Attacker has advantage
+  }
+  
+  // Check if defender element counters attacker element
+  const defenderCounterElement = ELEMENT_COUNTERS[defenderElement];
+  if (defenderCounterElement === attackerElement) {
+    return ELEMENT_EFFECTIVENESS.WEAK; // Defender has advantage
+  }
+  
+  // No elemental advantage
+  return ELEMENT_EFFECTIVENESS.NORMAL;
+}
+
+/**
+ * Apply elemental modifier to damage and return modified damage with message
+ */
+function applyElementalDamage(baseDamage: number, attackerElement: ElementType | null, defenderElement: ElementType | null): { damage: number, message: string } {
+  const modifier = calculateElementalModifier(attackerElement, defenderElement);
+  const damage = Math.floor(baseDamage * modifier);
+  
+  let message = '';
+  if (modifier === ELEMENT_EFFECTIVENESS.STRONG) {
+    message = ' (Hiệu quả!)';
+  } else if (modifier === ELEMENT_EFFECTIVENESS.WEAK) {
+    message = ' (Kém hiệu quả)';
+  }
+  
+  return { damage, message };
 }
 
 // Calculate player base damage (including equipped weapon)
@@ -409,7 +456,13 @@ export async function executeCombatTick(playerId: string, agentId: string): Prom
     
     if (playerState.isAutoAttacking && !pacifiedBuff) {
       const playerBaseDamage = await calculatePlayerDamage(player);
-      const playerDamage = calculateDamage(playerBaseDamage);
+      const rawDamage = calculateDamage(playerBaseDamage);
+      
+      // Apply elemental damage modifier (player affinity vs agent element if any)
+      const playerElement = player.elementalAffinity || 'NEUTRAL';
+      const agentElement = (agent as any).element || 'NEUTRAL'; // Agents may not have element
+      const { damage: playerDamage, message: elementalMsg } = applyElementalDamage(rawDamage, playerElement, agentElement);
+      
       agent.hp = Math.max(0, agent.hp - playerDamage);
       await agent.save();
       
@@ -431,7 +484,7 @@ export async function executeCombatTick(playerId: string, agentId: string): Prom
           `Sức mạnh bùng nổ! Bạn đánh trúng điểm yếu của [${agent.name}]!`
         ];
         attackMessage = critMessages[Math.floor(Math.random() * critMessages.length)];
-        attackMessage += ` Gây ${playerDamage} sát thương! (Chí mạng!)`;
+        attackMessage += ` Gây ${playerDamage} sát thương!${elementalMsg} (Chí mạng!)`;
       } else if (isGlancing) {
         const glancingMessages = [
           `Đòn đánh của bạn chỉ sượt qua [${agent.name}].`,
@@ -440,7 +493,7 @@ export async function executeCombatTick(playerId: string, agentId: string): Prom
           `Đòn đánh yếu ớt, [${agent.name}] hầu như không bị ảnh hưởng.`
         ];
         attackMessage = glancingMessages[Math.floor(Math.random() * glancingMessages.length)];
-        attackMessage += ` Gây ${playerDamage} sát thương. (Trượt phớt)`;
+        attackMessage += ` Gây ${playerDamage} sát thương.${elementalMsg} (Trượt phớt)`;
       } else {
         const normalMessages = [
           `Bạn vung vũ khí đánh trúng [${agent.name}].`,
@@ -451,7 +504,7 @@ export async function executeCombatTick(playerId: string, agentId: string): Prom
           `Vũ khí của bạn rít lên khi chém vào [${agent.name}].`
         ];
         attackMessage = normalMessages[Math.floor(Math.random() * normalMessages.length)];
-        attackMessage += ` Gây ${playerDamage} sát thương.`;
+        attackMessage += ` Gây ${playerDamage} sát thương.${elementalMsg}`;
       }
       
       attackMessage += ` (HP còn lại: ${agent.hp}/${agent.maxHp})`;
@@ -465,7 +518,13 @@ export async function executeCombatTick(playerId: string, agentId: string): Prom
       
       if (pet && petState && petState.currentStats.hp > 0) {
         const petBaseDamage = petState.currentStats.attack || 5;
-        const petDamage = calculateDamage(petBaseDamage);
+        const rawPetDamage = calculateDamage(petBaseDamage);
+        
+        // Apply elemental damage modifier (pet element vs agent element)
+        const petElement = pet.element || 'NEUTRAL';
+        const agentElement = (agent as any).element || 'NEUTRAL';
+        const { damage: petDamage, message: elementalMsg } = applyElementalDamage(rawPetDamage, petElement, agentElement);
+        
         agent.hp = Math.max(0, agent.hp - petDamage);
         await agent.save();
         
@@ -476,7 +535,7 @@ export async function executeCombatTick(playerId: string, agentId: string): Prom
           `[${pet.nickname}] nhảy lên và cào vào [${agent.name}]!`
         ];
         const petAttackMsg = petAttackMessages[Math.floor(Math.random() * petAttackMessages.length)];
-        messages.push(`${petAttackMsg} Gây ${petDamage} sát thương. (HP còn lại: ${agent.hp}/${agent.maxHp})`);
+        messages.push(`${petAttackMsg} Gây ${petDamage} sát thương.${elementalMsg} (HP còn lại: ${agent.hp}/${agent.maxHp})`);
       }
     }
     
