@@ -2744,6 +2744,105 @@ export async function initializeWorld() {
       { upsert: true, new: true, setDefaultsOnInsert: true }
     );
 
+    // High-Level Skills (Level 30+)
+    await SkillSchema.findOneAndUpdate(
+      { skillKey: 'volcanic_rage' },
+      {
+        skillKey: 'volcanic_rage',
+        name: 'Thịnh Nộ Núi Lửa',
+        description: 'Giải phóng sức mạnh núi lửa từ lòng đất. Gây sát thương lửa khổng lồ trong khu vực rộng.',
+        class: 'mutant_warrior',
+        type: 'active',
+        element: 'FIRE',
+        resourceCost: 60,
+        cooldown: 35000,
+        damage: 250,
+        levelRequirement: 30,
+        targetType: 'area',
+        tier: 4,
+        effects: new Map([['burnDamage', 20], ['burnDuration', 8000]])
+      },
+      { upsert: true, new: true, setDefaultsOnInsert: true }
+    );
+
+    await SkillSchema.findOneAndUpdate(
+      { skillKey: 'meteor_strike' },
+      {
+        skillKey: 'meteor_strike',
+        name: 'Thiên Thạch Rơi',
+        description: 'Triệu hồi thiên thạch từ trời rơi xuống kẻ địch. Sát thương cực cao và choáng mục tiêu.',
+        class: 'rune_historian',
+        type: 'active',
+        element: 'FIRE',
+        resourceCost: 70,
+        cooldown: 40000,
+        damage: 300,
+        levelRequirement: 30,
+        targetType: 'single',
+        tier: 4,
+        effects: new Map([['stun', true], ['stunDuration', 3000]])
+      },
+      { upsert: true, new: true, setDefaultsOnInsert: true }
+    );
+
+    await SkillSchema.findOneAndUpdate(
+      { skillKey: 'shadow_dance' },
+      {
+        skillKey: 'shadow_dance',
+        name: 'Vũ Điệu Bóng Tối',
+        description: 'Hòa mình vào bóng tối và tấn công liên tục. Tấn công 5 lần trong 3 giây.',
+        class: 'stalker',
+        type: 'active',
+        element: 'NEUTRAL',
+        resourceCost: 65,
+        cooldown: 38000,
+        damage: 80,
+        levelRequirement: 30,
+        targetType: 'single',
+        tier: 4,
+        effects: new Map([['multiHit', 5], ['invulnerable', true]])
+      },
+      { upsert: true, new: true, setDefaultsOnInsert: true }
+    );
+
+    await SkillSchema.findOneAndUpdate(
+      { skillKey: 'orbital_cannon' },
+      {
+        skillKey: 'orbital_cannon',
+        name: 'Pháo Quỹ Đạo',
+        description: 'Triệu hồi vệ tinh bắn tia laser từ không gian. Sát thương điện cực mạnh.',
+        class: 'scrap_engineer',
+        type: 'active',
+        element: 'LIGHTNING',
+        resourceCost: 75,
+        cooldown: 50000,
+        damage: 280,
+        levelRequirement: 30,
+        targetType: 'line',
+        tier: 4,
+      },
+      { upsert: true, new: true, setDefaultsOnInsert: true }
+    );
+
+    await SkillSchema.findOneAndUpdate(
+      { skillKey: 'elemental_mastery' },
+      {
+        skillKey: 'elemental_mastery',
+        name: 'Tinh Thông Nguyên Tố',
+        description: 'Làm chủ sức mạnh nguyên tố. Tăng 100% sát thương nguyên tố trong 25 giây.',
+        class: 'rune_historian',
+        type: 'active',
+        element: 'NEUTRAL',
+        resourceCost: 50,
+        cooldown: 60000,
+        levelRequirement: 35,
+        targetType: 'self',
+        tier: 5,
+        effects: new Map([['elementalDamageBonus', 1.0], ['duration', 25000]])
+      },
+      { upsert: true, new: true, setDefaultsOnInsert: true }
+    );
+
     // World Boss Hunt Items
     const loiRobotCoDai = await ItemSchema.findOneAndUpdate(
       { itemKey: 'ancient_robot_core' },
@@ -3519,6 +3618,9 @@ export async function initializeWorld() {
               shopInventory: [
                 // Basic items - can be bought with gold
                 trungSoi._id,
+                trungRua._id,
+                trungGau._id,
+                trungDaiBang._id,
                 thucAnPetSoCap._id,
                 thucAnPetCaoCap._id,
                 sachKyNangPetCanXe._id,
@@ -3528,6 +3630,11 @@ export async function initializeWorld() {
                 // Premium items - require Tamer Badge from Pet Trial Tower
                 daTayTuyPet._id,
                 trungPhuongHoang._id,
+                trungRong._id,
+                trungHaiXa._id,
+                trungGolem._id,
+                trungGriffin._id,
+                trungChimSam._id,
                 thucAnPetSieuCap._id,
                 sachKyNangPetPhunLua._id,
                 sachKyNangPetTanCong._id,
@@ -4829,6 +4936,7 @@ export async function initializeWorld() {
     console.log(`✓ Agents: ${await AgentSchema.countDocuments()}`);
     console.log(`✓ Quests: ${await QuestSchema.countDocuments()}`);
     console.log(`✓ Pet Templates: ${await PetTemplateSchema.countDocuments()}`);
+    console.log(`✓ Skills: ${await SkillSchema.countDocuments()}`);
     console.log('='.repeat(60));
     
     return {
