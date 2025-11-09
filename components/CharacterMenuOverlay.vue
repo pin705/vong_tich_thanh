@@ -185,9 +185,15 @@
         <div class="skills-container">
           <div v-if="loading" class="loading-message">Đang tải...</div>
           <div v-else-if="skills.length === 0" class="empty-message">
-            Chưa có kỹ năng nào.
+            <strong>📚 Cách Học Kỹ Năng</strong>
             <br><br>
-            <small>💡 Nâng cấp thiên phú (Tab [5]) để mở khóa kỹ năng mới!</small>
+            Để học kỹ năng mới, hãy:<br>
+            1️⃣ Mở Tab <strong>[5] Thiên Phú</strong> bên cạnh<br>
+            2️⃣ Chọn một nhánh thiên phú phù hợp<br>
+            3️⃣ Nâng cấp các thiên phú (cần điểm thiên phú)<br>
+            4️⃣ Một số thiên phú sẽ <strong>mở khóa kỹ năng mới</strong>!
+            <br><br>
+            <small>💡 Bạn nhận điểm thiên phú mỗi khi lên cấp!</small>
           </div>
           <div v-else class="skills-grid">
             <div

@@ -1,5 +1,5 @@
 import { PlayerSchema } from '~/models/Player';
-import { getTalentById } from '~/server/utils/talentData';
+import { getTalentById, getTalentsByClass } from '~/server/utils/talentData';
 
 export default defineEventHandler(async (event) => {
   const user = await getUserSession(event);
@@ -82,7 +82,7 @@ export default defineEventHandler(async (event) => {
     }
 
     // Validate points in branch requirement
-    const branches = require('~/server/utils/talentData').getTalentsByClass(playerClass);
+    const branches = getTalentsByClass(playerClass);
     const branch = branches.find((b: any) => b.id === talent.branch);
     if (branch) {
       let pointsInBranch = 0;
