@@ -69,6 +69,34 @@ export const PlayerSchema = defineMongooseModel({
       enum: ['mutant_warrior', 'rune_historian', 'stalker', 'scrap_engineer'],
       default: 'mutant_warrior', // Default for new players; existing players can remain null
     },
+    // Elemental affinity system
+    elementalAffinity: {
+      type: String,
+      enum: ['FIRE', 'WATER', 'EARTH', 'WIND', 'LIGHTNING', 'NEUTRAL'],
+      default: 'NEUTRAL',
+    },
+    elementalResistances: {
+      FIRE: {
+        type: Number,
+        default: 0,
+      },
+      WATER: {
+        type: Number,
+        default: 0,
+      },
+      EARTH: {
+        type: Number,
+        default: 0,
+      },
+      WIND: {
+        type: Number,
+        default: 0,
+      },
+      LIGHTNING: {
+        type: Number,
+        default: 0,
+      },
+    },
     // Class resources
     resource: {
       type: Number,

@@ -251,6 +251,26 @@ export interface Command {
   args?: string[];
 }
 
+// Elemental types
+export type ElementType = 'FIRE' | 'WATER' | 'EARTH' | 'WIND' | 'LIGHTNING' | 'NEUTRAL';
+
+// Elemental counter system: Fire > Wind > Earth > Water > Fire, Lightning is neutral
+export const ELEMENT_COUNTERS: Record<ElementType, ElementType | null> = {
+  FIRE: 'WIND',
+  WIND: 'EARTH',
+  EARTH: 'WATER',
+  WATER: 'FIRE',
+  LIGHTNING: null, // Lightning is neutral, no specific counter
+  NEUTRAL: null,
+};
+
+// Elemental effectiveness multipliers
+export const ELEMENT_EFFECTIVENESS = {
+  STRONG: 1.5, // Attacking element counters defending element
+  NORMAL: 1.0, // No elemental advantage
+  WEAK: 0.75, // Defending element counters attacking element
+};
+
 // WebSocket message types
 export interface WSMessage {
   type: 'connect' | 'disconnect' | 'command' | 'update' | 'combat' | 'chat';
