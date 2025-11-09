@@ -2449,6 +2449,25 @@ export async function initializeWorld() {
       { upsert: true, new: true, setDefaultsOnInsert: true }
     );
 
+    await SkillSchema.findOneAndUpdate(
+      { skillKey: 'battle_roar' },
+      {
+        skillKey: 'battle_roar',
+        name: 'Hú Chiến',
+        description: 'Gầm lên với sức mạnh dữ dội, khiến kẻ địch khiếp sợ và đồng đội được tiếp thêm sức mạnh. Giảm 20% phòng thủ kẻ địch và tăng 15% sát thương cho đồng đội trong 12 giây.',
+        class: 'mutant_warrior',
+        type: 'active',
+        element: 'NEUTRAL',
+        resourceCost: 35,
+        cooldown: 25000,
+        levelRequirement: 15,
+        targetType: 'area',
+        tier: 2,
+        effects: new Map([['defenseReduction', 0.2], ['damageBonus', 0.15], ['duration', 12000]])
+      },
+      { upsert: true, new: true, setDefaultsOnInsert: true }
+    );
+
     // Rune Historian Skills
     await SkillSchema.findOneAndUpdate(
       { skillKey: 'water_bolt' },
@@ -2626,6 +2645,25 @@ export async function initializeWorld() {
     );
 
     await SkillSchema.findOneAndUpdate(
+      { skillKey: 'smoke_bomb' },
+      {
+        skillKey: 'smoke_bomb',
+        name: 'Bom Khói',
+        description: 'Ném bom khói tạo màn khói dày đặc che mắt kẻ địch. Giảm 40% tỷ lệ trúng đòn của kẻ địch và tăng 30% tốc độ di chuyển trong 10 giây.',
+        class: 'stalker',
+        type: 'active',
+        element: 'NEUTRAL',
+        resourceCost: 30,
+        cooldown: 20000,
+        levelRequirement: 20,
+        targetType: 'area',
+        tier: 3,
+        effects: new Map([['blindness', 0.4], ['movementSpeed', 0.3], ['duration', 10000]])
+      },
+      { upsert: true, new: true, setDefaultsOnInsert: true }
+    );
+
+    await SkillSchema.findOneAndUpdate(
       { skillKey: 'blade_fury' },
       {
         skillKey: 'blade_fury',
@@ -2740,6 +2778,26 @@ export async function initializeWorld() {
         targetType: 'self',
         tier: 3,
         effects: new Map([['hpBonus', 0.6], ['defenseBonus', 0.6], ['duration', 20000]])
+      },
+      { upsert: true, new: true, setDefaultsOnInsert: true }
+    );
+
+    await SkillSchema.findOneAndUpdate(
+      { skillKey: 'tesla_coil' },
+      {
+        skillKey: 'tesla_coil',
+        name: 'Cuộn Dây Tesla',
+        description: 'Đặt một cuộn dây Tesla phát ra điện năng liên tục. Gây sát thương điện cho tất cả kẻ địch trong khu vực và có cơ hội làm choáng.',
+        class: 'scrap_engineer',
+        type: 'active',
+        element: 'LIGHTNING',
+        resourceCost: 45,
+        cooldown: 35000,
+        damage: 70,
+        levelRequirement: 25,
+        targetType: 'area',
+        tier: 3,
+        effects: new Map([['coilDuration', 20000], ['tickDamage', 15], ['stunChance', 0.2]])
       },
       { upsert: true, new: true, setDefaultsOnInsert: true }
     );
