@@ -32,7 +32,7 @@ const MOVEMENT_COMMANDS = ['go', 'n', 's', 'e', 'w', 'u', 'd',
 const COMBAT_COMMANDS = ['attack', 'a', 'kill', 'flee', 'run', 'auto'];
 
 const ITEM_COMMANDS = ['inventory', 'i', 'get', 'g', 'drop', 'use', 
-                       'list', 'buy', 'sell'];
+                       'list', 'buy', 'sell', 'equip', 'unequip'];
 
 // Helper function to get currency info for shop transactions
 function getCurrencyInfo(vendor: any, player: any) {
