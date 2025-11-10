@@ -19,22 +19,22 @@ export async function handleSayCommand(
     return responses;
   }
   
-  // Broadcast to room, excluding the sender
+  // Broadcast to room, INCLUDING the sender so they can see their own message
   const room = await RoomSchema.findById(player.currentRoomId);
   if (!room) {
     responses.push('Lỗi: Không tìm thấy phòng hiện tại.');
     return responses;
   }
   
+  // Send to everyone in the room including sender
   gameState.broadcastToRoom(room._id.toString(), {
     type: 'chat',
     channel: 'chat',
     category: 'say',
     user: player.username,
     message: message
-  }, playerId); // Exclude sender (playerId) to prevent receiving own message
+  }); // Don't exclude sender so they see their own message
   
-  // Don't add to responses - it will be shown via chat system
   return responses;
 }
 
