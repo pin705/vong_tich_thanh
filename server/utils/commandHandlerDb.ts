@@ -1830,9 +1830,6 @@ export async function handleCommandDb(command: Command, playerId: string): Promi
         break;
 
       case 'guild_chat':
-        responses.push(...await handleGuildChatCommand(playerId, player, target, args));
-        break;
-
       case 'guild':
       case 'g':
         responses.push(...await handleGuildChatCommand(playerId, player, target, args));

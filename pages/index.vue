@@ -188,7 +188,7 @@
       @openAchievements="handleOpenAchievements"
       @openTitles="handleOpenTitles"
     />
-    
+
     <!-- Settings Overlay -->
     <SettingsOverlay
       :isOpen="settingsOpen"
@@ -200,8 +200,6 @@
       @autoCombatChange="handleAutoCombatChange"
       @aliasesChange="handleAliasesChange"
     />
-
-
 
     <!-- Quest Tracker Overlay -->
     <QuestTrackerOverlay
@@ -1686,36 +1684,9 @@ const connectWebSocket = () => {
           break;
         case 'player_state':
           // Update player state
+          console.log('payload', payload)
           if (payload) {
-            playerState.value = {
-              name: payload.name || playerState.value.name,
-              hp: payload.hp ?? playerState.value.hp,
-              maxHp: payload.maxHp ?? playerState.value.maxHp,
-              mp: payload.mp ?? payload.resource ?? playerState.value.mp,
-              maxMp: payload.maxMp ?? payload.maxResource ?? playerState.value.maxMp,
-              resource: payload.resource ?? playerState.value.resource ?? 0,
-              maxResource: payload.maxResource ?? playerState.value.maxResource ?? 100,
-              level: payload.level ?? playerState.value.level,
-              exp: payload.exp ?? playerState.value.exp,
-              nextLevelExp: payload.nextLevelExp ?? playerState.value.nextLevelExp,
-              gold: payload.currency ?? payload.gold ?? playerState.value.gold,
-              premiumCurrency: payload.premiumCurrency ?? playerState.value.premiumCurrency,
-              profession: payload.profession ?? playerState.value.profession,
-              inCombat: payload.inCombat ?? playerState.value.inCombat,
-              hasUnreadMail: payload.hasUnreadMail ?? playerState.value.hasUnreadMail ?? false,
-              guild: payload.guild ?? playerState.value.guild,
-              stats: payload.stats ? {
-                damage: payload.stats.damage ?? playerState.value.stats.damage,
-                defense: payload.stats.defense ?? playerState.value.stats.defense,
-                critChance: payload.stats.critChance ?? playerState.value.stats.critChance,
-                critDamage: payload.stats.critDamage ?? playerState.value.stats.critDamage,
-                lifesteal: payload.stats.lifesteal ?? playerState.value.stats.lifesteal,
-                dodge: payload.stats.dodge ?? playerState.value.stats.dodge
-              } : playerState.value.stats,
-              inventoryItems: payload.inventoryItems || playerState.value.inventoryItems,
-              equippedSkills: payload.equippedSkills || playerState.value.equippedSkills || [],
-              skillCooldowns: payload.skillCooldowns || playerState.value.skillCooldowns || {}
-            };
+            updatePlayerState(payload);
           }
           break;
         case 'target_state':
