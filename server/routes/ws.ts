@@ -10,6 +10,7 @@ import { getRoomRespawns } from '../utils/npcAI';
 import { PlayerSchema } from '../../models/Player';
 import { RoomSchema } from '../../models/Room';
 import { AgentSchema } from '../../models/Agent';
+import { ItemSchema } from '../../models/Item';
 import { deduplicateItemsById } from '../utils/itemDeduplication';
 import { commandRateLimiter, chatRateLimiter, sanitizeInput } from '../utils/validation';
 import { getExpForLevel } from '../utils/constants';
@@ -26,6 +27,36 @@ const peerToPlayer = new Map<string, string>();
 async function sendPlayerState(peer: Peer, playerId: string) {
   const player = await PlayerSchema.findById(playerId);
   if (!player) return;
+
+  // Populate inventory items and mark equipped ones
+  let inventoryItems: any[] = [];
+  if (player.inventory && player.inventory.length > 0) {
+    const items = await ItemSchema.find({ _id: { $in: player.inventory } }).lean();
+    
+    // Create a set of equipped item IDs for quick lookup
+    const equippedIds = new Set<string>();
+    if (player.equipment) {
+      const slots = ['weapon', 'helmet', 'chest', 'legs', 'boots'];
+      for (const slot of slots) {
+        if (player.equipment[slot]) {
+          equippedIds.add(player.equipment[slot].toString());
+        }
+      }
+    }
+    
+    // Map items with equipped status and format for frontend
+    inventoryItems = items.map((item: any) => ({
+      id: item._id.toString(),
+      name: item.name,
+      description: item.description || '',
+      type: item.type || 'misc',
+      value: item.value || 0,
+      stats: item.stats || {},
+      levelRequirement: item.requiredLevel || 0,
+      slot: item.slot || null,
+      equipped: equippedIds.has(item._id.toString())
+    }));
+  }
 
   peer.send(JSON.stringify({
     type: 'player_state',
@@ -58,7 +89,7 @@ async function sendPlayerState(peer: Peer, playerId: string) {
         lifesteal: player.lifesteal || 0,
         dodge: player.dodge || 5
       },
-      inventoryItems: player.inventory || []
+      inventoryItems
     }
   }));
 

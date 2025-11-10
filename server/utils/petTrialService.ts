@@ -84,11 +84,15 @@ export async function generateTrialMonster(floorNumber: number) {
     const experience = Math.floor(baseExp * floorNumber * statsMultiplier);
     const level = Math.max(1, Math.floor(floorNumber / 2) + 2);
 
+    // Generate unique agentKey for this trial monster
+    const agentKey = `trial_${agentType}_floor_${floorNumber}_${Date.now()}`;
+
     return {
       name: agentName,
       description: `Sinh vật mạnh mẽ từ tầng ${floorNumber} của Tháp Thử Luyện. Nó chỉ tấn công thú cưng.`,
       type: 'mob',
       agentType,
+      agentKey,
       hp,
       maxHp,
       damage,
