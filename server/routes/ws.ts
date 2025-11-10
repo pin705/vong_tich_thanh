@@ -356,6 +356,54 @@ export default defineWebSocketHandler({
             message: ''
           }));
           
+          // Check if player is new and hasn't completed tutorial
+          if (!authPlayer.hasCompletedTutorial) {
+            peer.send(JSON.stringify({
+              type: 'system',
+              message: '════════════════════════════════════'
+            }));
+            peer.send(JSON.stringify({
+              type: 'accent',
+              message: '🎮 HƯỚNG DẪN TÂN THỦ'
+            }));
+            peer.send(JSON.stringify({
+              type: 'normal',
+              message: 'Chào mừng bạn đến với Vong Tích Thành!'
+            }));
+            peer.send(JSON.stringify({
+              type: 'normal',
+              message: ''
+            }));
+            peer.send(JSON.stringify({
+              type: 'normal',
+              message: '📖 Bắt đầu bằng cách:'
+            }));
+            peer.send(JSON.stringify({
+              type: 'normal',
+              message: '1. Gõ "look" để quan sát xung quanh'
+            }));
+            peer.send(JSON.stringify({
+              type: 'normal',
+              message: '2. Tìm và nói chuyện với [Già Làng] để nhận trang bị tân thủ'
+            }));
+            peer.send(JSON.stringify({
+              type: 'normal',
+              message: '3. Gõ "talk Già Làng" để bắt đầu hội thoại'
+            }));
+            peer.send(JSON.stringify({
+              type: 'normal',
+              message: '4. Gõ "help" để xem danh sách lệnh'
+            }));
+            peer.send(JSON.stringify({
+              type: 'system',
+              message: '════════════════════════════════════'
+            }));
+            peer.send(JSON.stringify({
+              type: 'normal',
+              message: ''
+            }));
+          }
+          
           // Send player state, exits, room occupants, party state, and initial room info
           await sendPlayerState(peer, playerId);
           await sendExits(peer, authRoom._id.toString());
