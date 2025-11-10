@@ -281,21 +281,60 @@ export async function handleCommandDb(command: Command, playerId: string): Promi
           responses.push(`[${talkAgent.name}] không có gì để nói với bạn.`);
         }
         
-        // Add NPC-specific actions
+        // Send UI open events for specific NPCs
+        const playerObj = gameState.getPlayer(playerId);
+        
+        // Add NPC-specific actions and UI events
         if (talkAgent.agentKey === 'archaeologist') {
           responses.push('');
           responses.push('Hành động có thể thực hiện:');
           responses.push('  explore - Khám phá Di Tích Cổ (yêu cầu nhóm)');
+          responses.push('  [Nhấn nút Party Dungeon ở menu để mở giao diện]');
+          
+          // Send WebSocket event to open Party Dungeon UI
+          if (playerObj?.ws) {
+            playerObj.ws.send(JSON.stringify({
+              type: 'ui_event',
+              payload: {
+                action: 'open_ui',
+                uiType: 'party_dungeon'
+              }
+            }));
+          }
         } else if (talkAgent.agentKey === 'thuong_nhan_ham_nguc') {
           responses.push('');
           responses.push('Hành động có thể thực hiện:');
           responses.push('  dungeon enter - Vào Hầm Ngục');
           responses.push('  dungeon status - Xem trạng thái Hầm Ngục');
+          responses.push('  [Nhấn nút Dungeon ở menu để mở giao diện]');
+          
+          // Send WebSocket event to open Dungeon UI
+          if (playerObj?.ws) {
+            playerObj.ws.send(JSON.stringify({
+              type: 'ui_event',
+              payload: {
+                action: 'open_ui',
+                uiType: 'dungeon'
+              }
+            }));
+          }
         } else if (talkAgent.agentKey === 'arena_manager') {
           responses.push('');
           responses.push('Hành động có thể thực hiện:');
           responses.push('  queue 1v1 - Tham gia hàng chờ đấu trường 1v1');
           responses.push('  list - Xem cửa hàng vinh quang');
+          responses.push('  [Nhấn nút Arena ở menu để mở giao diện]');
+          
+          // Send WebSocket event to open Arena UI
+          if (playerObj?.ws) {
+            playerObj.ws.send(JSON.stringify({
+              type: 'ui_event',
+              payload: {
+                action: 'open_ui',
+                uiType: 'arena'
+              }
+            }));
+          }
         }
         
         // Update quest progress for talk objectives
