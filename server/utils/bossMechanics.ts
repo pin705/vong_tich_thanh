@@ -286,7 +286,7 @@ function checkTrigger(agent: any, mechanic: BossMechanic, bossState: BossState):
   }
   
   // Timer-based triggers (repeating with cooldown)
-  if (trigger.startsWith('timer_')) {
+  if (trigger?.startsWith('timer_')) {
     const cooldown = mechanic.cooldown || 30; // Default 30s cooldown
     const lastTime = bossState.lastMechanicTime.get(mechanic.action) || 0;
     
