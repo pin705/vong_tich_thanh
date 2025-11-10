@@ -858,6 +858,9 @@ const handleContextualAction = async (action: { command: string }) => {
   } else if (action.command.startsWith('__quests__:')) {
     // Open quests menu
     questsOpen.value = true;
+  } else if (action.command.startsWith('__dungeon__:')) {
+    // Open dungeon menu
+    dungeonOverlayOpen.value = true;
   } else {
     // Execute normal command
     currentInput.value = action.command;
@@ -935,11 +938,16 @@ const getActionsForEntity = (type: 'player' | 'npc' | 'mob', name: string, entit
         });
       }
       
-      // Scavenger Hunter - Quest Giver
+      // Scavenger Hunter - Quest Giver & Dungeon Access
       if (name === 'Thợ Săn Phế Liệu' || name.includes('Săn Phế Liệu')) {
         actions.push({ 
           label: 'Nhiệm Vụ', 
           command: `__quests__:${entityId}:${name}`, 
+          disabled: false 
+        });
+        actions.push({ 
+          label: 'Tham Gia Hầm Ngục', 
+          command: `__dungeon__:${entityId}:${name}`, 
           disabled: false 
         });
       }
