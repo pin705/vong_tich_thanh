@@ -123,11 +123,12 @@
           <div
             v-for="room in filteredRooms"
             :key="room.id"
-            :class="['room-card', { current: room.isCurrent, visited: room.visited }]"
+            :class="['room-card', { current: room.isCurrent, visited: room.visited, locked: room.isLocked }]"
             @click="selectRoom(room)"
           >
             <div class="room-name">
               {{ room.name }}
+              <span v-if="room.isLocked" class="lock-indicator" title="Khu vực bị khóa">🔒</span>
               <span v-if="room.hasNewQuests" class="quest-indicator new-quest" title="Có nhiệm vụ mới">[!]</span>
               <span v-if="room.hasActiveQuests" class="quest-indicator active-quest" title="Có nhiệm vụ đang làm">[?]</span>
             </div>
@@ -179,6 +180,25 @@
             <div v-if="selectedRoom.boss" class="detail-section boss-section">
               <h4>Boss:</h4>
               <div class="detail-item boss-name">[!] {{ selectedRoom.boss }}</div>
+            </div>
+
+            <!-- Lock Status -->
+            <div v-if="selectedRoom.isLocked" class="detail-section lock-section">
+              <h4>🔒 Khu vực bị khóa:</h4>
+              <div v-if="selectedRoom.unlockHint" class="detail-item unlock-hint">
+                💡 {{ selectedRoom.unlockHint }}
+              </div>
+              <div v-if="selectedRoom.requirements" class="requirements-list">
+                <div v-if="selectedRoom.requirements.minLevel" class="requirement-item">
+                  • Yêu cầu cấp độ: {{ selectedRoom.requirements.minLevel }}
+                </div>
+                <div v-if="selectedRoom.requirements.requiredQuestKey" class="requirement-item">
+                  • Cần hoàn thành nhiệm vụ để mở khóa
+                </div>
+                <div v-if="selectedRoom.requirements.requiredItemKey" class="requirement-item">
+                  • Cần vật phẩm đặc biệt để vào
+                </div>
+              </div>
             </div>
 
             <!-- Actions -->
@@ -238,6 +258,17 @@ interface Room {
   connections?: string[];
   isCurrent?: boolean;
   visited?: boolean;
+  isLocked?: boolean;
+  unlockHint?: string;
+  requirements?: {
+    minLevel?: number;
+    requiredQuestKey?: string;
+    blockedByQuestKey?: string;
+    requiredItemKey?: string;
+    consumeItem?: boolean;
+  };
+  hasNewQuests?: boolean;
+  hasActiveQuests?: boolean;
 }
 
 interface Props {
@@ -556,6 +587,43 @@ function navigateToRoom(room: Room) {
 
 .room-card.visited {
   opacity: 0.8;
+}
+
+.room-card.locked {
+  border-color: #888;
+  background: rgba(136, 136, 136, 0.05);
+  opacity: 0.7;
+}
+
+.room-card.locked .room-name {
+  color: #888;
+}
+
+.lock-indicator {
+  margin-left: 0.3rem;
+  font-size: 0.9rem;
+}
+
+.lock-section {
+  background: rgba(136, 136, 136, 0.1);
+  padding: 0.5rem;
+  border-left: 2px solid #888;
+  margin-top: 0.5rem;
+}
+
+.unlock-hint {
+  color: #00ddff;
+  font-style: italic;
+  margin-top: 0.3rem;
+}
+
+.requirements-list {
+  margin-top: 0.5rem;
+}
+
+.requirement-item {
+  color: #ff8800;
+  margin-top: 0.2rem;
 }
 
 .room-name {

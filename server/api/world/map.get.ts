@@ -104,6 +104,9 @@ export default defineEventHandler(async (event) => {
         hasNewQuests,
         hasActiveQuests,
         connections,
+        isLocked: room.isLocked || false,
+        unlockHint: room.unlockHint,
+        requirements: room.requirements,
         visited: false, // Will be set based on player's visitedRooms
         isCurrent: false // Will be set below
       };
