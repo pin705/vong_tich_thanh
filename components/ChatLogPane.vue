@@ -29,7 +29,7 @@
     </div>
 
     <!-- Expanded mode - full chat popup -->
-    <Teleport to="body" v-if="typeof document !== 'undefined'">
+    <Teleport to="body">
       <div v-if="expanded" class="chat-overlay" @click="expanded = false">
         <div class="chat-popup" @click.stop>
           <div class="chat-popup-header">
