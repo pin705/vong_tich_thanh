@@ -46,7 +46,20 @@ export async function formatRoomDescription(room: any, player: any): Promise<str
   if (room.agents && room.agents.length > 0) {
     const agents = await AgentSchema.find({ _id: { $in: room.agents } });
     agents.forEach((agent: any) => {
-      responses.push(`Một [${agent.name}] đang đứng đây.`);
+      let prefix = 'NPC';
+      let suffix = 'đang đứng đây.';
+      
+      if (agent.type === 'mob') {
+        if (agent.agentType === 'boss') {
+          prefix = 'BOSS';
+          suffix = 'đang hiển hiện tại đây với khí thế đáng sợ.';
+        } else {
+          prefix = 'Quái Vật';
+          suffix = 'đang lang thang tại đây.';
+        }
+      }
+      
+      responses.push(`${prefix} [${agent.name}] ${suffix}`);
     });
   }
   

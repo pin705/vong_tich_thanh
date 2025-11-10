@@ -49,7 +49,8 @@ export default defineEventHandler(async (event) => {
       vendor: {
         id: vendor._id,
         name: vendor.name,
-        shopType: vendor.shopType || 'gold'
+        shopType: vendor.shopType || 'gold',
+        shopCurrency: vendor.shopCurrency || 'gold'
       },
       items: uniqueItems.map((item: any) => ({
         _id: item._id,
@@ -59,6 +60,10 @@ export default defineEventHandler(async (event) => {
         price: item.price,
         sellValue: item.sellValue,
         premiumPrice: item.premiumPrice,
+        dungeonCoinPrice: item.dungeonCoinPrice,
+        tamerBadgePrice: item.tamerBadgePrice,
+        gloryPointsPrice: item.gloryPointsPrice,
+        braveryMedalPrice: item.braveryMedalPrice,
         quality: item.quality,
         requiredLevel: item.requiredLevel,
         effects: item.effects,
