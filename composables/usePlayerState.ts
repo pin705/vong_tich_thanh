@@ -1,5 +1,18 @@
 import { ref, type Ref } from 'vue';
 
+export interface EquippedSkill {
+  slot: number;
+  id: string;
+  name: string;
+  description: string;
+  manaCost: number;
+  cooldown: number;
+  damage: number;
+  healing: number;
+  rank: number;
+  maxRank: number;
+}
+
 export interface PlayerState {
   name: string;
   level: number;
@@ -29,6 +42,8 @@ export interface PlayerState {
   talentPoints: number;
   skillPoints: number;
   hasUnreadMail: boolean;
+  equippedSkills?: EquippedSkill[];
+  skillCooldowns?: Record<string, number>;
 }
 
 export function usePlayerState() {
@@ -60,7 +75,9 @@ export function usePlayerState() {
     inventoryItems: [],
     talentPoints: 0,
     skillPoints: 0,
-    hasUnreadMail: false
+    hasUnreadMail: false,
+    equippedSkills: [],
+    skillCooldowns: {}
   });
   
   function updatePlayerState(updates: Partial<PlayerState>) {

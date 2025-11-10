@@ -12,6 +12,15 @@
       :premiumCurrency="playerState.premiumCurrency"
     />
 
+    <!-- Skill Bar (Sticky) -->
+    <div v-if="playerState.equippedSkills && playerState.equippedSkills.length > 0" class="skill-bar-container">
+      <SkillBar 
+        :equippedSkills="playerState.equippedSkills" 
+        :skillCooldowns="playerState.skillCooldowns || {}"
+        @useSkill="handleUseSkill"
+      />
+    </div>
+
     <!-- Main Content Area with Side Panel for Desktop -->
     <div class="main-content-wrapper">
       <!-- Main Output Area with Channel Tabs -->
@@ -430,6 +439,7 @@ import { ref, onMounted, onUnmounted, nextTick, watch, computed } from 'vue';
 import type { Message, ChatMessage, TargetState, Skill } from '~/types';
 
 import PlayerStatusHeader from '~/components/PlayerStatusHeader.vue';
+import SkillBar from '~/components/SkillBar.vue';
 import InventoryPane from '~/components/InventoryPane.vue';
 import HelpOverlay from '~/components/HelpOverlay.vue';
 import CharacterMenuOverlay from '~/components/CharacterMenuOverlay.vue';
@@ -1471,6 +1481,16 @@ const handleTitleRefresh = () => {
   sendCommand();
 };
 
+// Handle skill use from skill bar
+const handleUseSkill = (skillId: string) => {
+  // Find skill name from equipped skills
+  const skill = playerState.value.equippedSkills?.find(s => s.id === skillId);
+  if (skill) {
+    currentInput.value = `use ${skill.name}`;
+    sendCommand();
+  }
+};
+
 // Phase 25: Vendor System - Shop handlers
 const sendCommandFromShop = (command: string) => {
   currentInput.value = command;
@@ -1692,7 +1712,9 @@ const connectWebSocket = () => {
                 lifesteal: payload.stats.lifesteal ?? playerState.value.stats.lifesteal,
                 dodge: payload.stats.dodge ?? playerState.value.stats.dodge
               } : playerState.value.stats,
-              inventoryItems: payload.inventoryItems || playerState.value.inventoryItems
+              inventoryItems: payload.inventoryItems || playerState.value.inventoryItems,
+              equippedSkills: payload.equippedSkills || playerState.value.equippedSkills || [],
+              skillCooldowns: payload.skillCooldowns || playerState.value.skillCooldowns || {}
             };
           }
           break;
@@ -2065,6 +2087,17 @@ watch(messages, () => {
   /* Center and limit max width */
   max-width: 1024px;
   margin: 0 auto;
+}
+
+.skill-bar-container {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background-color: var(--bg-black);
+  border-bottom: 1px solid rgba(0, 136, 0, 0.3);
+  display: flex;
+  justify-content: center;
+  padding: 0.25rem 0.5rem;
 }
 
 .main-content-wrapper {
