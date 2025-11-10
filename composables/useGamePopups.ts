@@ -28,6 +28,9 @@ export function useGamePopups() {
   const guildInvitationPopupOpen = ref(false);
   const achievementPopupOpen = ref(false);
   const titlePopupOpen = ref(false);
+  const arenaQueuePopupOpen = ref(false);
+  const dungeonOverlayOpen = ref(false);
+  const partyDungeonFinderOpen = ref(false);
   
   function toggleHelp() {
     helpOpen.value = !helpOpen.value;
@@ -116,6 +119,18 @@ export function useGamePopups() {
   function openTitles() {
     titlePopupOpen.value = true;
   }
+
+  function openArenaQueue() {
+    arenaQueuePopupOpen.value = true;
+  }
+
+  function openDungeon() {
+    dungeonOverlayOpen.value = true;
+  }
+
+  function openPartyDungeonFinder() {
+    partyDungeonFinderOpen.value = true;
+  }
   
   function closeAllPopups() {
     helpOpen.value = false;
@@ -144,6 +159,9 @@ export function useGamePopups() {
     leaderboardOpen.value = false;
     achievementPopupOpen.value = false;
     titlePopupOpen.value = false;
+    arenaQueuePopupOpen.value = false;
+    dungeonOverlayOpen.value = false;
+    partyDungeonFinderOpen.value = false;
   }
   
   return {
@@ -174,6 +192,9 @@ export function useGamePopups() {
     leaderboardOpen,
     achievementPopupOpen,
     titlePopupOpen,
+    arenaQueuePopupOpen,
+    dungeonOverlayOpen,
+    partyDungeonFinderOpen,
     
     // Actions
     toggleHelp,
@@ -198,6 +219,9 @@ export function useGamePopups() {
     openLeaderboard,
     openAchievements,
     openTitles,
+    openArenaQueue,
+    openDungeon,
+    openPartyDungeonFinder,
     closeAllPopups
   };
 }

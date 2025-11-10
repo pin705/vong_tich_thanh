@@ -454,6 +454,23 @@ export async function executeCombatTick(playerId: string, agentId: string): Prom
       return;
     }
     
+    // Check if player HP is critically low (≤20%) and disable auto-attack
+    const hpPercent = (player.hp / player.maxHp) * 100;
+    if (playerState.isAutoAttacking && hpPercent <= 20) {
+      playerState.isAutoAttacking = false;
+      messages.push('⚠️ [AUTO TẮT] HP quá thấp! Tự động tấn công đã được tắt để bảo vệ bạn.');
+      
+      // Send message to player
+      const playerObj = gameState.getPlayer(playerId);
+      if (playerObj?.ws) {
+        playerObj.ws.send(JSON.stringify({
+          type: 'system',
+          category: 'combat',
+          message: '⚠️ [AUTO TẮT] HP quá thấp! Tự động tấn công đã được tắt để bảo vệ bạn.'
+        }));
+      }
+    }
+    
     if (playerState.isAutoAttacking && !pacifiedBuff) {
       const playerBaseDamage = await calculatePlayerDamage(player);
       const rawDamage = calculateDamage(playerBaseDamage);
@@ -1162,11 +1179,11 @@ export async function startCombat(playerId: string, agentId: string): Promise<st
     agent.combatTarget = player._id as any;
     await agent.save();
     
-    // Initialize player state - respect player's autoCombat setting
+    // Initialize player state - always enable auto-attacking when combat starts
     const playerState = gameState.getPlayerState(playerId);
     if (playerState) {
       playerState.inCombat = true;
-      playerState.isAutoAttacking = player.autoCombat || false; // Use player's preference
+      playerState.isAutoAttacking = true; // Always enable auto-attack when entering combat
       playerState.combatTargetId = agentId;
     }
     

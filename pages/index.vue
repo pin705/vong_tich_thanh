@@ -349,6 +349,41 @@
       @refresh="handleTitleRefresh"
     />
 
+    <!-- Arena Queue Popup -->
+    <ArenaQueuePopup
+      :isOpen="arenaQueuePopupOpen"
+      :gloryPoints="playerState.gloryPoints || 0"
+      :wins="playerState.arenaWins || 0"
+      :losses="playerState.arenaLosses || 0"
+      :rank="playerState.arenaRank || ''"
+      @close="arenaQueuePopupOpen = false"
+    />
+
+    <!-- Dungeon Overlay -->
+    <DungeonOverlay
+      :isOpen="dungeonOverlayOpen"
+      :dungeonStatus="{
+        currentFloor: playerState.dungeonFloor || 1,
+        highestFloor: playerState.highestDungeonFloor || 1,
+        dungeonCoin: playerState.dungeonCoin || 0,
+        lastWeeklyReset: playerState.lastDungeonReset || null
+      }"
+      @close="dungeonOverlayOpen = false"
+      @enterDungeon="handleEnterDungeon"
+      @openShop="handleOpenDungeonShop"
+    />
+
+    <!-- Party Dungeon Finder -->
+    <PartyDungeonFinder
+      :isOpen="partyDungeonFinderOpen"
+      :isInParty="partyState.isInParty"
+      :isLeader="partyState.isLeader"
+      :partyMembers="partyState.memberCount || 0"
+      :maxPartySize="partyState.maxSize || 5"
+      @close="partyDungeonFinderOpen = false"
+      @explore="handleExplorePartyDungeon"
+    />
+
     <!-- Crafting Popup -->
     <CraftingPopup
       :isOpen="craftingPopupOpen"
@@ -457,7 +492,8 @@ const {
   auctionHousePopupOpen, premiumShopPopupOpen, craftingPopupOpen, shopPopupOpen,
   mailPopupOpen, petPopupOpen, petEggHatchingPopupOpen, blacksmithPopupOpen, leaderboardOpen,
   guildInvitationPopupOpen, achievementPopupOpen, titlePopupOpen,
-  toggleHelp, openAchievements, openTitles
+  arenaQueuePopupOpen, dungeonOverlayOpen, partyDungeonFinderOpen,
+  toggleHelp, openAchievements, openTitles, openArenaQueue, openDungeon, openPartyDungeonFinder
 } = useGamePopups();
 const {
   isMobile, isTablet, isDesktop, updateDeviceType,
@@ -680,6 +716,17 @@ const handleTabClick = async (tabId: string) => {
         break;
       case 'hatch':
         petEggHatchingPopupOpen.value = true;
+        break;
+      case 'arena':
+      case 'arena_queue':
+        arenaQueuePopupOpen.value = true;
+        break;
+      case 'dungeon':
+        dungeonOverlayOpen.value = true;
+        break;
+      case 'party_dungeon':
+      case 'explore':
+        partyDungeonFinderOpen.value = true;
         break;
     }
   } finally {
@@ -1362,6 +1409,40 @@ const handleOpenTitles = () => {
   titlePopupOpen.value = true;
 };
 
+// Handle dungeon UI open
+const handleEnterDungeon = () => {
+  // Send dungeon enter command
+  if (ws.value && ws.value.readyState === WebSocket.OPEN) {
+    ws.value.send(JSON.stringify({
+      type: 'command',
+      payload: { action: 'dungeon', target: 'enter' }
+    }));
+  }
+  dungeonOverlayOpen.value = false;
+};
+
+const handleOpenDungeonShop = () => {
+  dungeonOverlayOpen.value = false;
+  // Send list command to show dungeon shop
+  if (ws.value && ws.value.readyState === WebSocket.OPEN) {
+    ws.value.send(JSON.stringify({
+      type: 'command',
+      payload: { action: 'list', target: '' }
+    }));
+  }
+};
+
+const handleExplorePartyDungeon = (dungeonId: string) => {
+  // Send explore command
+  if (ws.value && ws.value.readyState === WebSocket.OPEN) {
+    ws.value.send(JSON.stringify({
+      type: 'command',
+      payload: { action: 'explore', target: dungeonId }
+    }));
+  }
+  partyDungeonFinderOpen.value = false;
+};
+
 // Load merchant shop data
 const loadMerchantShop = async (merchantId: string, merchantName: string) => {
   tradingData.value = {
@@ -1692,6 +1773,22 @@ const connectWebSocket = () => {
               mobs: payload.mobs || [],
               respawns: payload.respawns || []
             };
+          }
+          break;
+        case 'ui_event':
+          // Handle UI open events from NPCs
+          if (payload && payload.action === 'open_ui') {
+            switch (payload.uiType) {
+              case 'arena':
+                arenaQueuePopupOpen.value = true;
+                break;
+              case 'dungeon':
+                dungeonOverlayOpen.value = true;
+                break;
+              case 'party_dungeon':
+                partyDungeonFinderOpen.value = true;
+                break;
+            }
           }
           break;
         case 'party_invitation':
