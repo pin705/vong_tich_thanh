@@ -168,10 +168,12 @@
       :branches="talentBranches"
       :allocatedTalents="allocatedTalents"
       :talentPoints="playerState.talentPoints || 0"
+      :skillPoints="playerState.skillPoints || 0"
       :inventoryItems="playerState.inventoryItems"
       @close="characterMenuOpen = false"
       @assignSkill="handleAssignSkill"
       @allocateTalent="handleAllocateTalent"
+      @upgradeSkill="handleUpgradeSkill"
       @openProfessionChoice="handleOpenProfessionChoice"
       @inventoryAction="handleInventoryAction"
       @openAchievements="handleOpenAchievements"
@@ -1081,6 +1083,31 @@ const loadTalents = async () => {
 // Handle skill assignment to hotkey
 const handleAssignSkill = (skill: Skill) => {
   addMessage(`Đã gán kỹ năng [${skill.name}] (Tính năng hotkey đang phát triển)`, 'system');
+};
+
+// Handle skill upgrade
+const handleUpgradeSkill = async (skillId: string) => {
+  isLoading.value = true;
+  loadingText.value = 'Đang nâng cấp kỹ năng...';
+  try {
+    const response = await $fetch('/api/player/skills/upgrade', {
+      method: 'POST',
+      body: { skillId }
+    });
+    
+    if (response.success) {
+      playerState.value.skillPoints = response.skillPoints;
+      addMessage(response.message || 'Đã nâng cấp kỹ năng thành công!', 'system');
+      // Reload skills to update UI
+      await loadSkills();
+    }
+  } catch (error: any) {
+    console.error('Error upgrading skill:', error);
+    const errorMsg = error.data?.message || 'Không thể nâng cấp kỹ năng.';
+    addMessage(errorMsg, 'error');
+  } finally {
+    isLoading.value = false;
+  }
 };
 
 // Handle talent allocation

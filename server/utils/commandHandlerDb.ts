@@ -621,7 +621,8 @@ export async function handleCommandDb(command: Command, playerId: string): Promi
           recipe: buyItem.recipe,
           resultItem: buyItem.resultItem,
           upgradeType: buyItem.upgradeType,
-          itemKey: buyItem.itemKey
+          itemKey: buyItem.itemKey,
+          data: buyItem.data // Ensure data field is copied for pet eggs
         });
 
         // Deduct currency

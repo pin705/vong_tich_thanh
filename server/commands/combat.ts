@@ -100,18 +100,48 @@ export async function handleCombatCommand(command: Command, playerId: string): P
       responses.push(...fleeMessages);
     }
 
-    // Handle auto command - toggle auto-attack mode
+    // Handle auto command - toggle auto-attack mode or auto-target
     if (action === 'auto') {
       const playerState = gameState.getPlayerState(playerId);
       
       // Check if player is in combat
       if (!player.inCombat) {
         // Toggle global autoCombat setting when not in combat
-        player.autoCombat = !player.autoCombat;
+        const wasAutoCombat = player.autoCombat || false;
+        player.autoCombat = !wasAutoCombat;
         await player.save();
         
         if (player.autoCombat) {
           responses.push('✓ Tự động tấn công đã được BẬT. Bạn sẽ tự động tấn công quái khi bắt đầu chiến đấu.');
+          
+          // Auto-target: Find and attack nearest mob
+          const room = await RoomSchema.findById(player.currentRoomId);
+          if (room && room.agents && room.agents.length > 0) {
+            const agents = await AgentSchema.find({ _id: { $in: room.agents } });
+            const hostileAgents = agents.filter((a: any) => a.type === 'mob');
+            
+            if (hostileAgents.length > 0) {
+              // Priority: agents attacking player > aggressive agents > nearest agent
+              let targetAgent = hostileAgents.find((a: any) => 
+                a.combatTarget && a.combatTarget.toString() === playerId
+              );
+              
+              if (!targetAgent) {
+                targetAgent = hostileAgents.find((a: any) => a.behavior === 'aggressive');
+              }
+              
+              if (!targetAgent) {
+                targetAgent = hostileAgents[0];
+              }
+              
+              responses.push(`[Auto-Target] Tìm thấy mục tiêu: [${targetAgent.name}]`);
+              responses.push('');
+              const combatMessages = await startCombat(playerId, targetAgent._id.toString());
+              responses.push(...combatMessages);
+            } else {
+              responses.push('[Auto-Target] Không tìm thấy mục tiêu để tấn công ở đây.');
+            }
+          }
         } else {
           responses.push('✗ Tự động tấn công đã được TẮT. Bạn sẽ phải đánh thủ công khi trong chiến đấu.');
         }

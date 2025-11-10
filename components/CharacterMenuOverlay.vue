@@ -183,6 +183,9 @@
       <!-- Skills Tab -->
       <div v-if="activeTab === 'skills'" class="tab-content skills-content">
         <div class="skills-container">
+          <div class="skill-points-header">
+            <strong>Điểm Kỹ Năng:</strong> {{ skillPoints || 0 }}
+          </div>
           <div v-if="loading" class="loading-message">Đang tải...</div>
           <div v-else-if="skills.length === 0" class="empty-message">
             <strong>📚 Cách Học Kỹ Năng</strong>
@@ -200,9 +203,13 @@
               v-for="skill in skills"
               :key="skill.id"
               class="skill-card"
-              @click="$emit('assignSkill', skill)"
             >
-              <div class="skill-name">{{ skill.name }}</div>
+              <div class="skill-name">
+                {{ skill.name }}
+                <span v-if="skill.upgradeLevel && skill.upgradeLevel > 1" class="skill-level">
+                  Lv.{{ skill.upgradeLevel }}
+                </span>
+              </div>
               <div class="skill-description">{{ skill.description }}</div>
               <div class="skill-details">
                 <div v-if="skill.damage" class="skill-stat">
@@ -214,6 +221,18 @@
                 <div v-if="skill.cooldown" class="skill-stat">
                   Hồi chiêu: {{ skill.cooldown }}s
                 </div>
+              </div>
+              <div class="skill-actions">
+                <button
+                  v-if="canUpgradeSkill(skill)"
+                  class="btn-upgrade-skill"
+                  @click.stop="$emit('upgradeSkill', skill._id)"
+                >
+                  ⬆️ Nâng Cấp ({{ skill.skillPointCost || 1 }}đ)
+                </button>
+                <button class="btn-use-skill" @click.stop="$emit('assignSkill', skill)">
+                  Sử Dụng
+                </button>
               </div>
             </div>
           </div>
@@ -312,6 +331,7 @@ interface Props {
   branches: TalentBranch[];
   allocatedTalents: Record<string, number>;
   talentPoints: number;
+  skillPoints?: number;
   inventoryItems: any[];
 }
 
@@ -320,6 +340,7 @@ const emit = defineEmits<{
   close: [];
   assignSkill: [skill: Skill];
   allocateTalent: [talentId: string];
+  upgradeSkill: [skillId: string];
   openProfessionChoice: [];
   inventoryAction: [action: string, itemId: string];
   openAchievements: [];
@@ -367,6 +388,15 @@ const handleItemClick = (item: any) => {
   // Emit event to parent for handling item actions
   // This could open a contextual menu or execute an action
   emit('inventoryAction', 'use', item.id || item.name);
+};
+
+// Check if skill can be upgraded
+const canUpgradeSkill = (skill: Skill): boolean => {
+  const currentLevel = skill.upgradeLevel || 1;
+  const maxLevel = skill.maxUpgradeLevel || 1;
+  if (currentLevel >= maxLevel) return false;
+  const upgradeCost = skill.skillPointCost || 1;
+  return (props.skillPoints || 0) >= upgradeCost;
 };
 </script>
 
@@ -609,6 +639,16 @@ const handleItemClick = (item: any) => {
   width: 100%;
 }
 
+.skill-points-header {
+  margin-bottom: 1rem;
+  padding: 0.75rem;
+  background-color: rgba(0, 136, 0, 0.1);
+  border: 1px solid rgba(0, 136, 0, 0.3);
+  text-align: center;
+  color: var(--text-accent);
+  font-size: 18px;
+}
+
 .skills-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
@@ -619,7 +659,6 @@ const handleItemClick = (item: any) => {
   background-color: rgba(0, 136, 0, 0.03);
   border: 1px solid rgba(0, 136, 0, 0.3);
   padding: 1rem;
-  cursor: pointer;
   transition: all 0.2s;
 }
 
@@ -633,6 +672,17 @@ const handleItemClick = (item: any) => {
   font-size: 18px;
   font-weight: bold;
   margin-bottom: 0.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.skill-level {
+  font-size: 14px;
+  color: var(--text-bright);
+  background: rgba(0, 136, 0, 0.2);
+  padding: 0.2rem 0.5rem;
+  border-radius: 3px;
 }
 
 .skill-description {
@@ -651,6 +701,35 @@ const handleItemClick = (item: any) => {
   color: var(--text-bright);
   font-size: 14px;
   margin-bottom: 0.25rem;
+}
+
+.skill-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.btn-upgrade-skill,
+.btn-use-skill {
+  flex: 1;
+  padding: 0.5rem;
+  border: 1px solid var(--text-accent);
+  background: transparent;
+  color: var(--text-accent);
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: inherit;
+  font-size: 14px;
+}
+
+.btn-upgrade-skill {
+  background: rgba(0, 136, 0, 0.2);
+}
+
+.btn-upgrade-skill:hover,
+.btn-use-skill:hover {
+  background: var(--text-accent);
+  color: #000;
 }
 
 /* Talents Tab Styles */

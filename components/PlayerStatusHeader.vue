@@ -157,9 +157,9 @@ const props = withDefaults(defineProps<Props>(), {
     max-width: 100%;
     width: 100%;
     z-index: 100;
-    flex-direction: column;
-    flex-wrap: nowrap;
-    align-items: stretch;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
     gap: 0.4rem;
     padding: 0.4rem 0.5rem;
     background-color: rgba(0, 136, 0, 0.15);
@@ -169,59 +169,6 @@ const props = withDefaults(defineProps<Props>(), {
   .player-info-section {
     flex: 0 0 auto;
     justify-content: flex-start;
-    gap: 0.5rem;
-  }
-
-  .player-name {
-    font-size: 14px;
-  }
-
-  .player-level {
-    font-size: 13px;
-    padding: 0.05rem 0.4rem;
-  }
-
-  .status-section {
-    flex: 0 0 auto;
-    gap: 0.3rem;
-    min-width: auto;
-  }
-
-  /* Compact currency display - show all in one row */
-  .currencies-wrapper {
-    display: flex;
-    flex-direction: row;
-    flex-wrap: wrap;
-    gap: 0.5rem;
-    padding: 0;
-  }
-
-  .currency-section {
-    flex: 0 0 auto;
-    gap: 0.25rem;
-    padding: 0.15rem 0.3rem;
-    background-color: rgba(0, 255, 0, 0.08);
-    border-radius: 3px;
-  }
-
-  .currency-label {
-    font-size: 12px;
-  }
-
-  .currency-value {
-    font-size: 12px;
-    font-weight: 600;
-  }
-}
-
-/* Very small screens - further optimize */
-@media (max-width: 480px) {
-  .player-status-header {
-    gap: 0.3rem;
-    padding: 0.3rem 0.4rem;
-  }
-
-  .player-info-section {
     gap: 0.4rem;
   }
 
@@ -235,16 +182,28 @@ const props = withDefaults(defineProps<Props>(), {
   }
 
   .status-section {
+    flex: 0 0 auto;
     gap: 0.25rem;
+    min-width: auto;
   }
 
+  /* Compact currency display - show all in one row */
   .currencies-wrapper {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
     gap: 0.4rem;
+    padding: 0;
+    flex: 1;
+    justify-content: flex-end;
   }
 
   .currency-section {
+    flex: 0 0 auto;
     gap: 0.2rem;
     padding: 0.1rem 0.25rem;
+    background-color: rgba(0, 255, 0, 0.08);
+    border-radius: 3px;
   }
 
   .currency-label {
@@ -253,6 +212,49 @@ const props = withDefaults(defineProps<Props>(), {
 
   .currency-value {
     font-size: 11px;
+    font-weight: 600;
+  }
+}
+
+/* Very small screens - further optimize */
+@media (max-width: 480px) {
+  .player-status-header {
+    gap: 0.3rem;
+    padding: 0.25rem 0.3rem;
+  }
+
+  .player-info-section {
+    gap: 0.3rem;
+  }
+
+  .player-name {
+    font-size: 12px;
+  }
+
+  .player-level {
+    font-size: 11px;
+    padding: 0.05rem 0.25rem;
+  }
+
+  .status-section {
+    gap: 0.2rem;
+  }
+
+  .currencies-wrapper {
+    gap: 0.3rem;
+  }
+
+  .currency-section {
+    gap: 0.15rem;
+    padding: 0.08rem 0.2rem;
+  }
+
+  .currency-label {
+    font-size: 10px;
+  }
+
+  .currency-value {
+    font-size: 10px;
   }
 }
 </style>

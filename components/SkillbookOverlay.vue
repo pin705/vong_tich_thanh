@@ -4,6 +4,7 @@
       <!-- Header -->
       <div class="skillbook-header">
         <h2>SỔ KỸ NĂNG</h2>
+        <div class="skill-points-display">Điểm Kỹ Năng: {{ skillPoints || 0 }}</div>
         <div class="tab-bar">
           <button 
             :class="['tab-button', { active: activeTab === 'active' }]"
@@ -108,13 +109,22 @@
                 <strong>Cấp độ kỹ năng:</strong> {{ selectedSkill.tier }}
               </div>
             </div>
-            <button 
-              v-if="selectedSkill.type === 'active'"
-              class="action-button"
-              @click="assignToHotkey"
-            >
-              [Gán Lên Phím Tắt]
-            </button>
+            <div class="action-buttons">
+              <button 
+                v-if="canUpgrade(selectedSkill)"
+                class="action-button upgrade-button"
+                @click="upgradeSkill"
+              >
+                [⬆️ Nâng Cấp] ({{ selectedSkill.skillPointCost || 1 }} điểm)
+              </button>
+              <button 
+                v-if="selectedSkill.type === 'active'"
+                class="action-button"
+                @click="assignToHotkey"
+              >
+                [Gán Lên Phím Tắt]
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -136,10 +146,11 @@ interface Props {
   isOpen: boolean;
   skills: Skill[];
   playerClass?: string;
+  skillPoints?: number;
 }
 
 const props = defineProps<Props>();
-const emit = defineEmits(['close', 'assignSkill']);
+const emit = defineEmits(['close', 'assignSkill', 'skillUpgraded']);
 
 const activeTab = ref<'active' | 'passive'>('active');
 const selectedSkill = ref<Skill | null>(null);
@@ -191,6 +202,43 @@ function assignToHotkey() {
     emit('assignSkill', selectedSkill.value);
   }
 }
+
+function canUpgrade(skill: Skill | null): boolean {
+  if (!skill) return false;
+  const currentLevel = learnedSkillLevels.value[skill._id] || 1;
+  const maxLevel = skill.maxUpgradeLevel || 1;
+  if (currentLevel >= maxLevel) return false;
+  const upgradeCost = skill.skillPointCost || 1;
+  return (props.skillPoints || 0) >= upgradeCost;
+}
+
+async function upgradeSkill() {
+  if (!selectedSkill.value) return;
+  
+  try {
+    const response = await $fetch('/api/player/skills/upgrade', {
+      method: 'POST',
+      body: { skillId: selectedSkill.value._id }
+    });
+    
+    if (response.success) {
+      // Update local skill level
+      learnedSkillLevels.value[selectedSkill.value._id] = response.newLevel;
+      // Emit event to update skill points in parent
+      emit('skillUpgraded', {
+        skillId: selectedSkill.value._id,
+        newLevel: response.newLevel,
+        skillPoints: response.skillPoints
+      });
+      // Show success message
+      alert(response.message || 'Nâng cấp kỹ năng thành công!');
+    }
+  } catch (error: any) {
+    console.error('Error upgrading skill:', error);
+    const errorMsg = error.data?.message || error.message || 'Không thể nâng cấp kỹ năng.';
+    alert(errorMsg);
+  }
+}
 </script>
 
 <style scoped>
@@ -209,9 +257,19 @@ function assignToHotkey() {
 
 .skillbook-header h2 {
   font-size: 1.5rem;
-  margin-bottom: 1rem;
+  margin-bottom: 0.5rem;
   color: #00ff00;
   text-align: center;
+}
+
+.skill-points-display {
+  text-align: center;
+  font-size: 1.2rem;
+  color: #00ff00;
+  margin-bottom: 1rem;
+  padding: 0.5rem;
+  background: rgba(0, 136, 0, 0.1);
+  border: 1px solid #008800;
 }
 
 .tab-bar {
@@ -372,13 +430,33 @@ function assignToHotkey() {
   font-family: 'VT323', 'Source Code Pro', monospace;
   font-size: 1.1rem;
   font-weight: bold;
-  width: 100%;
   transition: all 0.2s;
 }
 
 .action-button:hover {
   background: #00ff00;
   transform: scale(1.02);
+}
+
+.action-buttons {
+  display: flex;
+  gap: 1rem;
+  margin-top: 1rem;
+  flex-wrap: wrap;
+}
+
+.action-buttons .action-button {
+  flex: 1;
+  min-width: 200px;
+}
+
+.upgrade-button {
+  background: #006600;
+  border-color: #00cc00;
+}
+
+.upgrade-button:hover {
+  background: #00cc00;
 }
 
 .skillbook-footer {
