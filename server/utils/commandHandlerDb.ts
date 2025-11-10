@@ -281,6 +281,23 @@ export async function handleCommandDb(command: Command, playerId: string): Promi
           responses.push(`[${talkAgent.name}] không có gì để nói với bạn.`);
         }
         
+        // Add NPC-specific actions
+        if (talkAgent.agentKey === 'archaeologist') {
+          responses.push('');
+          responses.push('Hành động có thể thực hiện:');
+          responses.push('  explore - Khám phá Di Tích Cổ (yêu cầu nhóm)');
+        } else if (talkAgent.agentKey === 'thuong_nhan_ham_nguc') {
+          responses.push('');
+          responses.push('Hành động có thể thực hiện:');
+          responses.push('  dungeon enter - Vào Hầm Ngục');
+          responses.push('  dungeon status - Xem trạng thái Hầm Ngục');
+        } else if (talkAgent.agentKey === 'arena_manager') {
+          responses.push('');
+          responses.push('Hành động có thể thực hiện:');
+          responses.push('  queue 1v1 - Tham gia hàng chờ đấu trường 1v1');
+          responses.push('  list - Xem cửa hàng vinh quang');
+        }
+        
         // Update quest progress for talk objectives
         const questMessages = await updateQuestProgress(playerId, 'talk', talkAgent.name);
         responses.push(...questMessages);
@@ -2100,6 +2117,87 @@ export async function handleCommandDb(command: Command, playerId: string): Promi
           } else {
             responses.push(challengeResult.message);
           }
+        }
+        break;
+      }
+
+      case 'explore': {
+        // Party Dungeon exploration
+        // Check if player is in a party
+        const playerParty = partyService.getPlayerParty(playerId);
+        if (!playerParty) {
+          responses.push('Bạn cần tham gia một nhóm để khám phá Di Tích Cổ.');
+          responses.push('Sử dụng: party create hoặc party join [tên người chơi]');
+          break;
+        }
+        
+        // Check if player is the party leader
+        if (playerParty.party.leaderId !== playerId) {
+          responses.push('Chỉ trưởng nhóm mới có thể bắt đầu khám phá.');
+          break;
+        }
+        
+        // Check if player is at the correct location (party dungeon entrance)
+        const room = await RoomSchema.findById(player.currentRoomId);
+        if (!room || room.roomKey !== 'di_tich_co_loi_vao') {
+          responses.push('Bạn phải ở [Di Tích Cổ - Lối Vào] để bắt đầu khám phá.');
+          responses.push('Tìm [Nhà Khảo Cổ] để biết thêm thông tin.');
+          break;
+        }
+        
+        // Start party dungeon instance
+        const { createDungeonInstance } = await import('./partyDungeonService');
+        const dungeonResult = await createDungeonInstance(playerParty.partyId, 'ancient_tomb');
+        
+        if (dungeonResult.success) {
+          responses.push('═══════════════════════════════════════════════════');
+          responses.push('     KHÁM PHÁ DI TÍCH CỔ                          ');
+          responses.push('═══════════════════════════════════════════════════');
+          responses.push(dungeonResult.message);
+          responses.push('');
+          responses.push('Làm việc cùng nhóm để giải các câu đố!');
+          responses.push('Sử dụng lệnh: look, examine, use để tương tác.');
+        } else {
+          responses.push(dungeonResult.message);
+        }
+        break;
+      }
+
+      case 'queue': {
+        // Arena queue system
+        const arenaMode = target?.toLowerCase();
+        
+        if (!arenaMode || arenaMode === '1v1') {
+          // Check if player is at arena
+          const room = await RoomSchema.findById(player.currentRoomId);
+          if (!room || room.roomKey !== 'phong_cho_dau_truong') {
+            responses.push('Bạn phải ở [Phòng Chờ Đấu Trường] để tham gia hàng chờ.');
+            responses.push('Tìm [Quản Lý Đấu Trường] để biết thêm thông tin.');
+            break;
+          }
+          
+          // Check level requirement
+          if (player.level < 10) {
+            responses.push('Bạn cần đạt cấp 10 trước khi tham gia đấu trường.');
+            break;
+          }
+          
+          // Check if already in combat
+          if (player.inCombat) {
+            responses.push('Bạn đang trong chiến đấu. Không thể tham gia hàng chờ.');
+            break;
+          }
+          
+          responses.push('═══════════════════════════════════════════════════');
+          responses.push('         ĐẤU TRƯỜNG - HỆ THỐNG                    ');
+          responses.push('═══════════════════════════════════════════════════');
+          responses.push('Chức năng đấu trường PvP đang được phát triển.');
+          responses.push('');
+          responses.push('Sử dụng lệnh "list" để xem cửa hàng Điểm Vinh Quang.');
+          responses.push('Kiếm Điểm Vinh Quang bằng cách hoàn thành nhiệm vụ!');
+          responses.push('═══════════════════════════════════════════════════');
+        } else {
+          responses.push('Chế độ không hợp lệ. Sử dụng: queue 1v1');
         }
         break;
       }
