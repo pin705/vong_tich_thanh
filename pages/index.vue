@@ -847,11 +847,17 @@ const handleContextualAction = async (action: { command: string }) => {
     // Open pet menu
     petPopupOpen.value = true;
   } else if (action.command.startsWith('__arena__:')) {
-    // Open arena (could add arena popup in the future)
-    addMessage('Tính năng đấu trường đang được phát triển.', 'system');
+    // Open arena queue
+    arenaQueuePopupOpen.value = true;
   } else if (action.command.startsWith('__guild_menu__:')) {
     // Open guild menu
     guildPopupOpen.value = true;
+  } else if (action.command.startsWith('__party_dungeon__:')) {
+    // Open party dungeon finder
+    partyDungeonFinderOpen.value = true;
+  } else if (action.command.startsWith('__quests__:')) {
+    // Open quests menu
+    questsOpen.value = true;
   } else {
     // Execute normal command
     currentInput.value = action.command;
@@ -916,6 +922,24 @@ const getActionsForEntity = (type: 'player' | 'npc' | 'mob', name: string, entit
         actions.push({ 
           label: 'Quản Lý Bang Hội', 
           command: `__guild_menu__:${entityId}:${name}`, 
+          disabled: false 
+        });
+      }
+      
+      // Archaeologist - Party Dungeon
+      if (name === 'Nhà Khảo Cổ' || name.includes('Khảo Cổ')) {
+        actions.push({ 
+          label: 'Khám Phá Di Tích', 
+          command: `__party_dungeon__:${entityId}:${name}`, 
+          disabled: false 
+        });
+      }
+      
+      // Scavenger Hunter - Quest Giver
+      if (name === 'Thợ Săn Phế Liệu' || name.includes('Săn Phế Liệu')) {
+        actions.push({ 
+          label: 'Nhiệm Vụ', 
+          command: `__quests__:${entityId}:${name}`, 
           disabled: false 
         });
       }

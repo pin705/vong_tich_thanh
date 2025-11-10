@@ -299,7 +299,8 @@ const availableActions = computed(() => {
 
 const executeAction = (actionId: string) => {
   if (selectedItem.value) {
-    emit('itemAction', actionId, selectedItem.value.id);
+    // Use item.name because backend commands expect item names, not MongoDB IDs
+    emit('itemAction', actionId, selectedItem.value.name);
     closePopover();
   }
 };
