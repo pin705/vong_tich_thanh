@@ -42,9 +42,9 @@
             :class="{ 'top-three': index < 3 }"
           >
             <div class="col-rank">
-              <span v-if="index === 0" class="rank-medal gold">🥇</span>
-              <span v-else-if="index === 1" class="rank-medal silver">🥈</span>
-              <span v-else-if="index === 2" class="rank-medal bronze">🥉</span>
+              <span v-if="index === 0" class="rank-medal gold">[1]</span>
+              <span v-else-if="index === 1" class="rank-medal silver">[2]</span>
+              <span v-else-if="index === 2" class="rank-medal bronze">[3]</span>
               <span v-else>{{ index + 1 }}</span>
             </div>
             <div class="col-name">{{ player.username }}</div>
@@ -77,9 +77,9 @@
             :class="{ 'top-three': index < 3 }"
           >
             <div class="col-rank">
-              <span v-if="index === 0" class="rank-medal gold">🥇</span>
-              <span v-else-if="index === 1" class="rank-medal silver">🥈</span>
-              <span v-else-if="index === 2" class="rank-medal bronze">🥉</span>
+              <span v-if="index === 0" class="rank-medal gold">[1]</span>
+              <span v-else-if="index === 1" class="rank-medal silver">[2]</span>
+              <span v-else-if="index === 2" class="rank-medal bronze">[3]</span>
               <span v-else>{{ index + 1 }}</span>
             </div>
             <div class="col-name">{{ player.username }}</div>

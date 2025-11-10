@@ -108,7 +108,7 @@ export async function distributeWorldBossRewards(agentId: string): Promise<void>
   const topCount = Math.min(3, contributors.length);
   for (let i = 0; i < topCount; i++) {
     const contributor = contributors[i];
-    const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : '🥉';
+    const medal = i === 0 ? '[1]' : i === 1 ? '[2]' : '[3]';
     gameState.broadcastToAll({
       type: 'xp',
       message: `${medal} Top ${i + 1}: [${contributor.playerName}] - ${contributor.damageDealt.toLocaleString()} sát thương`,
