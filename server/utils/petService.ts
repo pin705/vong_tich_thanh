@@ -72,6 +72,10 @@ export async function summonPet(playerId: string, petId: string) {
     player.activePetId = petId;
     await player.save();
 
+    // Recalculate player stats to apply pet bonuses
+    const { recalculateStats } = await import('./playerStats');
+    await recalculateStats(playerId);
+
     // Add pet to game state
     const petState = {
       _id: pet._id.toString(),
@@ -138,6 +142,10 @@ export async function unsummonPet(playerId: string) {
     // Clear active pet
     player.activePetId = null;
     await player.save();
+
+    // Recalculate player stats to remove pet bonuses
+    const { recalculateStats } = await import('./playerStats');
+    await recalculateStats(playerId);
 
     return {
       success: true,
