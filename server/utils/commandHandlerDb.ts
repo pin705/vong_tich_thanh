@@ -24,8 +24,15 @@ import { transferItem, transferGold, addItemToPlayer, removeItemFromPlayer } fro
 import { findItemOnGround, findItemInInventory, findTargetInRoom } from './entityFinder';
 import { getHelpText } from './helpSystem';
 import { determinePetQuality, summonPet, unsummonPet, addExp } from './petService';
+import { 
+  getCurrencyInfoFromVendor, 
+  getPlayerCurrency, 
+  deductCurrency, 
+  checkAffordability,
+  formatCurrency,
+  getCurrencyName
+} from './currencyService';
 
-// Command routing configuration
 const MOVEMENT_COMMANDS = ['go', 'n', 's', 'e', 'w', 'u', 'd', 
                            'north', 'south', 'east', 'west', 'up', 'down',
                            'bắc', 'nam', 'đông', 'tây', 'lên', 'xuống'];
@@ -36,59 +43,6 @@ const ITEM_COMMANDS = ['inventory', 'i', 'get', 'g', 'drop', 'use',
                        'list', 'buy', 'sell', 'equip', 'unequip'];
 
 const SKILL_COMMANDS = ['skill', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10'];
-
-// Helper function to get currency info for shop transactions
-function getCurrencyInfo(vendor: any, player: any) {
-  const isPremiumShop = vendor.shopType === 'premium';
-  const isDungeonShop = vendor.shopCurrency === 'dungeon_coin';
-  const isTamerShop = vendor.shopCurrency === 'tamer_badge';
-  const isGloryShop = vendor.shopCurrency === 'glory_points';
-  const isBraveryShop = vendor.shopCurrency === 'bravery_medal';
-  
-  let currencySymbol = '💰';
-  let playerCurrency = player.gold;
-  let currencyName = 'vàng';
-  let priceField = 'price';
-  
-  if (isPremiumShop) {
-    currencySymbol = '💎';
-    playerCurrency = player.premiumCurrency;
-    currencyName = 'Cổ Thạch';
-    priceField = 'premiumPrice';
-  } else if (isDungeonShop) {
-    currencySymbol = '🎫';
-    playerCurrency = player.dungeonCoin || 0;
-    currencyName = 'Xu Hầm Ngục';
-    priceField = 'dungeonCoinPrice';
-  } else if (isTamerShop) {
-    currencySymbol = '🏅';
-    playerCurrency = player.tamerBadge || 0;
-    currencyName = 'Huy Hiệu Huấn Luyện';
-    priceField = 'tamerBadgePrice';
-  } else if (isGloryShop) {
-    currencySymbol = '⚔️';
-    playerCurrency = player.gloryPoints || 0;
-    currencyName = 'Điểm Vinh Quang';
-    priceField = 'gloryPointsPrice';
-  } else if (isBraveryShop) {
-    currencySymbol = '🎖️';
-    playerCurrency = player.braveryMedals || 0;
-    currencyName = 'Huy Chương Dũng Cảm';
-    priceField = 'braveryMedalPrice';
-  }
-  
-  return { 
-    isPremiumShop, 
-    isDungeonShop, 
-    isTamerShop,
-    isGloryShop,
-    isBraveryShop,
-    currencySymbol, 
-    playerCurrency, 
-    currencyName,
-    priceField
-  };
-}
 
 // Helper function to format trade status display
 async function formatTradeStatus(
@@ -605,12 +559,12 @@ export async function handleCommandDb(command: Command, playerId: string): Promi
           break;
         }
 
-        const currencyInfo = getCurrencyInfo(vendor, player);
+        const currencyInfo = getCurrencyInfoFromVendor(vendor);
         responses.push(`════════ HÀNG CỦA ${vendor.name.toUpperCase()} ════════`);
         uniqueItems.forEach((item: any, index: number) => {
           const itemPrice = item[currencyInfo.priceField] ?? 0;
           const spaces = ' '.repeat(Math.max(20 - item.name.length, 1));
-          responses.push(`${index + 1}. [${item.name}]${spaces}- ${itemPrice} ${currencyInfo.currencySymbol}`);
+          responses.push(`${index + 1}. [${item.name}]${spaces}- ${itemPrice} ${currencyInfo.symbol}`);
         });
         responses.push('═══════════════════════════════════════');
         responses.push('Gõ \'buy [tên vật phẩm]\' để mua.');
@@ -656,17 +610,17 @@ export async function handleCommandDb(command: Command, playerId: string): Promi
         }
 
         // Check price based on shop type and currency
-        const currencyInfo = getCurrencyInfo(buyVendor, player);
-        const itemPrice = buyItem[currencyInfo.priceField] ?? 0;
+        const currencyInfo = getCurrencyInfoFromVendor(buyVendor);
+        const affordCheck = checkAffordability(player, buyItem, currencyInfo);
 
         // Validate that item has a valid price
-        if (itemPrice <= 0) {
+        if (affordCheck.required <= 0) {
           responses.push(`[${buyItem.name}] không có giá bán.`);
           break;
         }
 
-        if (currencyInfo.playerCurrency < itemPrice) {
-          responses.push(`Bạn không có đủ ${currencyInfo.currencyName} để mua [${buyItem.name}]. Cần ${itemPrice} ${currencyInfo.currencySymbol}, bạn chỉ có ${currencyInfo.playerCurrency} ${currencyInfo.currencySymbol}.`);
+        if (!affordCheck.canAfford) {
+          responses.push(`Bạn không có đủ ${getCurrencyName(currencyInfo.type)} để mua [${buyItem.name}]. Cần ${formatCurrency(affordCheck.required, currencyInfo.type)}, bạn chỉ có ${formatCurrency(affordCheck.playerAmount, currencyInfo.type)}.`);
           break;
         }
 
@@ -692,33 +646,14 @@ export async function handleCommandDb(command: Command, playerId: string): Promi
           data: buyItem.data // Ensure data field is copied for pet eggs
         });
 
-        // Deduct currency
-        let remainingCurrency = 0;
-        if (currencyInfo.isPremiumShop) {
-          player.premiumCurrency -= itemPrice;
-          remainingCurrency = player.premiumCurrency;
-        } else if (currencyInfo.isDungeonShop) {
-          player.dungeonCoin = (player.dungeonCoin || 0) - itemPrice;
-          remainingCurrency = player.dungeonCoin;
-        } else if (currencyInfo.isTamerShop) {
-          player.tamerBadge = (player.tamerBadge || 0) - itemPrice;
-          remainingCurrency = player.tamerBadge;
-        } else if (currencyInfo.isGloryShop) {
-          player.gloryPoints = (player.gloryPoints || 0) - itemPrice;
-          remainingCurrency = player.gloryPoints;
-        } else if (currencyInfo.isBraveryShop) {
-          player.braveryMedals = (player.braveryMedals || 0) - itemPrice;
-          remainingCurrency = player.braveryMedals;
-        } else {
-          player.gold -= itemPrice;
-          remainingCurrency = player.gold;
-        }
+        // Deduct currency using centralized service
+        const remainingCurrency = deductCurrency(player, currencyInfo.type, affordCheck.required);
         
         player.inventory.push(newBuyItem._id);
         await player.save();
 
-        responses.push(`Bạn đã mua [${buyItem.name}] với giá ${itemPrice} ${currencyInfo.currencySymbol}!`);
-        responses.push(`${currencyInfo.currencyName} còn lại: ${remainingCurrency} ${currencyInfo.currencySymbol}`);
+        responses.push(`Bạn đã mua [${buyItem.name}] với giá ${formatCurrency(affordCheck.required, currencyInfo.type)}!`);
+        responses.push(`${getCurrencyName(currencyInfo.type)} còn lại: ${formatCurrency(remainingCurrency, currencyInfo.type)}`);
         break;
       }
 
