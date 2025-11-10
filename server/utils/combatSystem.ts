@@ -1536,3 +1536,157 @@ export async function updateQuestProgress(playerId: string, actionType: string, 
   
   return messages;
 }
+
+/**
+ * Use a skill in combat
+ */
+export async function useSkillInCombat(playerId: string, skillId: string): Promise<{ success: boolean; message?: string; messages: string[] }> {
+  const messages: string[] = [];
+  
+  try {
+    const player = await PlayerSchema.findById(playerId);
+    if (!player) {
+      return { success: false, message: 'Không tìm thấy thông tin người chơi.', messages };
+    }
+
+    if (!player.inCombat || !player.combatTarget) {
+      return { success: false, message: 'Bạn không đang trong chiến đấu.', messages };
+    }
+
+    const { SkillSchema } = await import('../../models/Skill');
+    const skill = await SkillSchema.findById(skillId);
+    if (!skill) {
+      return { success: false, message: 'Không tìm thấy kỹ năng.', messages };
+    }
+
+    // Check if player has learned this skill
+    if (!player.skills.some((s: any) => s.toString() === skillId)) {
+      return { success: false, message: 'Bạn chưa học kỹ năng này.', messages };
+    }
+
+    // Check if it's an active skill
+    if (skill.type !== 'active') {
+      return { success: false, message: 'Kỹ năng bị động không thể kích hoạt.', messages };
+    }
+
+    // Check cooldown
+    if (player.skillCooldowns) {
+      const cooldownTime = player.skillCooldowns.get(skillId);
+      if (cooldownTime && new Date(cooldownTime) > new Date()) {
+        const remainingSeconds = Math.ceil((new Date(cooldownTime).getTime() - Date.now()) / 1000);
+        return { success: false, message: `Kỹ năng đang hồi chiêu. (Còn ${remainingSeconds}s)`, messages };
+      }
+    }
+
+    // Check resource cost
+    if (skill.resourceCost > player.mp) {
+      return { success: false, message: `Không đủ MP để sử dụng [${skill.name}]. (Cần ${skill.resourceCost} MP)`, messages };
+    }
+
+    // Get target
+    const target = await AgentSchema.findById(player.combatTarget);
+    if (!target || target.hp <= 0) {
+      return { success: false, message: 'Mục tiêu không hợp lệ.', messages };
+    }
+
+    // Consume MP
+    player.mp = Math.max(0, player.mp - skill.resourceCost);
+
+    // Calculate skill damage/healing
+    let damage = 0;
+    let healing = 0;
+
+    if (skill.damage > 0) {
+      // Calculate damage with player stats
+      const baseDamage = skill.damage + (player.damage || 0);
+      const variance = Math.random() * 0.2 - 0.1; // ±10% variance
+      damage = Math.floor(baseDamage * (1 + variance));
+
+      // Apply element effectiveness if applicable
+      if (skill.element && skill.element !== 'NEUTRAL' && target.element && target.element !== 'NEUTRAL') {
+        const effectiveness = ELEMENT_EFFECTIVENESS[skill.element]?.[target.element] || 1;
+        damage = Math.floor(damage * effectiveness);
+        
+        if (effectiveness > 1) {
+          messages.push(`[!] Hiệu quả tuyệt vời! (${skill.element} vs ${target.element})`);
+        } else if (effectiveness < 1) {
+          messages.push(`[!] Không hiệu quả lắm... (${skill.element} vs ${target.element})`);
+        }
+      }
+
+      // Apply damage to target
+      target.hp = Math.max(0, target.hp - damage);
+      await target.save();
+
+      messages.push(`Bạn sử dụng [${skill.name}]!`);
+      messages.push(`[${target.name}] nhận ${damage} sát thương!`);
+      messages.push(`HP còn lại: ${target.hp}/${target.maxHp}`);
+
+      // Broadcast to room
+      const room = await RoomSchema.findById(player.currentRoomId);
+      if (room) {
+        gameState.broadcastToRoom(
+          room._id.toString(),
+          {
+            type: 'damage_out',
+            category: 'combat',
+            message: `[${player.username}] sử dụng [${skill.name}] gây ${damage} sát thương cho [${target.name}]!`
+          },
+          playerId
+        );
+      }
+
+      // Check if target is defeated
+      if (target.hp <= 0) {
+        messages.push('');
+        messages.push(`Bạn đã hạ gục [${target.name}]!`);
+        
+        // End combat
+        player.inCombat = false;
+        player.combatTarget = null;
+        target.inCombat = false;
+        target.combatTarget = null;
+        
+        // Award rewards (simplified)
+        const expGain = target.experience || 0;
+        player.exp += expGain;
+        if (expGain > 0) {
+          messages.push(`Bạn nhận được ${expGain} điểm kinh nghiệm.`);
+        }
+      }
+    }
+
+    if (skill.healing > 0) {
+      // Healing skill
+      const baseHealing = skill.healing;
+      const variance = Math.random() * 0.2 - 0.1; // ±10% variance
+      healing = Math.floor(baseHealing * (1 + variance));
+
+      const oldHp = player.hp;
+      player.hp = Math.min(player.maxHp, player.hp + healing);
+      const actualHealing = player.hp - oldHp;
+
+      messages.push(`Bạn sử dụng [${skill.name}]!`);
+      messages.push(`Hồi phục ${actualHealing} HP.`);
+      messages.push(`HP hiện tại: ${player.hp}/${player.maxHp}`);
+    }
+
+    // Set cooldown
+    if (skill.cooldown > 0) {
+      if (!player.skillCooldowns) {
+        player.skillCooldowns = new Map();
+      }
+      const cooldownEnd = new Date(Date.now() + skill.cooldown * 1000);
+      player.skillCooldowns.set(skillId, cooldownEnd);
+    }
+
+    await player.save();
+
+    return { success: true, messages };
+
+  } catch (error) {
+    console.error('Error using skill in combat:', error);
+    return { success: false, message: 'Lỗi khi sử dụng kỹ năng.', messages };
+  }
+}
+

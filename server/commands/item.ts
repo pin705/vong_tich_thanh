@@ -348,6 +348,77 @@ export async function handleItemCommand(command: Command, playerId: string): Pro
           } else {
             responses.push(`Bạn không thể sử dụng [${item.name}] ngay bây giờ.`);
           }
+        }
+        // Handle PET_EGG items - hatch a pet
+        else if (item.type === 'PET_EGG') {
+          if (!item.data?.grantsPetKey) {
+            responses.push(`[${item.name}] không có thông tin pet.`);
+            break;
+          }
+
+          // Import pet service functions
+          const { determinePetQuality } = await import('../utils/petService');
+          const { PetTemplateSchema } = await import('../../models/PetTemplate');
+          const { PetSchema } = await import('../../models/Pet');
+
+          // Get pet template
+          const petTemplate = await PetTemplateSchema.findOne({ petKey: item.data.grantsPetKey });
+          if (!petTemplate) {
+            responses.push(`Không tìm thấy thông tin pet cho [${item.name}].`);
+            break;
+          }
+
+          // Determine pet quality
+          const quality = determinePetQuality();
+
+          // Create new pet
+          const newPet = await PetSchema.create({
+            ownerId: player._id,
+            templateId: petTemplate._id,
+            petKey: item.data.grantsPetKey,
+            nickname: petTemplate.name,
+            quality,
+            level: 1,
+            exp: 0,
+            hp: petTemplate.baseStats.hp,
+            maxHp: petTemplate.baseStats.hp,
+            damage: petTemplate.baseStats.damage,
+            defense: petTemplate.baseStats.defense,
+            isActive: false
+          });
+
+          // Add pet to player's pets list
+          if (!player.pets) {
+            player.pets = [];
+          }
+          player.pets.push(newPet._id);
+
+          // Remove egg from inventory
+          player.inventory = player.inventory.filter((id: any) => id.toString() !== item._id.toString());
+          await player.save();
+
+          // Delete the consumed egg
+          await ItemSchema.findByIdAndDelete(item._id);
+
+          responses.push('═══════════════════════════════════');
+          responses.push(`[***] Bạn đã ấp nở một con pet mới! [***]`);
+          responses.push(`Tên: [${newPet.nickname}]`);
+          responses.push(`Phẩm chất: ${quality}`);
+          responses.push('═══════════════════════════════════');
+          responses.push('Sử dụng lệnh "pet" để xem và quản lý pet của bạn.');
+
+          // Broadcast to room
+          const room = await RoomSchema.findById(player.currentRoomId);
+          if (room) {
+            gameState.broadcastToRoom(
+              room._id.toString(),
+              {
+                type: 'critical',
+                message: `[***] [${player.username}] đã ấp nở một con pet mới: [${newPet.nickname}]! [***]`
+              },
+              playerId
+            );
+          }
         } else {
           responses.push(`[${item.name}] không phải là vật phẩm có thể sử dụng.`);
         }
@@ -544,6 +615,174 @@ export async function handleItemCommand(command: Command, playerId: string): Pro
 
         responses.push(`Bạn đã bán [${item.name}] nhận được ${sellValue} 💰 Vàng.`);
         responses.push(`Vàng hiện có: ${player.gold}`);
+        break;
+      }
+
+      case 'equip': {
+        if (!target) {
+          responses.push('Bạn muốn trang bị gì?');
+          break;
+        }
+
+        const items = await ItemSchema.find({ _id: { $in: player.inventory } });
+        const item = items.find((i: any) => 
+          i.name.toLowerCase().includes(target.toLowerCase())
+        );
+
+        if (!item) {
+          responses.push(`Bạn không có "${target}" trong túi đồ.`);
+          break;
+        }
+
+        // Check if item is equipment
+        if (item.type !== 'Equipment') {
+          responses.push(`[${item.name}] không phải là trang bị.`);
+          break;
+        }
+
+        // Check level requirement
+        if (item.requiredLevel && player.level < item.requiredLevel) {
+          responses.push(`Bạn chưa đủ cấp độ (Cần Cấp ${item.requiredLevel}) để mặc [${item.name}].`);
+          break;
+        }
+
+        const slot = item.slot;
+        if (!slot || !['helmet', 'chest', 'legs', 'boots', 'weapon'].includes(slot)) {
+          responses.push(`[${item.name}] không có vị trí trang bị hợp lệ.`);
+          break;
+        }
+
+        // Initialize equipment if not exists
+        if (!player.equipment) {
+          player.equipment = {
+            helmet: null,
+            chest: null,
+            legs: null,
+            boots: null,
+            weapon: null
+          };
+        }
+
+        // Unequip current item in slot if exists
+        const currentEquippedId = player.equipment[slot as keyof typeof player.equipment];
+        if (currentEquippedId) {
+          // Add currently equipped item back to inventory
+          player.inventory.push(currentEquippedId);
+          const currentItem = await ItemSchema.findById(currentEquippedId);
+          if (currentItem) {
+            responses.push(`Đã gỡ [${currentItem.name}] khỏi vị trí ${slot}.`);
+          }
+        }
+
+        // Remove item from inventory and equip it
+        player.inventory = player.inventory.filter((id: any) => id.toString() !== item._id.toString());
+        (player.equipment as any)[slot] = item._id;
+        await player.save();
+
+        responses.push(`Đã trang bị [${item.name}] vào vị trí ${slot}!`);
+
+        // Calculate and apply stats with set bonuses
+        const { applyStatsToPlayer } = await import('../utils/playerStats');
+        const statsResult = await applyStatsToPlayer(playerId);
+        if (statsResult.messages && statsResult.messages.length > 0) {
+          responses.push(...statsResult.messages);
+        }
+
+        // Broadcast to room
+        const room = await RoomSchema.findById(player.currentRoomId);
+        if (room) {
+          gameState.broadcastToRoom(
+            room._id.toString(),
+            {
+              type: 'normal',
+              message: `[${player.username}] trang bị [${item.name}].`
+            },
+            playerId
+          );
+        }
+        break;
+      }
+
+      case 'unequip': {
+        if (!target) {
+          responses.push('Bạn muốn gỡ trang bị gì? (helmet/chest/legs/boots/weapon)');
+          break;
+        }
+
+        const slotMap: Record<string, string> = {
+          'helmet': 'helmet',
+          'mu': 'helmet',
+          'mũ': 'helmet',
+          'chest': 'chest',
+          'ao': 'chest',
+          'áo': 'chest',
+          'legs': 'legs',
+          'quan': 'legs',
+          'quần': 'legs',
+          'boots': 'boots',
+          'giay': 'boots',
+          'giày': 'boots',
+          'weapon': 'weapon',
+          'vu_khi': 'weapon',
+          'vũ khí': 'weapon'
+        };
+
+        const slot = slotMap[target.toLowerCase()] || target.toLowerCase();
+
+        if (!['helmet', 'chest', 'legs', 'boots', 'weapon'].includes(slot)) {
+          responses.push('Vị trí không hợp lệ. Sử dụng: helmet, chest, legs, boots, hoặc weapon.');
+          break;
+        }
+
+        // Initialize equipment if not exists
+        if (!player.equipment) {
+          player.equipment = {
+            helmet: null,
+            chest: null,
+            legs: null,
+            boots: null,
+            weapon: null
+          };
+        }
+
+        const equippedItemId = player.equipment[slot as keyof typeof player.equipment];
+        if (!equippedItemId) {
+          responses.push(`Không có gì được trang bị ở vị trí ${slot}.`);
+          break;
+        }
+
+        const equippedItem = await ItemSchema.findById(equippedItemId);
+        if (!equippedItem) {
+          responses.push('Lỗi: Không tìm thấy vật phẩm được trang bị.');
+          break;
+        }
+
+        // Remove from equipment and add to inventory
+        (player.equipment as any)[slot] = null;
+        player.inventory.push(equippedItemId);
+        await player.save();
+
+        responses.push(`Đã gỡ [${equippedItem.name}] khỏi vị trí ${slot}.`);
+
+        // Recalculate stats
+        const { applyStatsToPlayer } = await import('../utils/playerStats');
+        const statsResult = await applyStatsToPlayer(playerId);
+        if (statsResult.messages && statsResult.messages.length > 0) {
+          responses.push(...statsResult.messages);
+        }
+
+        // Broadcast to room
+        const room = await RoomSchema.findById(player.currentRoomId);
+        if (room) {
+          gameState.broadcastToRoom(
+            room._id.toString(),
+            {
+              type: 'normal',
+              message: `[${player.username}] gỡ [${equippedItem.name}].`
+            },
+            playerId
+          );
+        }
         break;
       }
 
