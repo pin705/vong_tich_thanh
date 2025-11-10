@@ -23,7 +23,7 @@
             class="egg-card"
             @click="selectEgg(egg)"
           >
-            <div class="egg-icon">🥚</div>
+            <div class="egg-icon">[EGG]</div>
             <div class="egg-name">{{ egg.name }}</div>
             <div class="egg-description">{{ egg.description }}</div>
             <button class="btn-select">Chọn Trứng Này</button>
@@ -36,7 +36,7 @@
         <div class="section-title">[ Xác Nhận Ấp Trứng ]</div>
         
         <div class="egg-display">
-          <div class="egg-icon-large">🥚</div>
+          <div class="egg-icon-large">[EGG]</div>
           <div class="egg-details">
             <h3>{{ selectedEgg.name }}</h3>
             <p>{{ selectedEgg.description }}</p>
@@ -44,14 +44,14 @@
         </div>
 
         <div class="warning-message">
-          ⚠️ Sau khi nở, trứng sẽ biến thành thú cưng với phẩm chất ngẫu nhiên!
+          [!] Sau khi nở, trứng sẽ biến thành thú cưng với phẩm chất ngẫu nhiên!
           <br>
           Phẩm chất: Thường, Không Phổ Biến, Hiếm, Sử Thi, Huyền Thoại
         </div>
 
         <div class="action-buttons">
           <button class="btn-confirm" @click="confirmHatch">
-            ✨ Bắt Đầu Ấp Trứng
+            [*] Bắt Đầu Ấp Trứng
           </button>
           <button class="btn-cancel" @click="cancelSelection">
             ← Quay Lại
@@ -64,7 +64,7 @@
         <div class="section-title">[ Đang Ấp Trứng... ]</div>
         
         <div class="egg-animation">
-          <div class="egg-icon-animated" :class="{ 'shaking': hatching }">🥚</div>
+          <div class="egg-icon-animated" :class="{ 'shaking': hatching }">[EGG]</div>
           <div class="hatching-text">{{ hatchingText }}</div>
         </div>
 
@@ -75,10 +75,10 @@
 
       <!-- Success Phase -->
       <div v-if="hatchedPet" class="success-phase">
-        <div class="section-title">[ 🎉 Trứng Đã Nở! ]</div>
+        <div class="section-title">[ *** Trứng Đã Nở! *** ]</div>
         
         <div class="pet-reveal">
-          <div class="pet-icon">🐾</div>
+          <div class="pet-icon">[PET]</div>
           <div class="pet-info">
             <h2 class="pet-name">{{ hatchedPet.nickname }}</h2>
             <div class="pet-quality" :class="'quality-' + hatchedPet.quality.toLowerCase()">
@@ -93,7 +93,7 @@
         </div>
 
         <div class="success-message">
-          🎊 Chúc mừng! Bạn đã nhận được [{{ hatchedPet.nickname }}]!
+          [!!!] Chúc mừng! Bạn đã nhận được [{{ hatchedPet.nickname }}]!
           <br>
           Sử dụng lệnh <code>summon {{ hatchedPet.nickname }}</code> để triệu hồi thú cưng!
         </div>

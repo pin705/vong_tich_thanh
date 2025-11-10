@@ -47,7 +47,7 @@
               +{{ achievement.rewards.exp }} EXP
             </span>
             <span v-if="achievement.rewards.gold" class="reward">
-              +{{ achievement.rewards.gold }} 💰
+              +{{ achievement.rewards.gold }} vàng
             </span>
             <span v-if="achievement.rewards.title" class="reward title-reward">
               Danh hiệu: {{ achievement.rewards.title.name }}

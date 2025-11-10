@@ -112,7 +112,7 @@ export default defineEventHandler(async (event) => {
     const newLevel = currentLevel + (isSuccess ? 1 : 0);
 
     if (isSuccess) {
-      message = `✨ Cường hóa thành công! [${item.name}] đã lên +${newLevel}.`;
+      message = `[+] Cường hóa thành công! [${item.name}] đã lên +${newLevel}.`;
       // TODO: Update item enhancement level in database
     } else {
       message = `❌ Cường hóa thất bại! [${item.name}] vẫn ở +${currentLevel}.`;

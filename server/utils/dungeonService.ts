@@ -206,7 +206,7 @@ export async function completeFloor(playerId: string, floorNumber: number) {
         JSON.stringify({
           type: 'message',
           payload: {
-            text: `🎉 Hoàn thành tầng ${floorNumber}! Nhận được ${goldReward} vàng và ${dungeonCoinReward} Xu Hầm Ngục.`,
+            text: `[!!!] Hoàn thành tầng ${floorNumber}! Nhận được ${goldReward} vàng và ${dungeonCoinReward} Xu Hầm Ngục.`,
             type: 'system',
           },
         })

@@ -2363,7 +2363,7 @@ export async function handleCommandDb(command: Command, playerId: string): Promi
         await equipItem.save();
         await player.save();
 
-        responses.push(`✨ Đã khảm [${gemItem.name}] vào [${equipItem.name}]!`);
+        responses.push(`[+] Đã khảm [${gemItem.name}] vào [${equipItem.name}]!`);
         responses.push(`Lỗ khảm: ${equipItem.socketedGems.length}/${currentSocketsCount}`);
         
         // Show bonus stats
@@ -2418,7 +2418,7 @@ export async function handleCommandDb(command: Command, playerId: string): Promi
         await equipItem.save();
         await player.save();
 
-        responses.push(`✨ Đã tháo ${gems.length} viên ngọc khỏi [${equipItem.name}]!`);
+        responses.push(`[+] Đã tháo ${gems.length} viên ngọc khỏi [${equipItem.name}]!`);
         gems.forEach((gem: any) => {
           responses.push(`  - [${gem.name}]`);
         });
@@ -2545,7 +2545,7 @@ export async function handleCommandDb(command: Command, playerId: string): Promi
         });
 
         responses.push('═══════════════════════════════════════');
-        responses.push(`✨ [Thợ Kim Hoàn] đã kết hợp thành công!`);
+        responses.push(`[+] [Thợ Kim Hoàn] đã kết hợp thành công!`);
         responses.push('─────────────────────────────────────');
         responses.push(`3x [${sourceGems[0].name}] → 1x [${resultGem.name}]`);
         responses.push(`Chi phí: ${goldCost} vàng`);
@@ -2621,7 +2621,7 @@ export async function handleCommandDb(command: Command, playerId: string): Promi
         await ItemSchema.findByIdAndDelete(punchItem._id);
 
         responses.push('═══════════════════════════════════════');
-        responses.push(`✨ Đã thêm lỗ khảm vào [${equipItem.name}]!`);
+        responses.push(`[+] Đã thêm lỗ khảm vào [${equipItem.name}]!`);
         responses.push(`Lỗ khảm: ${equipItem.currentSockets}/${equipItem.maxSockets}`);
         responses.push('═══════════════════════════════════════');
         break;
