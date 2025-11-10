@@ -383,7 +383,7 @@ export async function handleItemCommand(command: Command, playerId: string): Pro
           
           // Calculate base stats with quality modifier
           const baseHp = Math.floor(petTemplate.baseStats.hp * multiplier);
-          const baseAttack = Math.floor(petTemplate.baseStats.damage * multiplier);
+          const baseAttack = Math.floor(petTemplate.baseStats.attack * multiplier);
           const baseDefense = Math.floor(petTemplate.baseStats.defense * multiplier);
 
           // Create new pet with proper currentStats
