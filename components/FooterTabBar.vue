@@ -68,6 +68,8 @@ const handleTabClick = (tabId: string) => {
   overflow-x: auto;
   overflow-y: hidden;
   scrollbar-width: thin;
+  /* Add safe area padding for mobile devices */
+  padding-bottom: env(safe-area-inset-bottom);
 }
 
 /* Hide scrollbar for cleaner look but keep functionality */
@@ -132,6 +134,14 @@ const handleTabClick = (tabId: string) => {
 
 /* Mobile responsiveness */
 @media (max-width: 768px) {
+  .footer-tab-bar {
+    position: sticky;
+    bottom: 0;
+    z-index: 100;
+    /* Ensure the footer is visible above the mobile browser chrome */
+    min-height: calc(3rem + env(safe-area-inset-bottom));
+  }
+  
   .tab-button {
     font-size: 14px;
     padding: 0.6rem 0.3rem;
