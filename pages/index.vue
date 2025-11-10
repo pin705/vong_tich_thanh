@@ -328,13 +328,6 @@
       @close="petPopupOpen = false"
     />
 
-    <!-- Pet Egg Hatching Popup -->
-    <PetEggHatchingOverlay
-      :isOpen="petEggHatchingPopupOpen"
-      @close="petEggHatchingPopupOpen = false"
-      @eggHatched="handleEggHatched"
-    />
-
     <!-- Achievement Popup -->
     <AchievementOverlay
       :isOpen="achievementPopupOpen"
@@ -435,7 +428,6 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, nextTick, watch, computed } from 'vue';
 import type { Message, ChatMessage, TargetState, Skill } from '~/types';
-import type { Recipe } from '~/composables/useGameState';
 
 import PlayerStatusHeader from '~/components/PlayerStatusHeader.vue';
 import InventoryPane from '~/components/InventoryPane.vue';
@@ -455,7 +447,6 @@ import PremiumShopPopup from '~/components/PremiumShopPopup.vue';
 import ShopPopup from '~/components/ShopPopup.vue';
 import MailPopup from '~/components/MailPopup.vue';
 import PetOverlay from '~/components/PetOverlay.vue';
-import PetEggHatchingOverlay from '~/components/PetEggHatchingOverlay.vue';
 import AchievementOverlay from '~/components/AchievementOverlay.vue';
 import TitleOverlay from '~/components/TitleOverlay.vue';
 import LeaderboardOverlay from '~/components/LeaderboardOverlay.vue';
@@ -493,7 +484,7 @@ const {
   inventoryPopupOpen, mapPopupOpen, occupantsPopupOpen, contextualPopupOpen,
   tradingPopupOpen, partyPopupOpen, partyInvitationPopupOpen, guildPopupOpen,
   auctionHousePopupOpen, premiumShopPopupOpen, craftingPopupOpen, shopPopupOpen,
-  mailPopupOpen, petPopupOpen, petEggHatchingPopupOpen, blacksmithPopupOpen, leaderboardOpen,
+  mailPopupOpen, petPopupOpen, blacksmithPopupOpen, leaderboardOpen,
   guildInvitationPopupOpen, achievementPopupOpen, titlePopupOpen,
   arenaQueuePopupOpen, dungeonOverlayOpen, partyDungeonFinderOpen,
   toggleHelp, openAchievements, openTitles, openArenaQueue, openDungeon, openPartyDungeonFinder
@@ -589,70 +580,6 @@ watch(chatLog, () => {
   saveChatToStorage();
 }, { deep: true });
 
-// Get CSS class for message type
-const getMessageClass = (message: Message) => {
-  return `message message-${message.type}`;
-};
-
-// Render clickable items in loot messages
-const renderClickableItems = (text: string): string => {
-  // Match item names in brackets like [Cỏ Chữa Lành] or [Đuôi Chuột]
-  const itemRegex = /\[([^\]]+)\]/g;
-  let counter = 0;
-  return text.replace(itemRegex, (match, itemName) => {
-    // Sanitize item name to prevent XSS
-    const sanitizedName = itemName.replace(/[<>"'&]/g, (char) => {
-      const entities: Record<string, string> = {
-        '<': '&lt;',
-        '>': '&gt;',
-        '"': '&quot;',
-        "'": '&#39;',
-        '&': '&amp;'
-      };
-      return entities[char] || char;
-    });
-    // Create a clickable span with unique ID for event handling
-    const itemId = `clickable-item-${Date.now()}-${counter++}`;
-    // Store the item name for event handling
-    setTimeout(() => {
-      const element = document.getElementById(itemId);
-      if (element) {
-        element.addEventListener('click', () => handleItemClick(sanitizedName));
-      }
-    }, 0);
-    return `<span id="${itemId}" class="clickable-item">[${sanitizedName}]</span>`;
-  });
-};
-
-// Handle item click from loot messages
-const handleItemClick = async (itemName: string) => {
-  // Check if item is in player's inventory
-  const item = playerState.value.inventoryItems.find(i => i && i.name === itemName);
-  
-  if (!item) {
-    addMessage(`Vật phẩm [${itemName}] không có trong túi đồ.`, 'system');
-    return;
-  }
-  
-  // Open contextual popup for the item
-  const actions = [
-    { label: 'Xem Xét (Look)', command: `look ${itemName}`, disabled: false },
-    { label: 'Sử Dụng (Use)', command: `use ${itemName}`, disabled: item.type !== 'consumable' },
-    { label: 'Vứt Bỏ (Drop)', command: `drop ${itemName}`, disabled: false }
-  ];
-  
-  contextualPopupData.value = {
-    title: `${itemName} (${item.type})`,
-    entityType: null,
-    entityData: {
-      description: item.description,
-      stats: item.stats
-    },
-    actions
-  };
-  
-  contextualPopupOpen.value = true;
-};
 
 // Focus input field (but not when clicking on certain elements)
 const focusInput = (event?: MouseEvent) => {
@@ -719,9 +646,6 @@ const handleTabClick = async (tabId: string) => {
         break;
       case 'pet':
         petPopupOpen.value = true;
-        break;
-      case 'hatch':
-        petEggHatchingPopupOpen.value = true;
         break;
       case 'arena':
       case 'arena_queue':
@@ -1038,12 +962,6 @@ const handleInventoryAction = (action: string, itemId: string) => {
     currentInput.value = command;
     sendCommand();
   }
-};
-
-// Handle egg hatched event
-const handleEggHatched = () => {
-  // Refresh player state after egg hatches
-  fetchPlayerState();
 };
 
 // Handle map navigation

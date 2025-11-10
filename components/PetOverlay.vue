@@ -389,7 +389,7 @@ const confirmRename = async () => {
   try {
     // Find rename tag in inventory
     const inventoryItems = await $fetch('/api/player/info');
-    const renameTag = inventoryItems.inventory?.find((item: any) => 
+    const renameTag = inventoryItems?.player?.inventory?.find((item: any) => 
       item.itemKey === 'pet_rename_tag'
     );
 
@@ -424,7 +424,7 @@ const confirmReroll = async () => {
   try {
     // Find reroll stone in inventory
     const inventoryItems = await $fetch('/api/player/info');
-    const rerollStone = inventoryItems.inventory?.find((item: any) => 
+    const rerollStone = inventoryItems?.player?.inventory?.find((item: any) => 
       item.itemKey === 'pet_reroll_stone'
     );
 
@@ -455,7 +455,8 @@ const confirmReroll = async () => {
 const loadPetEggs = async () => {
   try {
     const response = await $fetch('/api/player/info');
-    petEggs.value = (response.inventory || [])
+    console.log('response', response)
+    petEggs.value = (response?.player?.inventory || [])
       .filter((item: any) => item.type === 'PET_EGG')
       .map((item: any) => ({
         id: item._id,

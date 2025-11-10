@@ -634,13 +634,7 @@ export async function handleItemCommand(command: Command, playerId: string): Pro
           break;
         }
 
-        // Check if item is equipment
-        if (item.type !== 'Equipment') {
-          responses.push(`[${item.name}] không phải là trang bị.`);
-          break;
-        }
-
-        // Check level requirement
+        console.log('item.type', item)
         if (item.requiredLevel && player.level < item.requiredLevel) {
           responses.push(`Bạn chưa đủ cấp độ (Cần Cấp ${item.requiredLevel}) để mặc [${item.name}].`);
           break;
