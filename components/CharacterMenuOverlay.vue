@@ -133,51 +133,22 @@
 
       <!-- Items Tab -->
       <div v-if="activeTab === 'items'" class="tab-content inventory-content">
-        <div class="inventory-section">
-          <div class="section-title">[ Vật Phẩm ]</div>
-          <div class="inventory-grid">
-            <div
-              v-for="(item, index) in regularItems"
-              :key="index"
-              class="inventory-slot"
-              :class="{ 'has-item': item }"
-              @click="item && handleItemClick(item)"
-            >
-              <div v-if="item" class="item-content">
-                <div class="item-name">{{ item.name }}</div>
-                <div v-if="item.quantity && item.quantity > 1" class="item-quantity">x{{ item.quantity }}</div>
-              </div>
-              <div v-else class="empty-slot">
-                <span class="slot-number">{{ index + 1 }}</span>
-              </div>
-            </div>
-          </div>
-        </div>
+        <div class="section-title">[ Vật Phẩm ]</div>
+        <ItemGrid
+          :items="regularItems"
+          :actions="itemActions"
+          @itemAction="handleItemAction"
+        />
       </div>
 
       <!-- Equipment Tab -->
       <div v-if="activeTab === 'equipment'" class="tab-content inventory-content">
-        <div class="inventory-section">
-          <div class="section-title">[ Trang Bị ]</div>
-          <div class="inventory-grid">
-            <div
-              v-for="(item, index) in equipmentItems"
-              :key="index"
-              class="inventory-slot"
-              :class="{ 'has-item': item, 'equipped': item?.equipped }"
-              @click="item && handleItemClick(item)"
-            >
-              <div v-if="item" class="item-content">
-                <div class="item-name">{{ item.name }}</div>
-                <div v-if="item.equipped" class="equipped-badge">[E]</div>
-                <div v-if="item.quantity && item.quantity > 1" class="item-quantity">x{{ item.quantity }}</div>
-              </div>
-              <div v-else class="empty-slot">
-                <span class="slot-number">{{ index + 1 }}</span>
-              </div>
-            </div>
-          </div>
-        </div>
+        <div class="section-title">[ Trang Bị ]</div>
+        <ItemGrid
+          :items="equipmentItems"
+          :actions="equipmentActions"
+          @itemAction="handleItemAction"
+        />
       </div>
 
       <!-- Skills Tab -->
@@ -281,8 +252,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue';
+import { ref, computed } from 'vue';
 import FullscreenOverlay from './FullscreenOverlay.vue';
+import ItemGrid from './ItemGrid.vue';
 
 interface Skill {
   id: string;
@@ -379,15 +351,54 @@ const equipmentItems = computed(() => {
   return props.inventoryItems.filter(item => {
     if (!item) return false;
     const type = item.type?.toLowerCase();
-    return type === 'weapon' || type === 'armor' || type === 'equipment';
+    return type === 'weapon' || type === 'armor' || type === 'equipment' || item.slot;
   });
 });
 
-// Handle inventory item click
-const handleItemClick = (item: any) => {
-  // Emit event to parent for handling item actions
-  // Use item.name because backend commands expect item names, not IDs
-  emit('inventoryAction', 'use', item.name);
+// Define actions for regular items
+const itemActions = computed(() => [
+  {
+    id: 'use',
+    label: 'Sử dụng',
+    number: 1,
+    condition: (item: any) => item.type === 'consumable' || item.type === 'PET_EGG'
+  },
+  {
+    id: 'drop',
+    label: 'Vứt bỏ',
+    number: 2
+  }
+]);
+
+// Define actions for equipment
+const equipmentActions = computed(() => [
+  {
+    id: 'equip',
+    label: 'Trang bị',
+    number: 1,
+    condition: (item: any) => !item.equipped
+  },
+  {
+    id: 'unequip',
+    label: 'Tháo',
+    number: 1,
+    condition: (item: any) => item.equipped
+  },
+  {
+    id: 'sell',
+    label: 'Bán',
+    number: 2
+  },
+  {
+    id: 'drop',
+    label: 'Vứt bỏ',
+    number: 3
+  }
+]);
+
+// Handle inventory item action from ItemGrid
+const handleItemAction = (action: string, itemId: string) => {
+  emit('inventoryAction', action, itemId);
 };
 
 // Check if skill can be upgraded
