@@ -1,5 +1,6 @@
 import { defineMongooseModel } from '#nuxt/mongoose';
 import { Schema } from 'mongoose';
+import { CLASS_TYPES } from '~/types/gameTypes';
 
 export const TalentSchema = defineMongooseModel({
   name: 'Talent',
@@ -14,7 +15,7 @@ export const TalentSchema = defineMongooseModel({
     },
     class: {
       type: String,
-      enum: ['mutant_warrior', 'rune_historian', 'stalker', 'scrap_engineer'],
+      enum: CLASS_TYPES,
       required: true,
     },
     branch: {

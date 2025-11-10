@@ -1,4 +1,5 @@
 import { defineMongooseModel } from '#nuxt/mongoose';
+import { GameStats, STATS_SCHEMA_DEFINITION } from '~/types/gameTypes';
 
 export interface AchievementCriteria {
   type: 'KILL_AGENT' | 'VISIT_ROOM' | 'COMPLETE_QUEST' | 'GET_ITEM';
@@ -9,15 +10,7 @@ export interface AchievementCriteria {
 export interface TitleReward {
   key: string;
   name: string;
-  stats: {
-    attack?: number;
-    hp?: number;
-    defense?: number;
-    critChance?: number;
-    critDamage?: number;
-    dodge?: number;
-    lifesteal?: number;
-  };
+  stats: GameStats;
 }
 
 export interface AchievementRewards {
@@ -79,15 +72,7 @@ export const AchievementSchema = defineMongooseModel<IAchievement>({
       title: {
         key: { type: String },
         name: { type: String },
-        stats: {
-          attack: { type: Number },
-          hp: { type: Number },
-          defense: { type: Number },
-          critChance: { type: Number },
-          critDamage: { type: Number },
-          dodge: { type: Number },
-          lifesteal: { type: Number },
-        },
+        stats: STATS_SCHEMA_DEFINITION,
       },
     },
   },

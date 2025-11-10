@@ -1,5 +1,6 @@
 import { defineMongooseModel } from '#nuxt/mongoose';
 import { Schema } from 'mongoose';
+import { ELEMENT_TYPES, CLASS_TYPES, PROFESSION_TYPES } from '~/types/gameTypes';
 
 export const SkillSchema = defineMongooseModel({
   name: 'Skill',
@@ -20,7 +21,7 @@ export const SkillSchema = defineMongooseModel({
     },
     class: {
       type: String,
-      enum: ['mutant_warrior', 'rune_historian', 'stalker', 'scrap_engineer'],
+      enum: CLASS_TYPES,
       required: true,
     },
     type: {
@@ -30,7 +31,7 @@ export const SkillSchema = defineMongooseModel({
     },
     element: {
       type: String,
-      enum: ['FIRE', 'WATER', 'EARTH', 'WIND', 'LIGHTNING', 'NEUTRAL'],
+      enum: ELEMENT_TYPES,
       default: 'NEUTRAL',
     },
     resourceCost: {
@@ -86,7 +87,7 @@ export const SkillSchema = defineMongooseModel({
     },
     professionRequirement: {
       type: String,
-      enum: ['blacksmith', 'alchemist', 'enchanter', 'hunter', 'miner', 'herbalist', null],
+      enum: [...PROFESSION_TYPES, null],
       default: null,
     },
     tier: {

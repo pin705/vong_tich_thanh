@@ -24,8 +24,20 @@ import { transferItem, transferGold, addItemToPlayer, removeItemFromPlayer } fro
 import { findItemOnGround, findItemInInventory, findTargetInRoom } from './entityFinder';
 import { getHelpText } from './helpSystem';
 import { determinePetQuality, summonPet, unsummonPet, addExp } from './petService';
+import { 
+  getCurrencyInfoFromVendor, 
+  getPlayerCurrency, 
+  deductCurrency, 
+  checkAffordability,
+  formatCurrency,
+  getCurrencyName
+} from './currencyService';
+import {
+  getVendorsInRoom,
+  getVendorItems,
+  findVendorItem
+} from './gameHelpers';
 
-// Command routing configuration
 const MOVEMENT_COMMANDS = ['go', 'n', 's', 'e', 'w', 'u', 'd', 
                            'north', 'south', 'east', 'west', 'up', 'down',
                            'bắc', 'nam', 'đông', 'tây', 'lên', 'xuống'];
@@ -36,59 +48,6 @@ const ITEM_COMMANDS = ['inventory', 'i', 'get', 'g', 'drop', 'use',
                        'list', 'buy', 'sell', 'equip', 'unequip'];
 
 const SKILL_COMMANDS = ['skill', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10'];
-
-// Helper function to get currency info for shop transactions
-function getCurrencyInfo(vendor: any, player: any) {
-  const isPremiumShop = vendor.shopType === 'premium';
-  const isDungeonShop = vendor.shopCurrency === 'dungeon_coin';
-  const isTamerShop = vendor.shopCurrency === 'tamer_badge';
-  const isGloryShop = vendor.shopCurrency === 'glory_points';
-  const isBraveryShop = vendor.shopCurrency === 'bravery_medal';
-  
-  let currencySymbol = '💰';
-  let playerCurrency = player.gold;
-  let currencyName = 'vàng';
-  let priceField = 'price';
-  
-  if (isPremiumShop) {
-    currencySymbol = '💎';
-    playerCurrency = player.premiumCurrency;
-    currencyName = 'Cổ Thạch';
-    priceField = 'premiumPrice';
-  } else if (isDungeonShop) {
-    currencySymbol = '🎫';
-    playerCurrency = player.dungeonCoin || 0;
-    currencyName = 'Xu Hầm Ngục';
-    priceField = 'dungeonCoinPrice';
-  } else if (isTamerShop) {
-    currencySymbol = '🏅';
-    playerCurrency = player.tamerBadge || 0;
-    currencyName = 'Huy Hiệu Huấn Luyện';
-    priceField = 'tamerBadgePrice';
-  } else if (isGloryShop) {
-    currencySymbol = '⚔️';
-    playerCurrency = player.gloryPoints || 0;
-    currencyName = 'Điểm Vinh Quang';
-    priceField = 'gloryPointsPrice';
-  } else if (isBraveryShop) {
-    currencySymbol = '🎖️';
-    playerCurrency = player.braveryMedals || 0;
-    currencyName = 'Huy Chương Dũng Cảm';
-    priceField = 'braveryMedalPrice';
-  }
-  
-  return { 
-    isPremiumShop, 
-    isDungeonShop, 
-    isTamerShop,
-    isGloryShop,
-    isBraveryShop,
-    currencySymbol, 
-    playerCurrency, 
-    currencyName,
-    priceField
-  };
-}
 
 // Helper function to format trade status display
 async function formatTradeStatus(
@@ -576,41 +535,25 @@ export async function handleCommandDb(command: Command, playerId: string): Promi
         break;
 
       case 'list': {
-        const listRoom = await RoomSchema.findById(player.currentRoomId);
-        if (!listRoom || !listRoom.agents || listRoom.agents.length === 0) {
+        const vendor = await getVendorsInRoom(player.currentRoomId);
+        if (!vendor) {
           responses.push('Không có ai ở đây để bán hàng.');
           break;
         }
 
-        // Phase 25: Use new vendor system (optimized: only populate needed fields)
-        const vendors = await AgentSchema.find({ 
-          _id: { $in: listRoom.agents },
-          isVendor: true
-        }).populate('shopInventory', 'name price premiumPrice dungeonCoinPrice tamerBadgePrice gloryPointsPrice braveryMedalPrice').populate('shopItems', 'name price premiumPrice dungeonCoinPrice tamerBadgePrice gloryPointsPrice braveryMedalPrice');
-
-        if (vendors.length === 0) {
-          responses.push('Không có ai ở đây để bán hàng.');
-          break;
-        }
-
-        const vendor = vendors[0];
-        // Combine items from both shopInventory and shopItems (legacy field)
-        const shopInventory = vendor.shopInventory || [];
-        const shopItems = vendor.shopItems || [];
-        const allItems = [...shopInventory, ...shopItems];
-        const uniqueItems = deduplicateItemsById(allItems);
+        const uniqueItems = getVendorItems(vendor);
 
         if (uniqueItems.length === 0) {
           responses.push(`[${vendor.name}] không có gì để bán.`);
           break;
         }
 
-        const currencyInfo = getCurrencyInfo(vendor, player);
+        const currencyInfo = getCurrencyInfoFromVendor(vendor);
         responses.push(`════════ HÀNG CỦA ${vendor.name.toUpperCase()} ════════`);
         uniqueItems.forEach((item: any, index: number) => {
           const itemPrice = item[currencyInfo.priceField] ?? 0;
           const spaces = ' '.repeat(Math.max(20 - item.name.length, 1));
-          responses.push(`${index + 1}. [${item.name}]${spaces}- ${itemPrice} ${currencyInfo.currencySymbol}`);
+          responses.push(`${index + 1}. [${item.name}]${spaces}- ${itemPrice} ${currencyInfo.symbol}`);
         });
         responses.push('═══════════════════════════════════════');
         responses.push('Gõ \'buy [tên vật phẩm]\' để mua.');
@@ -623,32 +566,17 @@ export async function handleCommandDb(command: Command, playerId: string): Promi
           break;
         }
 
-        const buyRoom = await RoomSchema.findById(player.currentRoomId);
-        if (!buyRoom || !buyRoom.agents || buyRoom.agents.length === 0) {
-          responses.push('Không có ai ở đây để bán hàng.');
-          break;
-        }
-
-        // Phase 25: Use new vendor system (optimized: only populate needed fields)
-        const buyVendors = await AgentSchema.find({ 
-          _id: { $in: buyRoom.agents },
-          isVendor: true
-        }).populate('shopInventory', 'name price premiumPrice dungeonCoinPrice tamerBadgePrice gloryPointsPrice braveryMedalPrice type').populate('shopItems', 'name price premiumPrice dungeonCoinPrice tamerBadgePrice gloryPointsPrice braveryMedalPrice type');
-
-        if (buyVendors.length === 0) {
-          responses.push('Không có ai ở đây để bán hàng.');
-          break;
-        }
-
-        const buyVendor = buyVendors[0];
-        // Combine items from both shopInventory and shopItems (legacy field)
-        const buyShopInventory = buyVendor.shopInventory || [];
-        const buyShopItems = buyVendor.shopItems || [];
-        const buyAllItems = [...buyShopInventory, ...buyShopItems];
-        const buyUniqueItems = deduplicateItemsById(buyAllItems);
-        const buyItem = buyUniqueItems.find((i: any) => 
-          i.name.toLowerCase().includes(target.toLowerCase())
+        const buyVendor = await getVendorsInRoom(
+          player.currentRoomId, 
+          'name price premiumPrice dungeonCoinPrice tamerBadgePrice gloryPointsPrice braveryMedalPrice type'
         );
+        
+        if (!buyVendor) {
+          responses.push('Không có ai ở đây để bán hàng.');
+          break;
+        }
+
+        const buyItem = findVendorItem(buyVendor, target);
 
         if (!buyItem) {
           responses.push(`[${buyVendor.name}] không bán "${target}".`);
@@ -656,17 +584,17 @@ export async function handleCommandDb(command: Command, playerId: string): Promi
         }
 
         // Check price based on shop type and currency
-        const currencyInfo = getCurrencyInfo(buyVendor, player);
-        const itemPrice = buyItem[currencyInfo.priceField] ?? 0;
+        const currencyInfo = getCurrencyInfoFromVendor(buyVendor);
+        const affordCheck = checkAffordability(player, buyItem, currencyInfo);
 
         // Validate that item has a valid price
-        if (itemPrice <= 0) {
+        if (affordCheck.required <= 0) {
           responses.push(`[${buyItem.name}] không có giá bán.`);
           break;
         }
 
-        if (currencyInfo.playerCurrency < itemPrice) {
-          responses.push(`Bạn không có đủ ${currencyInfo.currencyName} để mua [${buyItem.name}]. Cần ${itemPrice} ${currencyInfo.currencySymbol}, bạn chỉ có ${currencyInfo.playerCurrency} ${currencyInfo.currencySymbol}.`);
+        if (!affordCheck.canAfford) {
+          responses.push(`Bạn không có đủ ${getCurrencyName(currencyInfo.type)} để mua [${buyItem.name}]. Cần ${formatCurrency(affordCheck.required, currencyInfo.type)}, bạn chỉ có ${formatCurrency(affordCheck.playerAmount, currencyInfo.type)}.`);
           break;
         }
 
@@ -692,33 +620,14 @@ export async function handleCommandDb(command: Command, playerId: string): Promi
           data: buyItem.data // Ensure data field is copied for pet eggs
         });
 
-        // Deduct currency
-        let remainingCurrency = 0;
-        if (currencyInfo.isPremiumShop) {
-          player.premiumCurrency -= itemPrice;
-          remainingCurrency = player.premiumCurrency;
-        } else if (currencyInfo.isDungeonShop) {
-          player.dungeonCoin = (player.dungeonCoin || 0) - itemPrice;
-          remainingCurrency = player.dungeonCoin;
-        } else if (currencyInfo.isTamerShop) {
-          player.tamerBadge = (player.tamerBadge || 0) - itemPrice;
-          remainingCurrency = player.tamerBadge;
-        } else if (currencyInfo.isGloryShop) {
-          player.gloryPoints = (player.gloryPoints || 0) - itemPrice;
-          remainingCurrency = player.gloryPoints;
-        } else if (currencyInfo.isBraveryShop) {
-          player.braveryMedals = (player.braveryMedals || 0) - itemPrice;
-          remainingCurrency = player.braveryMedals;
-        } else {
-          player.gold -= itemPrice;
-          remainingCurrency = player.gold;
-        }
+        // Deduct currency using centralized service
+        const remainingCurrency = deductCurrency(player, currencyInfo.type, affordCheck.required);
         
         player.inventory.push(newBuyItem._id);
         await player.save();
 
-        responses.push(`Bạn đã mua [${buyItem.name}] với giá ${itemPrice} ${currencyInfo.currencySymbol}!`);
-        responses.push(`${currencyInfo.currencyName} còn lại: ${remainingCurrency} ${currencyInfo.currencySymbol}`);
+        responses.push(`Bạn đã mua [${buyItem.name}] với giá ${formatCurrency(affordCheck.required, currencyInfo.type)}!`);
+        responses.push(`${getCurrencyName(currencyInfo.type)} còn lại: ${formatCurrency(remainingCurrency, currencyInfo.type)}`);
         break;
       }
 
