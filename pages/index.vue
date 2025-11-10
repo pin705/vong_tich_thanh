@@ -426,6 +426,9 @@
 
     <!-- Loading Indicator -->
     <LoadingIndicator :isLoading="isLoading" :text="loadingText" />
+
+    <!-- Toast Container -->
+    <ToastContainer />
   </div>
 </template>
 
@@ -509,6 +512,9 @@ const {
   tabCompletionMatches, tabCompletionIndex, tabCompletionPrefix,
   navigateHistory, addToHistory, resetTabCompletion, handleTabCompletion
 } = useCommandHistory();
+
+// Toast notifications
+const { success: toastSuccess, error: toastError, warning: toastWarning, info: toastInfo } = useToast();
 
 // Load chat from storage
 const CHAT_STORAGE_KEY = 'vong-tich-thanh-chat-log';
@@ -914,8 +920,7 @@ const getActionsForEntity = (type: 'player' | 'npc' | 'mob', name: string, entit
         });
       }
       
-      // Add trade and attack as default options for most NPCs
-      actions.push({ label: 'Giao Dịch (Trade)', command: `__trade__:${entityId}:${name}`, disabled: false });
+      // Add attack as default option for NPCs
       actions.push({ label: 'Tấn Công (Attack)', command: `attack ${name}`, disabled: false });
       
       return actions;
@@ -1167,6 +1172,7 @@ const handleAllocateTalent = async (talentId: string) => {
       allocatedTalents.value = response.allocatedTalents;
       playerState.value.talentPoints = response.talentPoints;
       addMessage('Đã cộng điểm thiên phú thành công!', 'system');
+      toastSuccess('Đã cộng điểm thiên phú thành công!');
       // Reload talents to update UI
       await loadTalents();
     }
@@ -1174,6 +1180,7 @@ const handleAllocateTalent = async (talentId: string) => {
     console.error('Error allocating talent:', error);
     const errorMsg = error.data?.message || 'Không thể cộng điểm thiên phú.';
     addMessage(errorMsg, 'error');
+    toastError(errorMsg, 4000);
   } finally {
     isLoading.value = false;
   }

@@ -79,11 +79,15 @@ export async function generateMonsterForFloor(floorNumber: number) {
     const experience = Math.floor(baseExp * floorNumber * statsMultiplier);
     const level = Math.max(1, Math.floor(floorNumber / 2));
 
+    // Generate unique agentKey for this dungeon monster
+    const agentKey = `dungeon_${agentType}_floor_${floorNumber}_${Date.now()}`;
+
     return {
       name: agentName,
       description: `Quái vật nguy hiểm từ tầng ${floorNumber} của hầm ngục.`,
       type: 'mob',
       agentType,
+      agentKey,
       hp,
       maxHp,
       damage,
