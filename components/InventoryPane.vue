@@ -148,13 +148,13 @@ const activeTab = ref<'info' | 'items' | 'equipment'>('info');
 // Separate items into regular items and equipment
 const regularItems = computed(() => {
   return props.inventoryItems.filter(item => 
-    item && item.type !== 'weapon' && item.type !== 'armor'
+    item && item.type !== 'weapon' && item.type !== 'armor' && item.type !== 'Equipment' && !item.slot
   );
 });
 
 const equipmentItems = computed(() => {
   return props.inventoryItems.filter(item => 
-    item && (item.type === 'weapon' || item.type === 'armor')
+    item && (item.type === 'weapon' || item.type === 'armor' || item.type === 'Equipment' || item.slot)
   );
 });
 

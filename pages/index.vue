@@ -997,6 +997,7 @@ const handleInventoryAction = (action: string, itemId: string) => {
   const commandMap: Record<string, string> = {
     use: `use ${itemId}`,
     equip: `equip ${itemId}`,
+    unequip: `unequip ${itemId}`,
     drop: `drop ${itemId}`
   };
   
