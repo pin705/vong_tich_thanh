@@ -32,6 +32,11 @@ import {
   formatCurrency,
   getCurrencyName
 } from './currencyService';
+import {
+  getVendorsInRoom,
+  getVendorItems,
+  findVendorItem
+} from './gameHelpers';
 
 const MOVEMENT_COMMANDS = ['go', 'n', 's', 'e', 'w', 'u', 'd', 
                            'north', 'south', 'east', 'west', 'up', 'down',
@@ -530,29 +535,13 @@ export async function handleCommandDb(command: Command, playerId: string): Promi
         break;
 
       case 'list': {
-        const listRoom = await RoomSchema.findById(player.currentRoomId);
-        if (!listRoom || !listRoom.agents || listRoom.agents.length === 0) {
+        const vendor = await getVendorsInRoom(player.currentRoomId);
+        if (!vendor) {
           responses.push('Không có ai ở đây để bán hàng.');
           break;
         }
 
-        // Phase 25: Use new vendor system (optimized: only populate needed fields)
-        const vendors = await AgentSchema.find({ 
-          _id: { $in: listRoom.agents },
-          isVendor: true
-        }).populate('shopInventory', 'name price premiumPrice dungeonCoinPrice tamerBadgePrice gloryPointsPrice braveryMedalPrice').populate('shopItems', 'name price premiumPrice dungeonCoinPrice tamerBadgePrice gloryPointsPrice braveryMedalPrice');
-
-        if (vendors.length === 0) {
-          responses.push('Không có ai ở đây để bán hàng.');
-          break;
-        }
-
-        const vendor = vendors[0];
-        // Combine items from both shopInventory and shopItems (legacy field)
-        const shopInventory = vendor.shopInventory || [];
-        const shopItems = vendor.shopItems || [];
-        const allItems = [...shopInventory, ...shopItems];
-        const uniqueItems = deduplicateItemsById(allItems);
+        const uniqueItems = getVendorItems(vendor);
 
         if (uniqueItems.length === 0) {
           responses.push(`[${vendor.name}] không có gì để bán.`);
@@ -577,32 +566,17 @@ export async function handleCommandDb(command: Command, playerId: string): Promi
           break;
         }
 
-        const buyRoom = await RoomSchema.findById(player.currentRoomId);
-        if (!buyRoom || !buyRoom.agents || buyRoom.agents.length === 0) {
-          responses.push('Không có ai ở đây để bán hàng.');
-          break;
-        }
-
-        // Phase 25: Use new vendor system (optimized: only populate needed fields)
-        const buyVendors = await AgentSchema.find({ 
-          _id: { $in: buyRoom.agents },
-          isVendor: true
-        }).populate('shopInventory', 'name price premiumPrice dungeonCoinPrice tamerBadgePrice gloryPointsPrice braveryMedalPrice type').populate('shopItems', 'name price premiumPrice dungeonCoinPrice tamerBadgePrice gloryPointsPrice braveryMedalPrice type');
-
-        if (buyVendors.length === 0) {
-          responses.push('Không có ai ở đây để bán hàng.');
-          break;
-        }
-
-        const buyVendor = buyVendors[0];
-        // Combine items from both shopInventory and shopItems (legacy field)
-        const buyShopInventory = buyVendor.shopInventory || [];
-        const buyShopItems = buyVendor.shopItems || [];
-        const buyAllItems = [...buyShopInventory, ...buyShopItems];
-        const buyUniqueItems = deduplicateItemsById(buyAllItems);
-        const buyItem = buyUniqueItems.find((i: any) => 
-          i.name.toLowerCase().includes(target.toLowerCase())
+        const buyVendor = await getVendorsInRoom(
+          player.currentRoomId, 
+          'name price premiumPrice dungeonCoinPrice tamerBadgePrice gloryPointsPrice braveryMedalPrice type'
         );
+        
+        if (!buyVendor) {
+          responses.push('Không có ai ở đây để bán hàng.');
+          break;
+        }
+
+        const buyItem = findVendorItem(buyVendor, target);
 
         if (!buyItem) {
           responses.push(`[${buyVendor.name}] không bán "${target}".`);

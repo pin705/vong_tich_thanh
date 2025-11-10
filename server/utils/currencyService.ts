@@ -21,32 +21,32 @@ export interface CurrencyCheckResult {
 // Currency configuration
 const CURRENCY_CONFIG: Record<CurrencyType, Omit<CurrencyInfo, 'type'>> = {
   gold: {
-    symbol: '💰',
+    symbol: 'Gold',
     name: 'vàng',
     priceField: 'price'
   },
   premium: {
-    symbol: '💎',
+    symbol: 'Premium',
     name: 'Cổ Thạch',
     priceField: 'premiumPrice'
   },
   dungeon_coin: {
-    symbol: '🎫',
+    symbol: 'DungeonCoin',
     name: 'Xu Hầm Ngục',
     priceField: 'dungeonCoinPrice'
   },
   tamer_badge: {
-    symbol: '🏅',
+    symbol: 'TamerBadge',
     name: 'Huy Hiệu Huấn Luyện',
     priceField: 'tamerBadgePrice'
   },
   glory_points: {
-    symbol: '⚔️',
+    symbol: 'GloryPoints',
     name: 'Điểm Vinh Quang',
     priceField: 'gloryPointsPrice'
   },
   bravery_medal: {
-    symbol: '🎖️',
+    symbol: 'BraveryMedal',
     name: 'Huy Chương Dũng Cảm',
     priceField: 'braveryMedalPrice'
   }
