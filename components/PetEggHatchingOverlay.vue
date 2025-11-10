@@ -173,7 +173,7 @@ const loadPetEggs = async () => {
     const response = await $fetch('/api/player/info');
     
     // Filter pet eggs from inventory
-    petEggs.value = (response.inventory || [])
+    petEggs.value = (response.player?.inventory || [])
       .filter((item: any) => item.type === 'PET_EGG')
       .map((item: any) => ({
         id: item._id,
