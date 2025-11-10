@@ -11,6 +11,7 @@ import { PlayerSchema } from '../../models/Player';
 import { RoomSchema } from '../../models/Room';
 import { AgentSchema } from '../../models/Agent';
 import { ItemSchema } from '../../models/Item';
+import { SkillSchema } from '../../models/Skill';
 import { deduplicateItemsById } from '../utils/itemDeduplication';
 import { commandRateLimiter, chatRateLimiter, sanitizeInput } from '../utils/validation';
 import { getExpForLevel } from '../utils/constants';
@@ -58,6 +59,59 @@ async function sendPlayerState(peer: Peer, playerId: string) {
     }));
   }
 
+  // Populate equipped skills
+  let equippedSkills: any[] = [];
+  if (player.equippedSkills && player.equippedSkills.size > 0) {
+    const skillIds = Array.from(player.equippedSkills.values());
+    const skills = await SkillSchema.find({ _id: { $in: skillIds } }).lean();
+    
+    // Create a map of skill ID to skill data
+    const skillMap = new Map();
+    skills.forEach((skill: any) => {
+      skillMap.set(skill._id.toString(), skill);
+    });
+    
+    // Build equipped skills array with slot information
+    player.equippedSkills.forEach((skillId: any, slot: any) => {
+      const skill = skillMap.get(skillId.toString());
+      if (skill) {
+        equippedSkills.push({
+          slot: parseInt(slot),
+          id: skill._id.toString(),
+          name: skill.name,
+          description: skill.description || '',
+          manaCost: skill.manaCost || 0,
+          cooldown: skill.cooldown || 0,
+          damage: skill.damage || 0,
+          healing: skill.healing || 0,
+          rank: skill.rank || 1,
+          maxRank: skill.maxRank || 1
+        });
+      }
+    });
+    
+    // Sort by slot number
+    equippedSkills.sort((a, b) => a.slot - b.slot);
+  }
+
+  // Get skill cooldowns
+  const skillCooldowns: Record<string, number> = {};
+  if (player.skillCooldowns && player.skillCooldowns.size > 0) {
+    const now = Date.now();
+    player.skillCooldowns.forEach((lastUsed: Date, skillId: string) => {
+      const timeElapsed = now - lastUsed.getTime();
+      // Find the skill to get its cooldown duration
+      const skill = equippedSkills.find(s => s.id === skillId);
+      if (skill && skill.cooldown > 0) {
+        const cooldownMs = skill.cooldown * 1000;
+        const remaining = Math.max(0, cooldownMs - timeElapsed);
+        if (remaining > 0) {
+          skillCooldowns[skillId] = Math.ceil(remaining / 1000); // Convert to seconds
+        }
+      }
+    });
+  }
+
   peer.send(JSON.stringify({
     type: 'player_state',
     payload: {
@@ -89,7 +143,9 @@ async function sendPlayerState(peer: Peer, playerId: string) {
         lifesteal: player.lifesteal || 0,
         dodge: player.dodge || 5
       },
-      inventoryItems
+      inventoryItems,
+      equippedSkills,
+      skillCooldowns
     }
   }));
 

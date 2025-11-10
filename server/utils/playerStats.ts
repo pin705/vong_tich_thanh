@@ -3,6 +3,8 @@
 
 import { PlayerSchema } from '../../models/Player';
 import { ItemSchema } from '../../models/Item';
+import { TalentSchema } from '../../models/Talent';
+import { PetSchema } from '../../models/Pet';
 
 interface PlayerStats {
   baseHp: number;
@@ -171,11 +173,82 @@ export async function calculateStats(playerId: string): Promise<PlayerStats> {
     }
   }
 
-  // Calculate total stats (before title bonuses)
-  let totalHp = baseHp + equipmentStats.hp;
-  let totalMaxHp = baseMaxHp + equipmentStats.hp;
-  let totalDamage = baseDamage + equipmentStats.damage + equipmentStats.strength;
-  let totalDefense = baseDefense + equipmentStats.defense + Math.floor(equipmentStats.agility * 0.5);
+  // Apply talent bonuses
+  let talentStats = {
+    hp: 0,
+    damage: 0,
+    defense: 0,
+    critChance: 0,
+    critDamage: 0,
+    dodge: 0,
+    lifesteal: 0
+  };
+
+  if (player.allocatedTalents && player.allocatedTalents.size > 0) {
+    // Get all talent IDs
+    const talentIds = Array.from(player.allocatedTalents.keys());
+    const talents = await TalentSchema.find({ _id: { $in: talentIds } });
+    
+    // Apply talent effects
+    for (const talent of talents) {
+      const rank = player.allocatedTalents.get(talent._id.toString()) || 0;
+      if (rank > 0 && talent.effects) {
+        // Apply each effect multiplied by rank
+        for (const [effectKey, effectValue] of talent.effects.entries()) {
+          const totalValue = effectValue * rank;
+          
+          switch (effectKey) {
+            case 'hp':
+            case 'maxHp':
+              talentStats.hp += totalValue;
+              break;
+            case 'damage':
+            case 'attack':
+              talentStats.damage += totalValue;
+              break;
+            case 'defense':
+              talentStats.defense += totalValue;
+              break;
+            case 'critChance':
+              talentStats.critChance += totalValue;
+              break;
+            case 'critDamage':
+              talentStats.critDamage += totalValue;
+              break;
+            case 'dodge':
+              talentStats.dodge += totalValue;
+              break;
+            case 'lifesteal':
+              talentStats.lifesteal += totalValue;
+              break;
+          }
+        }
+      }
+    }
+  }
+
+  // Calculate total stats (before title and pet bonuses)
+  let totalHp = baseHp + equipmentStats.hp + talentStats.hp;
+  let totalMaxHp = baseMaxHp + equipmentStats.hp + talentStats.hp;
+  let totalDamage = baseDamage + equipmentStats.damage + equipmentStats.strength + talentStats.damage;
+  let totalDefense = baseDefense + equipmentStats.defense + Math.floor(equipmentStats.agility * 0.5) + talentStats.defense;
+
+  // Apply pet bonuses if player has an active pet
+  if (player.activePetId) {
+    const activePet = await PetSchema.findById(player.activePetId);
+    if (activePet && activePet.currentStats) {
+      // Pets contribute a portion of their stats to the player
+      // 20% of pet HP, 30% of pet attack, 25% of pet defense
+      const petHpBonus = Math.floor(activePet.currentStats.maxHp * 0.2);
+      const petAttackBonus = Math.floor(activePet.currentStats.attack * 0.3);
+      const petDefenseBonus = Math.floor(activePet.currentStats.defense * 0.25);
+      
+      totalHp += petHpBonus;
+      totalMaxHp += petHpBonus;
+      totalDamage += petAttackBonus;
+      totalDefense += petDefenseBonus;
+    }
+  }
 
   // Apply title bonuses if player has an active title
   if (player.activeTitleKey && player.unlockedTitles) {

@@ -119,6 +119,10 @@ export default defineEventHandler(async (event) => {
 
     await player.save();
 
+    // Recalculate player stats to apply talent bonuses
+    const { recalculateStats } = await import('~/server/utils/playerStats');
+    await recalculateStats(user.user.id);
+
     return {
       success: true,
       talentPoints: player.talentPoints,

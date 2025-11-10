@@ -16,7 +16,7 @@ class BroadcastService {
     const allPlayers = gameState.getAllPlayers();
     
     allPlayers.forEach(player => {
-      if (player.ws && player.id !== senderId) {
+      if (player.ws) {
         player.ws.send(JSON.stringify({
           type: 'chat',
           channel: 'chat',

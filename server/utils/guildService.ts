@@ -114,6 +114,40 @@ class GuildService {
     return { success: true, message: 'Đã từ chối lời mời.' };
   }
 
+  // Send guild chat message
+  async sendGuildChat(senderId: string, message: string): Promise<{ success: boolean; message: string }> {
+    const { PlayerSchema } = await import('../../models/Player');
+    const { gameState } = await import('./gameState');
+    
+    // Get sender info
+    const sender = await PlayerSchema.findById(senderId);
+    if (!sender) {
+      return { success: false, message: 'Lỗi: Không tìm thấy người chơi.' };
+    }
+
+    if (!sender.guild) {
+      return { success: false, message: 'Bạn chưa gia nhập bang hội nào.' };
+    }
+
+    // Get all players in the guild
+    const guildMembers = await PlayerSchema.find({ guild: sender.guild });
+    
+    guildMembers.forEach(member => {
+      const playerState = gameState.getPlayer(member._id.toString());
+      if (playerState?.ws) {
+        playerState.ws.send(JSON.stringify({
+          type: 'chat',
+          channel: 'chat',
+          category: 'guild',
+          user: sender.username,
+          message: message
+        }));
+      }
+    });
+
+    return { success: true, message: 'Đã gửi tin nhắn.' };
+  }
+
   // Clean up old invitations (older than 10 minutes)
   cleanupOldInvitations() {
     const now = Date.now();
