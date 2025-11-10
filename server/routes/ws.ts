@@ -395,7 +395,7 @@ export default defineWebSocketHandler({
             }));
             peer.send(JSON.stringify({
               type: 'accent',
-              message: '🎮 HƯỚNG DẪN TÂN THỦ'
+              message: 'HƯỚNG DẪN TÂN THỦ'
             }));
             peer.send(JSON.stringify({
               type: 'normal',
@@ -407,7 +407,7 @@ export default defineWebSocketHandler({
             }));
             peer.send(JSON.stringify({
               type: 'normal',
-              message: '📖 Bắt đầu bằng cách:'
+              message: 'Bắt đầu bằng cách:'
             }));
             peer.send(JSON.stringify({
               type: 'normal',
