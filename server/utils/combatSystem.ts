@@ -458,7 +458,7 @@ export async function executeCombatTick(playerId: string, agentId: string): Prom
     const hpPercent = (player.hp / player.maxHp) * 100;
     if (playerState.isAutoAttacking && hpPercent <= 20) {
       playerState.isAutoAttacking = false;
-      messages.push('⚠️ [AUTO TẮT] HP quá thấp! Tự động tấn công đã được tắt để bảo vệ bạn.');
+      messages.push('[!] [AUTO TẮT] HP quá thấp! Tự động tấn công đã được tắt để bảo vệ bạn.');
       
       // Send message to player
       const playerObj = gameState.getPlayer(playerId);
@@ -466,7 +466,7 @@ export async function executeCombatTick(playerId: string, agentId: string): Prom
         playerObj.ws.send(JSON.stringify({
           type: 'system',
           category: 'combat',
-          message: '⚠️ [AUTO TẮT] HP quá thấp! Tự động tấn công đã được tắt để bảo vệ bạn.'
+          message: '[!] [AUTO TẮT] HP quá thấp! Tự động tấn công đã được tắt để bảo vệ bạn.'
         }));
       }
     }

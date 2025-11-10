@@ -299,7 +299,7 @@ export async function handleItemCommand(command: Command, playerId: string): Pro
             await ItemSchema.findByIdAndDelete(item._id);
             
             responses.push(`═══════════════════════════════════`);
-            responses.push(`✨ Bạn đã nhận được danh hiệu mới! ✨`);
+            responses.push(`[***] Bạn đã nhận được danh hiệu mới! [***]`);
             responses.push(`[${item.grantTitle}]`);
             responses.push(`═══════════════════════════════════`);
             
@@ -310,7 +310,7 @@ export async function handleItemCommand(command: Command, playerId: string): Pro
                 room._id.toString(),
                 {
                   type: 'critical',
-                  message: `✨ [${player.username}] đã nhận được danh hiệu [${item.grantTitle}]! ✨`
+                  message: `[***] [${player.username}] đã nhận được danh hiệu [${item.grantTitle}]! [***]`
                 },
                 playerId
               );

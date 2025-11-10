@@ -21,7 +21,7 @@ export default defineEventHandler(async (event) => {
 
     // Add active quests
     for (const pq of playerQuests) {
-      if (pq.status === 'active' || pq.status === 'completed') {
+      if (pq.status === 'active') {
         const quest = allQuests.find((q: any) => q._id.toString() === pq.questId.toString());
         if (quest) {
           quests.push({
@@ -41,16 +41,22 @@ export default defineEventHandler(async (event) => {
       }
     }
 
-    // Add available quests (not yet started)
+    // Add available quests (not yet started or repeatable completed quests)
     const PlayerSchema = await import('~/models/Player').then(m => m.PlayerSchema);
     const player = await PlayerSchema.findById(playerId).lean();
 
     for (const quest of allQuests) {
-      const hasQuest = playerQuests.some((pq: any) => 
+      const playerQuest = playerQuests.find((pq: any) => 
         pq.questId.toString() === quest._id.toString()
       );
 
-      if (!hasQuest) {
+      // Show quest if:
+      // 1. Player doesn't have it, OR
+      // 2. It's a repeatable quest that was completed
+      const shouldShow = !playerQuest || 
+        (playerQuest.status === 'completed' && quest.isRepeatable);
+
+      if (shouldShow) {
         // Check requirements
         const meetsLevel = !quest.levelRequirement || (player?.level || 1) >= quest.levelRequirement;
         const meetsProfession = !quest.professionRequirement || player?.profession === quest.professionRequirement;

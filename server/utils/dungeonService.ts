@@ -199,27 +199,47 @@ export async function completeFloor(playerId: string, floorNumber: number) {
 
     await player.save();
 
-    // Send message to player
+    // Send completion message to player
     const playerObj = gameState.getPlayer(playerId);
     if (playerObj && playerObj.ws) {
       playerObj.ws.send(
         JSON.stringify({
           type: 'message',
           payload: {
-            text: `🎉 Hoàn thành tầng ${floorNumber}! Nhận được ${goldReward} vàng và ${dungeonCoinReward} Xu Hầm Ngục.`,
+            text: `[!!!] Hoàn thành tầng ${floorNumber}! Nhận được ${goldReward} vàng và ${dungeonCoinReward} Xu Hầm Ngục.`,
             type: 'system',
           },
         })
       );
+      
+      // Auto-advance to next floor
+      const nextFloor = floorNumber + 1;
       playerObj.ws.send(
         JSON.stringify({
           type: 'message',
           payload: {
-            text: 'Gõ [tiếp] để lên tầng tiếp theo hoặc [thoát] để rời khỏi hầm ngục.',
+            text: `Đang tự động chuyển đến tầng ${nextFloor}...`,
             type: 'system',
           },
         })
       );
+      
+      // Small delay before starting next floor
+      setTimeout(async () => {
+        const nextFloorResult = await startChallenge(playerId);
+        if (nextFloorResult.success && nextFloorResult.boss) {
+          // Start combat with the new boss automatically
+          playerObj.ws.send(
+            JSON.stringify({
+              type: 'message',
+              payload: {
+                text: nextFloorResult.message,
+                type: 'combat',
+              },
+            })
+          );
+        }
+      }, 1500);
     }
 
     return {
@@ -229,6 +249,7 @@ export async function completeFloor(playerId: string, floorNumber: number) {
         gold: goldReward,
         dungeonCoin: dungeonCoinReward,
       },
+      autoAdvanced: true,
     };
   } catch (error) {
     console.error('Error completing floor:', error);
