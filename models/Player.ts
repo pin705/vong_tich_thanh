@@ -1,5 +1,6 @@
 import { defineMongooseModel } from '#nuxt/mongoose';
 import { Schema } from 'mongoose';
+import { ELEMENT_TYPES, CLASS_TYPES, PROFESSION_TYPES, STATS_SCHEMA_DEFINITION } from '~/types/gameTypes';
 
 export const PlayerSchema = defineMongooseModel({
   name: 'Player',
@@ -66,13 +67,13 @@ export const PlayerSchema = defineMongooseModel({
     // Phase 12: Class & Talent System
     class: {
       type: String,
-      enum: ['mutant_warrior', 'rune_historian', 'stalker', 'scrap_engineer'],
+      enum: CLASS_TYPES,
       default: 'mutant_warrior', // Default for new players; existing players can remain null
     },
     // Elemental affinity system
     elementalAffinity: {
       type: String,
-      enum: ['FIRE', 'WATER', 'EARTH', 'WIND', 'LIGHTNING', 'NEUTRAL'],
+      enum: ELEMENT_TYPES,
       default: 'NEUTRAL',
     },
     elementalResistances: {
@@ -161,7 +162,7 @@ export const PlayerSchema = defineMongooseModel({
     // Profession system
     profession: {
       type: String,
-      enum: ['blacksmith', 'alchemist', 'enchanter', 'hunter', 'miner', 'herbalist', null],
+      enum: [...PROFESSION_TYPES, null],
       default: null,
     },
     professionLevel: {
@@ -249,15 +250,7 @@ export const PlayerSchema = defineMongooseModel({
     unlockedTitles: [{
       key: { type: String },
       name: { type: String },
-      stats: {
-        attack: { type: Number },
-        hp: { type: Number },
-        defense: { type: Number },
-        critChance: { type: Number },
-        critDamage: { type: Number },
-        dodge: { type: Number },
-        lifesteal: { type: Number },
-      },
+      stats: STATS_SCHEMA_DEFINITION,
     }],
     activeTitleKey: {
       type: String,

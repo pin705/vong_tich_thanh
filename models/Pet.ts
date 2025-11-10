@@ -1,5 +1,6 @@
 import { defineMongooseModel } from '#nuxt/mongoose';
 import { Schema } from 'mongoose';
+import { ELEMENT_TYPES } from '~/types/gameTypes';
 
 export const PetSchema = defineMongooseModel({
   name: 'Pet',
@@ -21,7 +22,7 @@ export const PetSchema = defineMongooseModel({
     },
     element: {
       type: String,
-      enum: ['FIRE', 'WATER', 'EARTH', 'WIND', 'LIGHTNING', 'NEUTRAL'],
+      enum: ELEMENT_TYPES,
       default: 'NEUTRAL',
     },
     level: {
