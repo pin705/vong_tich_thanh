@@ -1088,8 +1088,26 @@ const loadTalents = async () => {
 };
 
 // Handle skill assignment to hotkey
-const handleAssignSkill = (skill: Skill) => {
-  addMessage(`Đã gán kỹ năng [${skill.name}] (Tính năng hotkey đang phát triển)`, 'system');
+const handleAssignSkill = async (skill: Skill) => {
+  isLoading.value = true;
+  loadingText.value = 'Đang gán kỹ năng...';
+  try {
+    const response = await $fetch('/api/player/skills/equip', {
+      method: 'POST',
+      body: { skillId: skill.id }
+    });
+    
+    if (response.success) {
+      addMessage(response.message || `Đã gán kỹ năng [${skill.name}] vào slot ${response.slot}`, 'system');
+      // Note: Player state will be updated via WebSocket automatically
+    }
+  } catch (error: any) {
+    console.error('Error assigning skill:', error);
+    const errorMsg = error.data?.message || 'Không thể gán kỹ năng.';
+    addMessage(errorMsg, 'error');
+  } finally {
+    isLoading.value = false;
+  }
 };
 
 // Handle skill upgrade

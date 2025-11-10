@@ -312,6 +312,7 @@ export async function handleCommandDb(command: Command, playerId: string): Promi
         if (talkAgent.agentKey === 'gia_lang' && !player.hasCompletedTutorial) {
           // Mark tutorial as completed
           player.hasCompletedTutorial = true;
+          await player.save(); // Save the tutorial completion flag
           
           // Get starter items by itemKey
           const starterItems = await ItemSchema.find({
