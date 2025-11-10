@@ -371,7 +371,22 @@ export async function handleItemCommand(command: Command, playerId: string): Pro
           // Determine pet quality
           const quality = determinePetQuality();
 
-          // Create new pet
+          // Calculate quality multiplier for stats
+          const qualityMultipliers: Record<string, number> = {
+            'COMMON': 1.0,
+            'UNCOMMON': 1.3,
+            'RARE': 1.7,
+            'EPIC': 2.2,
+            'LEGENDARY': 3.0,
+          };
+          const multiplier = qualityMultipliers[quality] || 1.0;
+          
+          // Calculate base stats with quality modifier
+          const baseHp = Math.floor(petTemplate.baseStats.hp * multiplier);
+          const baseAttack = Math.floor(petTemplate.baseStats.damage * multiplier);
+          const baseDefense = Math.floor(petTemplate.baseStats.defense * multiplier);
+
+          // Create new pet with proper currentStats
           const newPet = await PetSchema.create({
             ownerId: player._id,
             templateId: petTemplate._id,
@@ -380,10 +395,16 @@ export async function handleItemCommand(command: Command, playerId: string): Pro
             quality,
             level: 1,
             exp: 0,
-            hp: petTemplate.baseStats.hp,
-            maxHp: petTemplate.baseStats.hp,
-            damage: petTemplate.baseStats.damage,
-            defense: petTemplate.baseStats.defense,
+            hp: baseHp,
+            maxHp: baseHp,
+            damage: baseAttack,
+            defense: baseDefense,
+            currentStats: {
+              hp: baseHp,
+              maxHp: baseHp,
+              attack: baseAttack,
+              defense: baseDefense,
+            },
             isActive: false
           });
 
@@ -404,6 +425,7 @@ export async function handleItemCommand(command: Command, playerId: string): Pro
           responses.push(`[***] Bạn đã ấp nở một con pet mới! [***]`);
           responses.push(`Tên: [${newPet.nickname}]`);
           responses.push(`Phẩm chất: ${quality}`);
+          responses.push(`HP: ${baseHp} | Tấn Công: ${baseAttack} | Phòng Thủ: ${baseDefense}`);
           responses.push('═══════════════════════════════════');
           responses.push('Sử dụng lệnh "pet" để xem và quản lý pet của bạn.');
 

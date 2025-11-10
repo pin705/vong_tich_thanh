@@ -314,6 +314,10 @@ export async function applyStatsToPlayer(playerId: string): Promise<{ success: b
   const hpPercentage = player.hp / player.maxHp;
   player.maxHp = stats.totalMaxHp;
   player.hp = Math.floor(player.maxHp * hpPercentage); // Maintain HP percentage
+  
+  // Update damage and defense stats so they reflect in the UI
+  player.damage = stats.totalDamage;
+  player.defense = stats.totalDefense;
 
   await player.save();
 
