@@ -117,6 +117,36 @@ export default defineEventHandler(async (event) => {
     // Mark the talents field as modified to ensure Mongoose saves it
     player.markModified('talents');
 
+    // Grant skill if this talent provides one and it's the first rank
+    if (talent.grantsSkill && currentRank === 0) {
+      // Import SkillSchema
+      const { SkillSchema } = await import('~/models/Skill');
+      
+      // Find the skill by its key/ID
+      const skill = await SkillSchema.findOne({ skillKey: talent.grantsSkill });
+      
+      if (skill) {
+        // Initialize skills array if needed
+        if (!player.skills) {
+          player.skills = [];
+        }
+        
+        // Check if player already has this skill
+        const hasSkill = player.skills.some((s: any) => s.toString() === skill._id.toString());
+        
+        if (!hasSkill) {
+          player.skills.push(skill._id);
+          
+          // Initialize learnedSkills map if needed
+          if (!player.learnedSkills) {
+            player.learnedSkills = new Map();
+          }
+          player.learnedSkills.set(skill._id.toString(), 1);
+          player.markModified('learnedSkills');
+        }
+      }
+    }
+
     await player.save();
 
     // Recalculate player stats to apply talent bonuses
