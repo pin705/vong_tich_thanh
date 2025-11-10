@@ -2,6 +2,7 @@ import { gameState } from '../utils/gameState';
 import { RoomSchema } from '../../models/Room';
 import { broadcastService } from '../utils/broadcastService';
 import { guildService } from '../utils/guildService';
+import { partyService } from '../utils/partyService';
 
 export async function handleSayCommand(
   playerId: string,
@@ -84,5 +85,47 @@ export async function handleGuildChatCommand(
   }
   
   // Don't add to responses if successful - it will be shown via chat system
+  return responses;
+}
+
+export async function handlePartyChatCommand(
+  playerId: string,
+  player: any,
+  target: string | undefined,
+  args: string[] | undefined
+): Promise<string[]> {
+  const responses: string[] = [];
+  
+  // Reconstruct full message
+  const chatMessage = [target, ...(args || [])].filter(Boolean).join(' ');
+  
+  if (!chatMessage) {
+    responses.push('Bạn muốn nói gì với nhóm?');
+    return responses;
+  }
+  
+  const playerParty = partyService.getPlayerParty(playerId);
+  if (!playerParty) {
+    responses.push('Bạn không ở trong nhóm nào.');
+    return responses;
+  }
+  
+  // Broadcast to all party members
+  const memberIds = partyService.getPartyMemberIds(playerParty.partyId);
+  const members = gameState.getPlayersByIds(memberIds);
+  
+  members.forEach(member => {
+    if (member.ws) {
+      member.ws.send(JSON.stringify({
+        type: 'chat',
+        channel: 'chat',
+        category: 'party',
+        user: player.username,
+        message: chatMessage
+      }));
+    }
+  });
+  
+  // Don't add to responses - it will be shown via chat system
   return responses;
 }

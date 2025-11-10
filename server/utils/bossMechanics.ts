@@ -274,6 +274,12 @@ async function processCasting(agent: any, roomId: string): Promise<void> {
 function checkTrigger(agent: any, mechanic: BossMechanic, bossState: BossState): boolean {
   const trigger = mechanic.trigger;
   
+  // Guard against undefined trigger
+  if (!trigger) {
+    console.error('Boss mechanic has undefined trigger:', mechanic);
+    return false;
+  }
+  
   // Health-based triggers (one-time)
   if (trigger === 'health_below_50') {
     const hpPercent = agent.hp / agent.maxHp;

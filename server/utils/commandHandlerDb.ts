@@ -16,7 +16,7 @@ import { handleCombatCommand } from '../commands/combat';
 import { handleItemCommand } from '../commands/item';
 import { handlePartyCommand } from '../commands/party';
 import { handleSkillCommand } from '../commands/skill';
-import { handleSayCommand, handleWorldCommand, handleGuildChatCommand } from '../commands/social';
+import { handleSayCommand, handleWorldCommand, handleGuildChatCommand, handlePartyChatCommand } from '../commands/social';
 import { formatRoomDescription } from './roomUtils';
 import { deduplicateItemsById } from './itemDeduplication';
 import { BUILT_IN_COMMANDS } from './commandParser';
@@ -1914,6 +1914,14 @@ export async function handleCommandDb(command: Command, playerId: string): Promi
       case 'world':
       case 'w':
         responses.push(...await handleWorldCommand(playerId, player, target, args));
+        break;
+
+      case 'party_chat':
+        responses.push(...await handlePartyChatCommand(playerId, player, target, args));
+        break;
+
+      case 'guild_chat':
+        responses.push(...await handleGuildChatCommand(playerId, player, target, args));
         break;
 
       case 'guild':
