@@ -4584,6 +4584,8 @@ export async function initializeWorld() {
     // Save all rooms with agents
     await cổngThành.save();
     await khuCho.save();
+    await arenaLobby.save(); // Save arena lobby after adding arena manager
+    await partyDungeonEntrance.save(); // Save party dungeon entrance after adding archaeologist
     await hẻmTối.save();
     await rừngRậm.save();
     await hang.save();

@@ -386,8 +386,8 @@ const equipmentItems = computed(() => {
 // Handle inventory item click
 const handleItemClick = (item: any) => {
   // Emit event to parent for handling item actions
-  // This could open a contextual menu or execute an action
-  emit('inventoryAction', 'use', item.id || item.name);
+  // Use item.name because backend commands expect item names, not IDs
+  emit('inventoryAction', 'use', item.name);
 };
 
 // Check if skill can be upgraded
