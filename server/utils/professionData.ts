@@ -395,3 +395,19 @@ export const professionStarterItems: Record<string, ProfessionStarterItem[]> = {
 export const validProfessions = ['blacksmith', 'alchemist', 'enchanter', 'hunter', 'miner', 'herbalist'] as const;
 
 export type ProfessionType = typeof validProfessions[number];
+
+// Map profession keys to Vietnamese display names
+export const professionNames: Record<string, string> = {
+  'blacksmith': 'Thợ Rèn',
+  'alchemist': 'Giả Kim Sư',
+  'enchanter': 'Phù Phép Sư',
+  'hunter': 'Thợ Săn',
+  'miner': 'Thợ Mỏ',
+  'herbalist': 'Dược Sư'
+};
+
+// Get Vietnamese name for profession key, with fallback
+export function getProfessionDisplayName(professionKey: string | null | undefined): string {
+  if (!professionKey) return 'Lãng Khách';
+  return professionNames[professionKey] || professionKey;
+}

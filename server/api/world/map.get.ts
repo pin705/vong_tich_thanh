@@ -73,7 +73,11 @@ export default defineEventHandler(async (event) => {
 
       // Check if room has shop
       const hasShop = roomAgents.some((agent: any) => 
-        agent.type === 'npc' && agent.shopItems && agent.shopItems.length > 0
+        agent.type === 'npc' && (
+          agent.isVendor || 
+          (agent.shopItems && agent.shopItems.length > 0) ||
+          (agent.shopInventory && agent.shopInventory.length > 0)
+        )
       );
 
       // Get room connections

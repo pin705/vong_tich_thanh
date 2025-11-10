@@ -693,9 +693,6 @@ const handleEntitySelect = async (type: 'player' | 'npc' | 'mob', entity: { id: 
   console.log('Entity selected:', type, entity);
   selectedTarget.value = { type, id: entity.id, name: entity.name };
   
-  // Prepare contextual popup data
-  const actions = getActionsForEntity(type, entity.name, entity.id);
-  
   // For NPCs and mobs, fetch detailed information from the server
   if (type === 'npc' || type === 'mob') {
     try {
@@ -703,6 +700,9 @@ const handleEntitySelect = async (type: 'player' | 'npc' | 'mob', entity: { id: 
       
       if (response.success && response.agent) {
         const agent = response.agent;
+        
+        // Generate actions with agent data for better decisions
+        const actions = getActionsForEntity(type, entity.name, entity.id, agent);
         
         contextualPopupData.value = {
           title: `${entity.name} (${getEntityTypeLabel(type)})`,
@@ -725,6 +725,7 @@ const handleEntitySelect = async (type: 'player' | 'npc' | 'mob', entity: { id: 
     } catch (error) {
       console.error('Error fetching agent details:', error);
       // Fallback to basic information
+      const actions = getActionsForEntity(type, entity.name, entity.id);
       contextualPopupData.value = {
         title: `${entity.name} (${getEntityTypeLabel(type)})`,
         entityType: type,
@@ -737,6 +738,7 @@ const handleEntitySelect = async (type: 'player' | 'npc' | 'mob', entity: { id: 
     }
   } else {
     // For players, use basic information
+    const actions = getActionsForEntity(type, entity.name, entity.id);
     contextualPopupData.value = {
       title: `${entity.name} (${getEntityTypeLabel(type)})`,
       entityType: type,
@@ -805,7 +807,7 @@ const handleContextualAction = async (action: { command: string }) => {
 };
 
 // Get actions for entity type
-const getActionsForEntity = (type: 'player' | 'npc' | 'mob', name: string, entityId: string) => {
+const getActionsForEntity = (type: 'player' | 'npc' | 'mob', name: string, entityId: string, agentData?: any) => {
   switch (type) {
     case 'npc':
       const actions = [
@@ -813,24 +815,18 @@ const getActionsForEntity = (type: 'player' | 'npc' | 'mob', name: string, entit
         { label: 'Xem Xét (Look)', command: `look ${name}`, disabled: false }
       ];
       
-      // Add specific actions based on NPC name
-      // Vendors and shops
-      if (name === 'Thương Gia') {
+      // Add vendor shop action if agent is a vendor
+      if (agentData?.isVendor) {
+        const shopType = agentData.shopType || 'gold';
+        const currencyLabel = shopType === 'premium' ? 'Cổ Thạch' : 'Vàng';
         actions.push({ 
-          label: 'Xem Cửa Hàng (Shop)', 
-          command: `__vendor_shop__:${entityId}:${name}:gold`, 
+          label: `Cửa Hàng (${currencyLabel})`, 
+          command: `__vendor_shop__:${entityId}:${name}:${shopType}`, 
           disabled: false 
         });
       }
       
-      if (name === 'Thương Gia Bí Ẩn') {
-        actions.push({ 
-          label: 'Cửa Hàng Cao Cấp', 
-          command: `__vendor_shop__:${entityId}:${name}:premium`, 
-          disabled: false 
-        });
-      }
-      
+      // Add specific actions based on NPC name for backward compatibility
       if (name === 'Thợ Rèn') {
         actions.push({ 
           label: 'Chế Tạo (Craft)', 

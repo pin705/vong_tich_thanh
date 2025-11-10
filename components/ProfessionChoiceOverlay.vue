@@ -5,6 +5,7 @@
       <div class="profession-header">
         <h2>--- CHỌN NGHỀ NGHIỆP ---</h2>
         <p class="profession-level-notice">Bạn đã đạt Cấp 5. Hãy chọn con đường của mình.</p>
+        <p class="profession-requirement">[Yêu cầu] Cấp độ tối thiểu: 5</p>
         <p class="profession-warning">[!] Lựa chọn này là vĩnh viễn!</p>
         <p class="profession-subtitle">Chọn một nghề nghiệp để bắt đầu hành trình của bạn!</p>
       </div>
@@ -203,6 +204,12 @@ function confirmChoice() {
   font-size: 1.2rem;
   color: #00ff00;
   font-weight: bold;
+  margin-bottom: 0.5rem;
+}
+
+.profession-requirement {
+  font-size: 1rem;
+  color: #00ddff;
   margin-bottom: 0.5rem;
 }
 

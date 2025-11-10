@@ -298,8 +298,11 @@ export async function handleCommandDb(command: Command, playerId: string): Promi
           // Add items to player inventory concurrently for better performance
           await Promise.all(starterItems.map(item => addItemToPlayer(playerId, item._id.toString())));
           
-          // Reload player to get updated inventory
-          await player.reload();
+          // Refetch player to get updated inventory
+          const updatedPlayer = await PlayerSchema.findById(playerId);
+          if (updatedPlayer) {
+            Object.assign(player, updatedPlayer.toObject());
+          }
           
           // Prepare reward data to be stored in gameState for WebSocket to pick up
           const itemsAwarded = starterItems.map(item => ({

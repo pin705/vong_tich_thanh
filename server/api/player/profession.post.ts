@@ -1,6 +1,6 @@
 import { PlayerSchema } from '~/models/Player';
 import { ItemSchema } from '~/models/Item';
-import { professionStarterItems, validProfessions } from '~/server/utils/professionData';
+import { professionStarterItems, validProfessions, getProfessionDisplayName } from '~/server/utils/professionData';
 
 export default defineEventHandler(async (event) => {
   try {
@@ -54,7 +54,7 @@ export default defineEventHandler(async (event) => {
 
     return {
       success: true,
-      message: `Đã chọn nghề nghiệp: ${profession}`,
+      message: `Đã chọn nghề nghiệp: ${getProfessionDisplayName(profession)}`,
       profession: player.profession,
       professionLevel: player.professionLevel
     };

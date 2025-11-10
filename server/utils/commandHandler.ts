@@ -51,7 +51,7 @@ export function handleCommand(command: Command, playerId: string): string[] {
         responses.push('Rêu và dây leo phủ kín. Gió rít qua những khe hở.');
         responses.push('');
         responses.push('Lối ra: [bắc]');
-        responses.push('Một [Lính Gác] đang đứng đây.');
+        responses.push('NPC [Lính Gác] đang đứng đây.');
       } else {
         // Look at specific target
         if (target.includes('lính') || target.includes('gác')) {
@@ -74,7 +74,7 @@ export function handleCommand(command: Command, playerId: string): string[] {
         responses.push('và tiếng người qua lại tạo nên không khí sôi động.');
         responses.push('');
         responses.push('Lối ra: [nam]');
-        responses.push('Một [Thương Gia] đang đứng ở gian hàng.');
+        responses.push('NPC [Thương Gia] đang đứng ở gian hàng.');
       } else {
         responses.push('Bạn không thể đi theo hướng đó.');
       }
