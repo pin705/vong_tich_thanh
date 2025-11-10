@@ -15,6 +15,7 @@ import { handleMovementCommand, handleGotoCommand } from '../commands/movement';
 import { handleCombatCommand } from '../commands/combat';
 import { handleItemCommand } from '../commands/item';
 import { handlePartyCommand } from '../commands/party';
+import { handleSkillCommand } from '../commands/skill';
 import { handleSayCommand, handleWorldCommand, handleGuildChatCommand } from '../commands/social';
 import { formatRoomDescription } from './roomUtils';
 import { deduplicateItemsById } from './itemDeduplication';
@@ -33,6 +34,8 @@ const COMBAT_COMMANDS = ['attack', 'a', 'kill', 'flee', 'run', 'auto'];
 
 const ITEM_COMMANDS = ['inventory', 'i', 'get', 'g', 'drop', 'use', 
                        'list', 'buy', 'sell', 'equip', 'unequip'];
+
+const SKILL_COMMANDS = ['skill', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10'];
 
 // Helper function to get currency info for shop transactions
 function getCurrencyInfo(vendor: any, player: any) {
@@ -167,6 +170,11 @@ export async function handleCommandDb(command: Command, playerId: string): Promi
     // Item commands
     if (ITEM_COMMANDS.includes(action)) {
       return await handleItemCommand(command, playerId);
+    }
+
+    // Skill commands
+    if (SKILL_COMMANDS.includes(action)) {
+      return await handleSkillCommand(command, playerId);
     }
 
     // Get player from database for remaining commands

@@ -136,6 +136,12 @@ export const PlayerSchema = defineMongooseModel({
       of: Date, // Skill ID -> Last Used Time
       default: {},
     },
+    // Equipped skills hotbar (slots 1-10)
+    equippedSkills: {
+      type: Map,
+      of: Schema.Types.ObjectId, // Slot number -> Skill ID
+      default: {},
+    },
     // Auto-skill configuration
     autoSkills: [{
       skillId: {
