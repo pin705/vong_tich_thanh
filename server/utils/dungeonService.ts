@@ -44,21 +44,18 @@ export async function getDungeonStatus(playerId: string) {
  */
 export async function generateMonsterForFloor(floorNumber: number) {
   try {
-    let agentKey = 'goblin'; // Default base mob
     let agentName = 'Goblin Hầm Ngục';
     let agentType = 'mob';
     let statsMultiplier = 1.1;
 
     // Boss every 10 floors
     if (floorNumber % 10 === 0) {
-      agentKey = 'boss';
       agentName = `Thủ Lĩnh Tầng ${floorNumber}`;
       agentType = 'boss';
       statsMultiplier = 2.0;
     }
     // Elite every 5 floors
     else if (floorNumber % 5 === 0) {
-      agentKey = 'elite';
       agentName = `Tinh Anh Tầng ${floorNumber}`;
       agentType = 'elite';
       statsMultiplier = 1.5;
