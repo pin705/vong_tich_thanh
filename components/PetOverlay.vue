@@ -7,7 +7,7 @@
       <!-- Tab Selector -->
       <TabSelector
         :tabs="tabs"
-        :active-tab="activeTab"
+        :current-tab="activeTab"
         @tab-change="activeTab = $event"
       />
 
