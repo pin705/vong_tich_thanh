@@ -4148,6 +4148,110 @@ export async function initializeWorld() {
       { upsert: true, new: true, setDefaultsOnInsert: true }
     );
 
+    // ============= BEGINNER MOBS (Levels 1-10) =============
+    // Added for better game balance and difficulty curve
+    
+    const chuotHoangDa = await AgentSchema.findOneAndUpdate(
+      { agentKey: 'chuot_hoang_da' },
+      {
+        agentKey: 'chuot_hoang_da',
+              name: 'Chuột Hoang Dã',
+              description: 'Một con chuột nhỏ với bộ lông nâu. Trông có vẻ yếu nhưng khá nhanh nhẹn.',
+              type: 'mob',
+              currentRoomId: rừngRậm._id,
+              hp: 30,
+              maxHp: 30,
+              level: 1,
+              damage: 3,
+              behavior: 'aggressive',
+              loot: [],
+              experience: 10,
+              agentType: 'mob',
+              lootTable: [
+                { itemId: binhMauNho._id, dropChance: 0.3 },
+                { itemId: dungDichHoiPhuc._id, dropChance: 0.2 }
+              ]
+      },
+      { upsert: true, new: true, setDefaultsOnInsert: true }
+    );
+
+    const doiLangThang = await AgentSchema.findOneAndUpdate(
+      { agentKey: 'doi_lang_thang' },
+      {
+        agentKey: 'doi_lang_thang',
+              name: 'Dơi Lang Thang',
+              description: 'Dơi vùng rừng với đôi cánh nhỏ. Bay vụng về nhưng khá hung dữ.',
+              type: 'mob',
+              currentRoomId: rừngRậm._id,
+              hp: 45,
+              maxHp: 45,
+              level: 3,
+              damage: 5,
+              behavior: 'aggressive',
+              loot: [],
+              experience: 20,
+              agentType: 'mob',
+              lootTable: [
+                { itemId: binhMauNho._id, dropChance: 0.4 },
+                { itemId: dungDichHoiPhuc._id, dropChance: 0.3 }
+              ]
+      },
+      { upsert: true, new: true, setDefaultsOnInsert: true }
+    );
+
+    const soiHoang = await AgentSchema.findOneAndUpdate(
+      { agentKey: 'soi_hoang' },
+      {
+        agentKey: 'soi_hoang',
+              name: 'Sói Hoang',
+              description: 'Sói rừng với bộ lông xám. Mắt sáng trong bóng tối, răng nanh sắc nhọn.',
+              type: 'mob',
+              currentRoomId: rừngRậm._id,
+              hp: 70,
+              maxHp: 70,
+              level: 5,
+              damage: 8,
+              behavior: 'aggressive',
+              loot: [],
+              experience: 35,
+              agentType: 'mob',
+              lootTable: [
+                { itemId: binhMauTrungBinh._id, dropChance: 0.4 },
+                { itemId: dungDichHoiPhuc._id, dropChance: 0.3 },
+                { itemId: voNhenCung._id, dropChance: 0.1 }
+              ]
+      },
+      { upsert: true, new: true, setDefaultsOnInsert: true }
+    );
+
+    const golemDa = await AgentSchema.findOneAndUpdate(
+      { agentKey: 'golem_da' },
+      {
+        agentKey: 'golem_da',
+              name: 'Golem Đá Nhỏ',
+              description: 'Sinh vật bằng đá với cơ thể nặng nề. Di chuyển chậm chạp nhưng có sức mạnh khủng khiếp.',
+              type: 'mob',
+              currentRoomId: hang._id,
+              hp: 100,
+              maxHp: 100,
+              level: 8,
+              damage: 12,
+              behavior: 'aggressive',
+              loot: [],
+              experience: 55,
+              agentType: 'mob',
+              lootTable: [
+                { itemId: binhMauTrungBinh._id, dropChance: 0.5 },
+                { itemId: loiNangLuongYeu._id, dropChance: 0.2 },
+                { itemId: voNhenCung._id, dropChance: 0.15 }
+              ]
+      },
+      { upsert: true, new: true, setDefaultsOnInsert: true }
+    );
+
+    // ============= MID-LEVEL REBALANCE =============
+    // Adjusted existing mobs to create smoother difficulty progression
+
     const nhenDotBien = await AgentSchema.findOneAndUpdate(
       { agentKey: 'nhen_dot_bien' },
       {
@@ -4156,13 +4260,13 @@ export async function initializeWorld() {
               description: 'Nhện khổng lồ với nhiều mắt đỏ rực. Nọc độc nhỏ giọt từ nanh.',
               type: 'mob',
               currentRoomId: hamNgam2._id,
-              hp: 120,
-              maxHp: 120,
-              level: 12,
-              damage: 15,
+              hp: 100,              // Reduced from 120
+              maxHp: 100,           // Reduced from 120
+              level: 10,            // Reduced from 12
+              damage: 12,           // Reduced from 15
               behavior: 'aggressive',
               loot: [],
-              experience: 80,
+              experience: 65,       // Adjusted from 80
               agentType: 'mob',
               lootTable: [
                 { itemId: voNhenCung._id, dropChance: 0.6 },
@@ -4183,13 +4287,13 @@ export async function initializeWorld() {
               description: 'Sinh vật nhân hình biến dạng sống trong hầm ngầm. Da xanh nhợt nhạt.',
               type: 'mob',
               currentRoomId: hamNgam4._id,
-              hp: 150,
-              maxHp: 150,
-              level: 16,
-              damage: 20,
+              hp: 130,              // Reduced from 150
+              maxHp: 130,           // Reduced from 150
+              level: 13,            // Reduced from 16
+              damage: 16,           // Reduced from 20
               behavior: 'aggressive',
               loot: [],
-              experience: 120,
+              experience: 95,       // Adjusted from 120
               agentType: 'mob',
               lootTable: [
                 { itemId: voNhenCung._id, dropChance: 0.5 },
