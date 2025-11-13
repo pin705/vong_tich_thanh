@@ -2,9 +2,6 @@
   <div class="terminal-container">
     <div class="auth-content">
       <div class="auth-header">
-        <div class="ascii-art">
-          🌟  ⚔️  🌟
-        </div>
         <div class="title-border">╔════════════════════════════════════════╗</div>
         <div class="message message-accent">║     VÒNG TÍCH THÀNH - ĐĂNG KÝ         ║</div>
         <div class="title-border">╚════════════════════════════════════════╝</div>

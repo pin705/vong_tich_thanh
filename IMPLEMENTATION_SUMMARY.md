@@ -165,7 +165,7 @@ Initial world includes:
 ✅ **No vulnerabilities found** in application code
 
 ### npm audit Results
-⚠️ 10 vulnerabilities in development dependencies:
+ 10 vulnerabilities in development dependencies:
 - 7 moderate (esbuild, vite-related)
 - 3 high (@nuxt/devtools path traversal)
 
@@ -216,10 +216,10 @@ Initial world includes:
 2. ✅ Environment variables configured
 3. ✅ MongoDB connection string set
 4. ✅ Session password configured
-5. ⚠️ Initialize world (`POST /api/init-world`)
-6. ⚠️ Set up SSL/TLS for WebSocket (wss://)
-7. ⚠️ Configure CORS if needed
-8. ⚠️ Set up monitoring and logging
+5.  Initialize world (`POST /api/init-world`)
+6.  Set up SSL/TLS for WebSocket (wss://)
+7.  Configure CORS if needed
+8.  Set up monitoring and logging
 
 ## Known Limitations
 

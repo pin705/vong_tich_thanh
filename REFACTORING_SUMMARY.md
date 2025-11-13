@@ -43,7 +43,7 @@ questKey: { type: String, unique: true, required: true, index: true }
 skillKey: { type: String, unique: true, required: true, index: true }
 ```
 
-### Task 2: Upsert Pattern Implementation ⚠️ PARTIAL
+### Task 2: Upsert Pattern Implementation  PARTIAL
 
 **Completed:**
 - ✅ Removed `deleteMany()` calls
@@ -80,7 +80,7 @@ const item = await ItemSchema.findOneAndUpdate(
 
 All follow the same pattern demonstrated in the converted examples.
 
-### Task 3: Linking Logic ⚠️ DOCUMENTED
+### Task 3: Linking Logic  DOCUMENTED
 
 **Completed:**
 - ✅ Created `fetchMappedIds()` function
@@ -165,13 +165,13 @@ const questItem = await getItemByKey('ancient_key');
 For teams completing this refactoring:
 
 1. **Phase 1** (✅ Complete): Update all models with natural keys
-2. **Phase 2** (⚠️ Partial): Convert create() to findOneAndUpdate()
+2. **Phase 2** ( Partial): Convert create() to findOneAndUpdate()
    - Use pattern demonstrated in initWorld.ts
    - Process entities in batches (items, then rooms, then agents, then quests)
-3. **Phase 3** (⚠️ Pending): Implement linking logic
+3. **Phase 3** ( Pending): Implement linking logic
    - Call fetchMappedIds() after seeding
    - Update all cross-references using maps
-4. **Phase 4** (⚠️ Pending): Testing
+4. **Phase 4** ( Pending): Testing
    - Run init script multiple times
    - Verify _ids remain stable
    - Verify all references work correctly

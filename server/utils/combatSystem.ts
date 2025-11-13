@@ -981,9 +981,9 @@ export async function executeCombatTick(playerId: string, agentId: string): Prom
       
       // Add HP warning if critical
       if (hpPercent <= 20) {
-        enemyAttackMessage += ` (HP còn lại: ${player.hp}/${player.maxHp}) ⚠️ CẢNH BÁO: HP RẤT THẤP!`;
+        enemyAttackMessage += ` (HP còn lại: ${player.hp}/${player.maxHp})  CẢNH BÁO: HP RẤT THẤP!`;
       } else if (hpPercent <= 40) {
-        enemyAttackMessage += ` (HP còn lại: ${player.hp}/${player.maxHp}) ⚠️ Cảnh báo: HP thấp!`;
+        enemyAttackMessage += ` (HP còn lại: ${player.hp}/${player.maxHp})  Cảnh báo: HP thấp!`;
       } else {
         enemyAttackMessage += ` (HP còn lại: ${player.hp}/${player.maxHp})`;
       }

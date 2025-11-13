@@ -187,7 +187,7 @@ Already had correct configuration:
 ### Code Review
 ```
 ✅ No critical issues
-⚠️  1 nitpick: Enum naming consistency (pre-existing pattern)
+  1 nitpick: Enum naming consistency (pre-existing pattern)
 ✅ Positive feedback on Quest reward interface design
 ```
 

@@ -255,7 +255,7 @@ export async function spawnWorldBoss(roomName: string, bossKey: string): Promise
     });
     gameState.broadcastToAll({
       type: 'critical',
-      message: `║  ⚠️  WORLD BOSS ĐÃ XUẤT HIỆN! ⚠️         ║`,
+      message: `║    WORLD BOSS ĐÃ XUẤT HIỆN!          ║`,
     });
     gameState.broadcastToAll({
       type: 'critical',
