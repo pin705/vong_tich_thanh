@@ -6,22 +6,22 @@
 :root,
 .theme-vong-tich {
   --bg-black: #0a0a0a;
-  --text-dim: #008800;
+  --text-dim: #00aa00;        /* Slightly brighter for better readability */
   --text-bright: #00ff00;
-  --text-accent: #ffb000;
+  --text-accent: #ffbb00;     /* Slightly more vibrant amber */
   --text-cyan: #00ffff;
-  --text-danger: #ff0000;
+  --text-danger: #ff2020;     /* Slightly brighter red for better visibility */
   
   /* Semantic Message Colors (Phase 15) */
-  --theme-text-damage-in: #ff0000;      /* Damage received - bright red */
-  --theme-text-damage-out: #ffb000;     /* Damage dealt - amber/gold */
+  --theme-text-damage-in: #ff2020;      /* Damage received - bright red */
+  --theme-text-damage-out: #ffbb00;     /* Damage dealt - amber/gold */
   --theme-text-heal: #00ff00;           /* Healing - bright green */
   --theme-text-loot: #ff00ff;           /* Loot/Items - magenta */
-  --theme-text-xp: #00ffaa;             /* Experience gained - cyan-green */
-  --theme-text-critical: #ff8800;       /* Critical events (level up) - bright orange */
+  --theme-text-xp: #00ffbb;             /* Experience gained - cyan-green */
+  --theme-text-critical: #ff9900;       /* Critical events (level up) - bright orange */
   --theme-text-chat-say: #ffffff;       /* Normal chat - white */
   --theme-text-chat-guild: #8080ff;     /* Guild chat - light blue */
-  --theme-text-error: #aa0000;          /* Errors - dark red */
+  --theme-text-error: #cc0000;          /* Errors - dark red */
   --theme-text-system: #00ffff;         /* System messages - cyan */
 }
 
@@ -125,14 +125,43 @@ button, input, select, textarea {
 
 ::-webkit-scrollbar-track {
   background: var(--bg-black);
+  border-left: 1px solid rgba(0, 170, 0, 0.2);
 }
 
 ::-webkit-scrollbar-thumb {
   background: var(--text-dim);
   border: 2px solid var(--bg-black);
+  border-radius: 6px;
+  transition: all 0.2s ease;
 }
 
 ::-webkit-scrollbar-thumb:hover {
   background: var(--text-bright);
+  box-shadow: 0 0 8px rgba(0, 255, 0, 0.5);
+}
+
+/* Smooth scrolling */
+* {
+  scroll-behavior: smooth;
+}
+
+/* Improved focus visibility for accessibility */
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid var(--text-accent);
+  outline-offset: 2px;
+}
+
+/* Reduced motion for users who prefer it */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }
 
