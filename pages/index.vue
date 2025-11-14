@@ -32,6 +32,14 @@
           @tabChange="handleChannelChange"
         />
         
+        <!-- Quick Actions Panel (Fixed above messages) -->
+        <div v-if="currentChannel === 'main'" class="quick-actions-container">
+          <QuickActionsPanel
+            ref="quickActionsRef"
+            @selectEntity="handleQuickActionEntity"
+          />
+        </div>
+        
         <!-- Content Area for Active Tab -->
         <div class="channel-content">
           <MainLogPane v-if="currentChannel === 'main'" :messages="mainLog" @clickElement="handleClickableElement" />
@@ -470,6 +478,7 @@ import PartyPopup from '~/components/PartyPopup.vue';
 import PartyInvitationPopup from '~/components/PartyInvitationPopup.vue';
 import GuildOverlay from '~/components/GuildOverlay.vue';
 import GuildInvitationPopup from '~/components/GuildInvitationPopup.vue';
+import QuickActionsPanel from '~/components/QuickActionsPanel.vue';
 import AuctionHouseOverlay from '~/components/AuctionHouseOverlay.vue';
 import RewardPopup from '~/components/RewardPopup.vue';
 
@@ -567,6 +576,7 @@ const inputField = ref<HTMLInputElement | null>(null);
 const ws = ref<WebSocket | null>(null);
 const isConnected = ref(false);
 const shopPopupRef = ref<InstanceType<typeof ShopPopup> | null>(null);
+const quickActionsRef = ref<InstanceType<typeof QuickActionsPanel> | null>(null);
 
 // Tutorial reward popup data
 const rewardData = ref<{ title: string; message: string; items: Array<{ itemKey: string; name: string }> } | null>(null);
@@ -736,6 +746,12 @@ const handleEntitySelect = async (type: 'player' | 'npc' | 'mob', entity: { id: 
   }
   
   contextualPopupOpen.value = true;
+};
+
+// Handle entity selection from QuickActionsPanel
+const handleQuickActionEntity = async (type: 'npc' | 'mob', entity: { id: string; name: string }) => {
+  // Reuse the existing handleEntitySelect logic
+  await handleEntitySelect(type, entity);
 };
 
 // Handle contextual action execution
@@ -1699,6 +1715,10 @@ const connectWebSocket = () => {
               down: !!payload.exits.down
             };
           }
+          // Refresh quick actions panel when room changes
+          if (quickActionsRef.value) {
+            quickActionsRef.value.refresh();
+          }
           break;
         case 'player_state':
           // Update player state
@@ -1742,6 +1762,10 @@ const connectWebSocket = () => {
               mobs: payload.mobs || [],
               respawns: payload.respawns || []
             };
+          }
+          // Refresh quick actions panel when occupants change
+          if (quickActionsRef.value) {
+            quickActionsRef.value.refresh();
           }
           break;
         case 'ui_event':
@@ -2122,6 +2146,11 @@ watch(messages, () => {
   display: flex;
   flex-direction: column;
   background-color: rgba(0, 136, 0, 0.03);
+}
+
+.quick-actions-container {
+  border-bottom: 1px solid rgba(0, 136, 0, 0.3);
+  background-color: rgba(0, 0, 0, 0.3);
 }
 
 /* Clickable items in loot messages */
