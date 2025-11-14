@@ -23,6 +23,12 @@ A classic text-based MUD (Multi-User Dungeon) game with a retro terminal aesthet
   - Info tab: player stats (damage, defense, crit, lifesteal, dodge)
   - Inventory tab: 20-slot grid with clickable items
   - Item popovers with full details and one-click actions
+- **Quick Actions Panel**: Fixed panel with NPC/Monster buttons (NEW!)
+  - One-click access to NPCs and monsters in current room
+  - Shows level and HP information for quick reference
+  - Collapsible to save screen space
+  - Auto-refreshes when room changes
+  - Messages display below the action buttons for clarity
 - **Clickable Map**: Click directions to move (no typing required!)
 - **Interactive Help System**: Wiki-style help with search and categories (press F1 or Ctrl+H)
 - **Status Effects Display**: Visual buffs/debuffs with timers
