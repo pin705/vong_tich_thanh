@@ -1,3 +1,6 @@
+import { ref, watch } from 'vue';
+import type { Ref } from 'vue';
+
 /**
  * Enhanced localStorage wrapper with error handling and type safety
  */
