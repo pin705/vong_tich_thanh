@@ -1,13 +1,21 @@
 <template>
-  <div class="actions-panel">
-    <div class="actions-header">
-      <span class="actions-title">[ Hành Động ]</span>
-      <button v-if="npcs.length > 0 || mobs.length > 0" @click="refresh" class="refresh-btn" title="Làm mới">
+  <div class="actions-panel" :class="{ collapsed: isCollapsed }">
+    <div class="actions-header" @click="toggleCollapse">
+      <span class="actions-title">
+        <span class="collapse-icon">{{ isCollapsed ? '▶' : '▼' }}</span>
+        [ Hành Động ]
+      </span>
+      <button 
+        v-if="!isCollapsed && (npcs.length > 0 || mobs.length > 0)" 
+        @click.stop="refresh" 
+        class="refresh-btn" 
+        title="Làm mới"
+      >
         ⟳
       </button>
     </div>
     
-    <div class="actions-content">
+    <div v-if="!isCollapsed" class="actions-content">
       <!-- NPCs Section -->
       <div v-if="npcs.length > 0" class="entity-group">
         <div class="group-title">NPC:</div>
@@ -77,6 +85,7 @@ const emit = defineEmits<{
 
 const npcs = ref<Entity[]>([]);
 const mobs = ref<Entity[]>([]);
+const isCollapsed = ref(false);
 
 const loadOccupants = async () => {
   try {
@@ -98,6 +107,10 @@ const refresh = () => {
   loadOccupants();
 };
 
+const toggleCollapse = () => {
+  isCollapsed.value = !isCollapsed.value;
+};
+
 // Load occupants when component is mounted
 onMounted(() => {
   loadOccupants();
@@ -116,6 +129,11 @@ defineExpose({
   border-radius: 4px;
   overflow: hidden;
   font-family: 'VT323', 'Source Code Pro', monospace;
+  transition: all 0.3s ease;
+}
+
+.actions-panel.collapsed .actions-header {
+  border-bottom: none;
 }
 
 .actions-header {
@@ -125,12 +143,27 @@ defineExpose({
   padding: 0.5rem 0.75rem;
   background-color: rgba(0, 136, 0, 0.1);
   border-bottom: 1px solid rgba(0, 136, 0, 0.3);
+  cursor: pointer;
+  user-select: none;
+  transition: background-color 0.2s;
+}
+
+.actions-header:hover {
+  background-color: rgba(0, 136, 0, 0.15);
 }
 
 .actions-title {
   color: var(--text-accent);
   font-weight: bold;
   font-size: 16px;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.collapse-icon {
+  font-size: 12px;
+  transition: transform 0.2s;
 }
 
 .refresh-btn {
