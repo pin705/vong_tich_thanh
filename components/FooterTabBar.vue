@@ -101,9 +101,24 @@ const handleTabClick = (tabId: string) => {
   cursor: pointer;
   font-family: 'VT323', 'Source Code Pro', monospace;
   font-size: 16px;
-  transition: all 0.2s;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   text-align: center;
   white-space: nowrap;
+  position: relative;
+  overflow: hidden;
+}
+
+.tab-button::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: 0;
+  height: 2px;
+  background: var(--text-accent);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transform: translateX(-50%);
+  box-shadow: 0 0 8px var(--text-accent);
 }
 
 .tab-button:last-child {
@@ -115,6 +130,7 @@ const handleTabClick = (tabId: string) => {
   color: var(--text-danger);
   font-weight: bold;
   animation: blink 1s infinite;
+  text-shadow: 0 0 5px var(--text-danger);
 }
 
 @keyframes blink {
@@ -123,13 +139,28 @@ const handleTabClick = (tabId: string) => {
 }
 
 .tab-button:hover {
-  background-color: rgba(0, 255, 0, 0.1);
+  background-color: rgba(0, 255, 0, 0.12);
   color: var(--text-accent);
+  transform: translateY(-2px);
+  box-shadow: inset 0 -2px 0 0 rgba(0, 255, 0, 0.3);
+}
+
+.tab-button:hover::before {
+  width: 80%;
+}
+
+.tab-button:active {
+  transform: translateY(0);
 }
 
 .tab-button.active {
-  background-color: rgba(0, 255, 0, 0.15);
+  background-color: rgba(0, 255, 0, 0.18);
   color: var(--text-accent);
+  text-shadow: 0 0 8px rgba(255, 176, 0, 0.6);
+}
+
+.tab-button.active::before {
+  width: 100%;
 }
 
 /* Mobile responsiveness */

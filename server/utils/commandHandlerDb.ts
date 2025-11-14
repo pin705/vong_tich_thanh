@@ -1141,7 +1141,7 @@ export async function handleCommandDb(command: Command, playerId: string): Promi
         break;
 
       case 'talents':
-      case 't':
+      case 'tal':
       case 'thienphu':
         responses.push(DEV_FEATURE_MESSAGE);
         responses.push('Sử dụng nút "Talents" ở thanh tab dưới để xem bảng thiên phú.');
@@ -1211,48 +1211,7 @@ export async function handleCommandDb(command: Command, playerId: string): Promi
         responses.push(...await handlePartyCommand(playerId, player, action, target, args));
         break;
 
-      case 'g': {
-        // Guild chat
-        const chatMessage = [target, ...(args || [])].filter(Boolean).join(' ');
-        
-        if (!chatMessage) {
-          responses.push('Bạn muốn nói gì với bang?');
-          break;
-        }
-        
-        if (!player.guild) {
-          responses.push('Bạn không có bang hội.');
-          break;
-        }
-        
-        // Import GuildSchema at the top of file if not already imported
-        const { GuildSchema } = await import('../../models/Guild');
-        const guild = await GuildSchema.findById(player.guild).populate('members', '_id');
-        
-        if (!guild) {
-          responses.push('Không tìm thấy bang hội.');
-          break;
-        }
-        
-        // Broadcast to all online guild members
-        const memberIds = guild.members.map((m: any) => m._id.toString());
-        const members = gameState.getPlayersByIds(memberIds);
-        
-        members.forEach(member => {
-          if (member.ws) {
-            member.ws.send(JSON.stringify({
-              type: 'chat',
-              category: 'guild',
-              user: player.username,
-              guildTag: guild.tag,
-              message: chatMessage
-            }));
-          }
-        });
-        
-        // Don't add to responses - it will be shown via chat system
-        break;
-      }
+      // Removed duplicate 'g' case - guild chat now uses 'gc' or 'guild_chat' to avoid conflict with 'get' command
 
       case 'guild': {
         // Guild management commands
@@ -1831,8 +1790,7 @@ export async function handleCommandDb(command: Command, playerId: string): Promi
         break;
 
       case 'guild_chat':
-      case 'guild':
-      case 'g':
+      case 'gc':
         responses.push(...await handleGuildChatCommand(playerId, player, target, args));
         break;
 

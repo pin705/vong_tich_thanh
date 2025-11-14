@@ -239,12 +239,12 @@ export const helpTopics: Record<string, HelpTopic> = {
         examples: ['guild deposit gold 500']
       },
       {
-        command: '/g [tin nhắn]',
-        aliases: ['g'],
+        command: 'gc [tin nhắn]',
+        aliases: ['guild_chat'],
         description: 'Chat với thành viên bang',
         examples: [
-          '/g Chào mọi người!',
-          'g Ai rảnh đi farm không?'
+          'gc Chào mọi người!',
+          'gc Ai rảnh đi farm không?'
         ]
       }
     ]
